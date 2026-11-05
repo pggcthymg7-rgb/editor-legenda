@@ -151,3 +151,33 @@ Ainda não feito: emojis animados, transcrição de vários idiomas na mesma tel
 ## Falta uma ação sua (1 minuto)
 - Criar a chave grátis do Groq e colar em Render → `editor-legenda-api` → Environment → `GROQ_API_KEY`.
 - Sem ela, a opção Nuvem aparece desligada e o app usa a IA no aparelho.
+
+
+---
+
+# Entrega 3: correções do teste no iPhone real
+
+## O que o iPhone mostrou
+1. **Erro "no available backend found… webgpuInit is not a function".**
+   - Causa: no Safari, o transformers.js 4.2 carrega de propósito o runtime ONNX sem WebGPU (`ort-wasm-simd-threaded.mjs`). O `@remotion/whisper-webgpu` força WebGPU, então quebrava.
+   - Correção: o Whisper agora roda pelo transformers.js direto (`src/app/transcribe.ts`).
+     - Chrome/Mac: WebGPU.
+     - Safari/iPhone: CPU (WASM).
+     - Se a GPU falhar, cai sozinho para a CPU.
+   - Modelo: `onnx-community/whisper-*_timestamped` do Hugging Face, com tempo por palavra.
+   - Na CPU: encoder q8 + decoder q4. O decoder q8 "merged" quebra no ONNX Runtime 1.26 com "Missing required scale".
+2. **Não dava para tocar em "Nuvem".**
+   - Causa: a opção ficava desligada porque o servidor estava sem chave.
+   - Correção:
+     - a opção agora pode ser tocada;
+     - aparece uma caixa para colar a chave grátis do Groq uma vez (guardada só no aparelho, enviada ao nosso proxy no header `x-groq-key`);
+     - o proxy usa a chave do usuário só se o servidor não tiver uma, e valida o formato `gsk_…`.
+
+## Testes
+- 82 testes unitários; builds do Mac e da PWA passam.
+- **Caminho do iPhone** (perfil iPhone, CPU/WASM, MOV de 15 s em inglês): 53 palavras corretas.
+- **Caminho do desktop** (WebGPU): 16 palavras corretas.
+- **Ao vivo no site publicado**, com perfil de iPhone e chave Groq falsa:
+  - a nuvem é chamada (`/transcribe` → 502 porque a chave é falsa);
+  - o app cai sozinho para o aparelho e transcreve o MOV em cerca de 1 min.
+- Não testado: o Safari de um iPhone real. Aqui roda o Chromium com o mesmo user agent, e o transformers.js usa o mesmo runtime que usa no Safari.

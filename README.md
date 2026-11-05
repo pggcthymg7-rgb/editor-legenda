@@ -74,9 +74,11 @@ Build: `npm run build:pwa` gera a pasta `dist-pwa/`. O Render publica sozinho a 
 
 ### Ativar a nuvem (uma vez só, grátis)
 
-1. Crie uma conta grátis em https://console.groq.com e gere uma API key (começa com `gsk_`).
-2. No Render, abra o serviço **editor-legenda-api**, vá em **Environment** e adicione `GROQ_API_KEY` com a chave. Salve; ele reinicia sozinho.
-3. Pronto. A chave fica só no servidor, nunca no app nem no GitHub.
+1. Crie uma conta grátis em https://console.groq.com/keys (dá para entrar com Google) e toque em **Create API Key**. A chave começa com `gsk_`.
+2. Escolha uma das opções:
+   - **No próprio app:** na tela inicial, cole a chave na caixa da opção Nuvem e toque em **Ativar**. Ela fica guardada só naquele aparelho.
+   - **Para todos os aparelhos:** no Render, abra o serviço **editor-legenda-api** → **Environment** e adicione `GROQ_API_KEY`. Aí ninguém precisa colar nada.
+3. A chave nunca vai para o GitHub nem para o código do app.
 
 O plano grátis do Groq permite 2.000 transcrições/dia e cerca de 8 h de áudio por dia. O servidor grátis do Render dorme após 15 min sem uso; o app já acorda ele ao abrir, então a 1ª transcrição do dia pode levar ~1 min a mais. Limite de proteção: 60 transcrições por hora por IP (`LIMIT_PER_HOUR`).
 

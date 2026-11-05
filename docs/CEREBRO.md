@@ -110,3 +110,9 @@ Nuvem:
 Render:
 - O deploy automático não dispara: use `trigger_deploy` (MCP) nos dois serviços após o push.
 - Site estático: `srv-dbluvl88v5cc73d1d3j0`.
+
+## Sessão 5: iPhone real
+
+- **Whisper local:** saiu o `@remotion/whisper-webgpu`. Agora é transformers.js direto, com CPU no Safari (WebGPU lá quebra) e dtype `{encoder q8, decoder q4}`.
+- **Nuvem:** o usuário cola a chave Groq no app; o proxy aceita o header `x-groq-key`.
+- **Testes e2e:** `scratchpad/e2e-local.cjs` (com `DESKTOP=1` testa a GPU) e `e2e-cloud.cjs`.
