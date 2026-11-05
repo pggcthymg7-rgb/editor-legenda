@@ -31,6 +31,12 @@ const project = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('servidor (segurança)', () => {
+  it('manda cabeçalhos de segurança', async () => {
+    const r = await fetch(`${base}/api/status`);
+    expect(r.headers.get('x-frame-options')).toBe('DENY');
+    expect(r.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(r.headers.get('x-powered-by')).toBeNull();
+  });
   it('status responde', async () => {
     const r = await fetch(`${base}/api/status`);
     expect(r.status).toBe(200);

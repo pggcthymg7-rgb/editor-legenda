@@ -46,6 +46,10 @@ export const ExportPanel: React.FC<{ project: Project }> = ({ project }) => {
       .catch(() => setFormats([]));
   }, [width, height]);
 
+  // libera a memória dos vídeos gerados no aparelho ao sair do editor
+  const urls = useRef<string[]>([]);
+  useEffect(() => () => urls.current.forEach((u) => u.startsWith('blob:') && URL.revokeObjectURL(u)), []);
+
   const update = (id: string, patch: Partial<Job>) => setJobs((js) => js.map((x) => (x.id === id ? { ...x, ...patch } : x)));
 
   const render = async (format: FormatId) => {
@@ -57,6 +61,7 @@ export const ExportPanel: React.FC<{ project: Project }> = ({ project }) => {
     const release = await keepAwake();
     try {
       const r = await platform.render(project, format, (p) => update(id, { progress: p }), ctrl.signal);
+      urls.current.push(r.url);
       update(id, { status: 'done', url: r.url, file: r.file, progress: 1 });
     } catch (e) {
       update(id, { status: 'error', error: ctrl.signal.aborted ? 'Cancelado' : (e as Error).message });

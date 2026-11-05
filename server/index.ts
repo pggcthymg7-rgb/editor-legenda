@@ -26,6 +26,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Cabeçalhos de segurança: sem embutir em iframe (clickjacking), sem sniff de tipo, sem referrer.
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  next();
+});
+
 // CSRF: escrita exige header próprio (site de fora não consegue mandar sem preflight, que negamos).
 app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD' && req.headers['x-editor'] !== '1') {
