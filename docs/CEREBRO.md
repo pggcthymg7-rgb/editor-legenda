@@ -1,10 +1,10 @@
 # Cérebro do projeto (memória para retomar)
 
-Leia antes de qualquer trabalho. Atualizado no fim da **Etapa 1** (branch `etapa-1` (commit `4d63a18`)).
+Leia antes de qualquer trabalho. Atualizado na **Fase 2** (2026-11-05, após o Lote A4; antes: fim da Etapa 1, branch `etapa-1`, commit `4d63a18`).
 
 ## Onde estamos
 - **Etapa 1 concluída.** O editor de legendas funciona no Mac e no iPhone (PWA), com transcrição na nuvem grátis.
-- **Próxima, Fase 2:** testes em aparelho real, revisão com o Antigravity e melhorias. Plano em `docs/PLANO_REVISAO.md`.
+- **Fase 2 em andamento (quase fechada):** auditoria de código e segurança feita em lotes com o Antigravity (protocolo em `docs/COLAB.md`). Falta validar em aparelho real (seção A), B6 componentes, B7 E2E. Plano em `docs/PLANO_REVISAO.md`.
 - **Manual de uso** (todos os botões): `docs/MANUAL.md`.
 - **Relatórios de entrega:** `ENTREGA_PRONTA.md`.
 
@@ -68,8 +68,17 @@ Observações sobre o Render:
    - "webgpuInit": Safari sem WebGPU no ONNX. Agora usa CPU.
    - Nuvem grátis com Groq.
 
+6. Fase 2 (lotes 1–5, A2–A4 em `docs/COLAB.md`):
+   - segurança do proxy (C1) e fuzz do `validateProject` (C5);
+   - memória/desempenho: forma de onda em streaming, cache de máscaras, revogação de Blobs;
+   - cancelamento real de render: `DELETE /api/render/:id` (`server/index.ts`, `server/render.ts`);
+   - ESLint no `npm run verify`; CI em `.github/workflows/ci.yml` (verify + segredos + invariantes de segurança);
+   - Karaokê 2.0: `Phrase.highlightScale` (1–1,6 na UI, validado 0,5–3) → `highlightPop` (`src/core/motion.ts`, easeOutBack) aplicado em `WordView`;
+   - emojis por contexto: `src/core/emojis.ts` (`suggestEmojis`, `suggestForText`, `withEmoji`), offline PT/EN/ES;
+   - Monitor: alças de escala (canto) e rotação (topo, ímã de 15°, Alt livre) em `Preview.tsx`; botão **Dividir nesta palavra**; `Alt + ←/→` desloca o tempo da frase/palavra.
+
 ## Pendências principais
-Validar no iPhone, CapCut e Premiere reais; trocar a chave do Groq; deploy automático; ESLint/CI. Detalhes em `docs/PLANO_REVISAO.md`.
+Validar no iPhone, CapCut e Premiere reais; trocar a chave do Groq; deploy automático; testes de componente (B6) e E2E (B7). Detalhes em `docs/PLANO_REVISAO.md`.
 
 ## Skills úteis (já instaladas em `.claude/skills/`)
 - remotion-*, ffmpeg;

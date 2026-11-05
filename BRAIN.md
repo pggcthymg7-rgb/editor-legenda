@@ -51,24 +51,25 @@ graphify explain "validateProject"
   - [`src/core/fonts.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/fonts.ts): Catálogo de 58 fontes OFL categorizadas.
   - [`src/core/grouping.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/grouping.ts): Agrupamento de frases, papéis gramaticais PT-BR, `retextPhrase` e `shiftPhrase`.
   - [`src/core/edit.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/edit.ts): Operações de timeline (split, trim, move, snap, search/replace).
-  - [`src/core/layout.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/layout.ts) & [`src/core/motion.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/motion.ts): Posicionamento, curvas de animação e contador `counterText`.
+  - [`src/core/layout.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/layout.ts) & [`src/core/motion.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/motion.ts): Posicionamento, curvas de animação, Karaokê 2.0 (`highlightPop`) e contador `counterText`.
+  - [`src/core/emojis.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/emojis.ts): Sugestão offline de emojis por contexto semântico (PT/EN/ES).
   - [`src/core/mask.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/mask.ts): Refino temporal e espacial de máscaras de segmentação.
-  - [`src/core/exporters.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/exporters.ts): Exportação SRT e ASS (com escala X/Y por palavra).
-  - [`src/core/validate.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/validate.ts): Sanitização e validação de segurança do schema.
+  - [`src/core/exporters.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/exporters.ts): Exportação SRT e ASS (com estilos por preset, karaokê `\kf`, 3D `\frx/\fry` e escala X/Y por palavra).
+  - [`src/core/validate.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/validate.ts): Sanitização profunda de `Project`, `TextStyle` e `customPresets` com proteção contra XSS/CSS injection.
 - 🕸️ **Render Engine (`src/remotion/`)**:
-  - [`src/remotion/CaptionComposition.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/remotion/CaptionComposition.tsx): Composição única (suporta oclusão `useMask` e camada `person`).
-  - [`src/remotion/fonts.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/remotion/fonts.ts): Carregamento local de fontes e medição em canvas.
+  - [`src/remotion/CaptionComposition.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/remotion/CaptionComposition.tsx): Composição única (suporta oclusão `useMask`, `clearMaskCache`, Karaokê 2.0 e camada `person`).
+  - [`src/remotion/fonts.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/remotion/fonts.ts): Carregamento local de fontes e medição em canvas com cache LRU.
 - 🕸️ **UI / Components (`src/app/`)**:
   - [`src/app/App.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/App.tsx): Orquestrador da interface (Topbar, Library, Preview, PhrasePanel, Timeline, ExportPanel).
   - [`src/app/store.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/store.ts): Estado imutável com histórico Undo/Redo (100 passos).
-  - [`src/app/person/segment.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/person/segment.ts) & [`src/app/person/PersonPanel.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/person/PersonPanel.tsx): Segmentação MediaPipe no browser.
+  - [`src/app/person/segment.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/person/segment.ts) & [`src/app/components/PersonPanel.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/PersonPanel.tsx): Segmentação MediaPipe no browser.
   - [`src/app/transcribe.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/transcribe.ts) & [`src/app/cloud.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/cloud.ts): Transcrição local (ONNX/WASM/WebGPU) e nuvem (Groq).
-  - [`src/app/waveform.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/waveform.ts): Extração de picos de forma de onda para a Timeline.
-- 🕸️ **Platform, Entrypoints & CI Security (`src/app/platform/`, `server/`, `cloud/`, `.github/workflows/`)**:
-  - [`src/app/platform/mac.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/platform/mac.ts) vs [`src/app/platform/device.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/platform/device.ts): Abstração Desktop vs PWA (IndexedDB).
-  - [`server/index.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/server/index.ts) & [`server/render.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/server/render.ts): API Express local (`127.0.0.1:3210`) e fila `@remotion/renderer`.
-  - [`cloud/proxy.mjs`](file:///Users/joaogabrielzava/Projetos/editor-legenda/cloud/proxy.mjs): Proxy Render para transcrição Groq.
-  - [`.github/workflows/ci.yml`](file:///Users/joaogabrielzava/Projetos/editor-legenda/.github/workflows/ci.yml): Verificação automática de segurança, segredos, auditoria de pacotes e `npm run verify` em cada PR/push.
+  - [`src/app/waveform.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/waveform.ts): Extração de picos de forma de onda em streaming via `mediabunny`.
+- 🕸️ **Platform, Entrypoints & CI Security (`src/app/platform/`, `server/`, `cloud/`, `.github/workflows/`, `eslint.config.mjs`)**:
+  - [`src/app/platform/mac.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/platform/mac.ts) vs [`src/app/platform/device.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/platform/device.ts): Abstração Desktop vs PWA (IndexedDB + revogação automática de Blob URLs).
+  - [`server/index.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/server/index.ts) & [`server/render.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/server/render.ts): API Express local (`127.0.0.1:3210`) e fila `@remotion/renderer` com cancelamento real (`DELETE /api/render/:id`).
+  - [`cloud/proxy.mjs`](file:///Users/joaogabrielzava/Projetos/editor-legenda/cloud/proxy.mjs): Proxy Render para transcrição Groq com rate-limit LRU por IP real.
+  - [`eslint.config.mjs`](file:///Users/joaogabrielzava/Projetos/editor-legenda/eslint.config.mjs) & [`.github/workflows/ci.yml`](file:///Users/joaogabrielzava/Projetos/editor-legenda/.github/workflows/ci.yml): Lint TS/JS, gate de segurança de PR e `npm run verify` automatizado.
 
 ---
 

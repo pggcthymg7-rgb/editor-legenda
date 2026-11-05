@@ -59,6 +59,8 @@ No iPhone a tela vira uma coluna só. Os botões **Inspetor** e **Frases e model
 | Clique numa legenda | Seleciona a **frase** (contorno roxo) |
 | Clique de novo numa palavra (ou Alt + clique) | Seleciona só a **palavra** (contorno amarelo tracejado) |
 | Arrastar | Move a frase inteira ou só a palavra selecionada |
+| ◻ Alça do canto (frase selecionada, pausado) | Arraste para aumentar ou diminuir a frase |
+| ○ Alça de cima | Arraste para girar a frase (ímã a cada 15°; segure Alt para girar livre) |
 | ⏮ Início / ⏭ Fim | Vai para o começo ou o fim (Home / End) |
 | ◁▏ / ▕▷ | Volta ou avança 1 quadro (← / →; com Shift, 1 s) |
 | ▶ / ⏸ | Play e pausa (Espaço) |
@@ -113,7 +115,7 @@ Galeria dos 8 modelos, cada um com uma prévia:
 | P7 Caixa Alta Mista | Caixa alta colorida, itálico e serif com 3D |
 | P8 Destaque Colorido | Uma palavra em cor forte |
 
-Toque na prévia para aplicar o modelo na frase selecionada. **Em todas** aplica em todas as frases. Os seus modelos salvos aparecem no fim da lista.
+Passe o mouse (ou foque com Tab) para ver a prévia animada. Toque na prévia para aplicar o modelo na frase selecionada. **Em todas** aplica em todas as frases. Os seus modelos salvos aparecem no fim da lista.
 
 ### Aba Texto
 | Item | Função |
@@ -175,11 +177,15 @@ Os controles estão na seção 5.
 ### Aba Karaokê
 **Destacar a palavra que está sendo falada**: a palavra ganha um estilo próprio enquanto é dita, no estilo CapCut/Submagic. Só os campos que você mudar aqui são aplicados.
 
+**Pop (escala)** (1 a 1,6): a palavra falada cresce com um pulinho elástico e volta ao tamanho normal quando termina. Vai junto em **Aplicar em todas** e **Aplicar nas frases deste modelo**.
+
 ### Aba Palavra
 | Controle | Função |
 |---|---|
 | Lista de palavras | Escolhe a palavra |
 | **Texto** | Corrige só esta palavra |
+| **Emoji** | Aparece quando a palavra tem sentido conhecido (ex.: dinheiro 💰, fogo 🔥). Toque para pôr o emoji no fim da palavra; tocar em outro troca |
+| ✂ **Dividir nesta palavra** | A frase passa a começar nesta palavra (desligado na 1ª palavra) |
 | **Papel** | Ligação / Normal / Destaque |
 | **Início / Fim (ms)** | Tempo exato da palavra |
 | **Posição X / Y** | Desloca só esta palavra |
@@ -215,6 +221,7 @@ Os controles estão na seção 5.
 |---|---|
 | Espaço | Play / pause |
 | ← / → (Shift = 1 s) | Quadro anterior / próximo |
+| Alt + ← / → (Shift = 10 ms) | Adianta ou atrasa 50 ms a frase ou a palavra selecionada |
 | Home / End | Início / fim |
 | S | Dividir na agulha |
 | T | Nova frase |
@@ -241,7 +248,7 @@ Os controles estão na seção 5.
 | **ASS** | Texto com fonte, cor, posição e escala por palavra, sem animação |
 | **Compartilhar** (iPhone) | Abre o menu do iOS: Salvar vídeo, mandar ao CapCut etc. |
 | **Baixar** | Salva o arquivo |
-| **Cancelar** | Interrompe a geração |
+| **Cancelar** | Interrompe a geração de verdade (para o render no servidor, não só na tela) |
 
 Observações:
 - No iPhone o vídeo é gerado no próprio aparelho, em no máximo 1080 px de largura. Deixe o app aberto; a tela não apaga sozinha durante o export.

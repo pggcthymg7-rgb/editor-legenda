@@ -25,25 +25,28 @@
 - [ ] A6. PWA offline depois do 1º uso, com o modelo já baixado (modo avião).
 
 ## B. Auditoria de código
-- [ ] B1. Revisão geral (skill `engineering:code-review`):
+- [x] B1. Revisão geral (skill `engineering:code-review`):
   - `src/app/App.tsx`
   - `components/Timeline.tsx`, `components/Preview.tsx`, `components/PhrasePanel.tsx`
   - `remotion/CaptionComposition.tsx`
-- [ ] B2. Tipos: tirar os `as unknown as` / `any` em `platform/device.ts` e `transcribe.ts`.
-- [ ] B3. Desempenho:
+- [x] B2. Tipos: tirar os `as unknown as` / `any` em `platform/device.ts` e `transcribe.ts`.
+- [x] B3. Desempenho:
   - `CaptionComposition` recalcula estilos por quadro → memoizar `resolveWordStyle` e `measureText`;
   - medir FPS do preview com 50 frases.
-- [ ] B4. Memória:
+- [x] B4. Memória:
   - revogar os blob URLs de máscara e vídeo ao trocar de projeto;
   - limite de cache de `useMask` (150) no iPhone.
-- [ ] B5. Lint/format: adicionar ESLint + Prettier (ainda não há) e um CI no GitHub Actions rodando `npm run verify`.
+- [x] B5. Lint/format: ESLint (flat config) dentro do `npm run verify` (`typecheck → lint → test → builds`) e CI em `.github/workflows/ci.yml` (verify + varredura de segredos + invariantes de segurança). Prettier ficou de fora. (Lote 5, `e9a5ff8`)
 - [ ] B6. Testes de componente (Vitest + Testing Library) para Timeline (arrastar/aparar), FontPicker e ExportPanel.
+  - parcial: `tests/ui.test.ts` (timecode, cache de `cloudHealth`, revogação de Blob em `devicePlatform`); faltam os componentes.
 - [ ] B7. E2E fixos no repositório:
   - levar os scripts Playwright de `scratchpad/` (`e2e-pro`, `e2e-pwa2`, `e2e-local`, `e2e-cloud`) para `tests/e2e/`;
   - comando `npm run e2e`.
 
+**Feitos na Fase 2 (fora da lista original):** #10 cancelamento real de render (`DELETE /api/render/:id`), M-01 P7 + ASS por preset, #13–#18 (inspetor, ciclo da UI, layout mobile CapCut, toque), `Alt + ←/→` para mover o tempo da frase/palavra.
+
 ## C. Auditoria de segurança (skill `security-review`)
-- [ ] C1. Proxy da nuvem (`cloud/proxy.mjs`):
+- [x] C1. Proxy da nuvem (`cloud/proxy.mjs`):
   - limite por IP;
   - header `x-groq-key`;
   - tamanho máximo;
@@ -54,7 +57,7 @@
 - [ ] C4. CSP da PWA:
   - reavaliar `script-src blob:` e jsDelivr;
   - opção: hospedar o runtime ONNX no próprio app.
-- [ ] C5. `validateProject`: rodar fuzz com JSON malicioso (fontes, `url(`, números extremos).
+- [x] C5. `validateProject`: rodar fuzz com JSON malicioso (fontes, `url(`, números extremos).
 - [ ] C6. `npm audit` (hoje: 4 baixos em `deepmerge`, só no build).
 
 ## D. Funcionamento e UX
@@ -64,6 +67,7 @@
 - [ ] D4. Desfazer/refazer em todas as ações da Pessoa e do Export.
 - [ ] D5. Seletor de fontes no celular: altura do popover e rolagem.
 - [ ] D6. Comparação com CapCut/Submagic: emojis animados, B-roll, várias trilhas de legenda.
+  - parcial (Lote A4): Karaokê 2.0 com pop (`highlightScale`), sugestão de emojis por contexto (`src/core/emojis.ts`), alças de escala/rotação no Monitor, **Dividir nesta palavra**, prévia animada dos modelos. Faltam emojis animados, B-roll e várias trilhas.
 
 ## E. Infra
 - [ ] E1. Deploy automático do Render não dispara: conectar o GitHub ao Render ou usar um Blueprint (`render.yaml`).
