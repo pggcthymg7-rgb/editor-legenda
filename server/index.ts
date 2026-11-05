@@ -183,8 +183,10 @@ if (process.env.NODE_ENV === 'production' && existsSync(DIST)) {
 }
 
 // Erros não mostram stack.
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  res.status(500).json({ error: err.message?.split('\n')[0] ?? 'erro' });
+app.use((err: Error & { status?: number; statusCode?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status ?? err.statusCode ?? 500;
+  // 4xx: mensagem genérica (não expõe caminho de arquivo); 5xx: só a 1ª linha
+  res.status(status).json({ error: status === 404 ? 'não encontrado' : status < 500 ? 'requisição inválida' : (err.message?.split('\n')[0] ?? 'erro') });
 });
 
 if (process.env.NODE_ENV !== 'test') {

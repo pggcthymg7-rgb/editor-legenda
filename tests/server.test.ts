@@ -97,4 +97,35 @@ describe('servidor (segurança)', () => {
     });
     expect(r.status).toBe(400);
   });
+
+  it('máscaras: aceita JPEG, recusa outros tipos, ids e índices inválidos', async () => {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]);
+    const put = (path: string, body: Uint8Array, type = 'image/jpeg', h: Record<string, string> = W) =>
+      fetch(`${base}/api/masks/${path}`, { method: 'PUT', headers: { ...h, 'content-type': type }, body });
+    expect((await put('m_teste/0', jpeg)).status).toBe(200);
+    const got = await fetch(`${base}/media/masks/m_teste/0.jpg`);
+    expect(got.status).toBe(200);
+    expect((await put('m_teste/1', new Uint8Array([0x89, 0x50, 0x4e, 0x47]))).status).toBe(400); // PNG não
+    expect((await put('m_teste/1', jpeg, 'text/html')).status).toBe(400);
+    expect((await put('..%2F..%2Fetc/1', jpeg)).status).toBe(400);
+    expect((await put('m_teste/-1', jpeg)).status).toBe(400);
+    expect((await put('m_teste/abc', jpeg)).status).toBe(400);
+    expect((await put('m_teste/2', jpeg, 'image/jpeg', {})).status).toBe(403); // sem x-editor (CSRF)
+    const del = await fetch(`${base}/api/masks/m_teste`, { method: 'DELETE', headers: W });
+    expect(del.status).toBe(200);
+    expect((await fetch(`${base}/media/masks/m_teste/0.jpg`)).status).toBe(404);
+  });
+  it('CORS de /media só para origem local', async () => {
+    const local = await fetch(`${base}/media/nada.jpg`, { headers: { origin: 'http://localhost:3000' } });
+    expect(local.headers.get('access-control-allow-origin')).toBe('http://localhost:3000');
+    const evil = await fetch(`${base}/media/nada.jpg`, { headers: { origin: 'https://evil.com' } });
+    expect(evil.headers.get('access-control-allow-origin')).toBeNull();
+  });
+  it('render recusa camada inválida e camada da pessoa sem análise', async () => {
+    const body = (layer: string) => JSON.stringify({ project: project(), format: 'mp4-green', layer });
+    const r1 = await fetch(`${base}/api/render`, { method: 'POST', headers: { ...W, 'content-type': 'application/json' }, body: body('x') });
+    expect(r1.status).toBe(400);
+    const r2 = await fetch(`${base}/api/render`, { method: 'POST', headers: { ...W, 'content-type': 'application/json' }, body: body('person') });
+    expect(r2.status).toBe(400);
+  });
 });
