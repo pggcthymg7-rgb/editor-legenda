@@ -1,8 +1,8 @@
 import React from 'react';
 import { Video } from '@remotion/media';
 import { AbsoluteFill, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
-import { useEffect, useState } from 'react';
-import { grayToAlpha } from '../core/mask';
+import { useEffect, useRef, useState } from 'react';
+import { grayToAlpha, maskIndexAt } from '../core/mask';
 import { phraseStart, phraseVisibleEnd } from '../core/grouping';
 import { arcPlacement, computeLines } from '../core/layout';
 import { counterText, wordMotion, wordWindows } from '../core/motion';
@@ -243,30 +243,55 @@ function loadMask(url: string, mode: 'hole' | 'person'): Promise<string> {
   });
 }
 
-/** Máscara CSS (data URL com alfa) do quadro atual; segura o render até ficar pronta. */
-export function useMask(urls: string[] | undefined, frame: number, mode: 'hole' | 'person', enabled: boolean): string | null {
-  const url = enabled && urls?.length ? urls[Math.min(frame, urls.length - 1)] : null;
+/**
+ * Máscara CSS (data URL com alfa) do tempo atual; segura o render até ela estar no DOM.
+ * - índice por tempo (`maskIndexAt`), independente do fps da composição;
+ * - `continueRender` uma única vez: depois do commit da máscara certa, no erro ou ao desmontar;
+ * - no preview, enquanto carrega, mostra a última máscara (não pisca); se falhar, nenhuma.
+ */
+export function useMask(urls: string[] | undefined, tMs: number, mode: 'hole' | 'person', enabled: boolean): string | null {
+  const url = enabled && urls?.length ? urls[maskIndexAt(tMs, urls.length)] : null;
   const key = url ? `${mode}|${url}` : '';
-  const [state, setState] = useState<{ key: string; css: string } | null>(null);
+  const [state, setState] = useState<{ key: string; css: string | null } | null>(null);
+  const pending = useRef<{ key: string; handle: number } | null>(null);
   const cached = key ? maskCache.get(key) : undefined;
+
+  const release = (k?: string) => {
+    const p = pending.current;
+    if (!p || (k !== undefined && p.key !== k)) return;
+    pending.current = null;
+    continueRender(p.handle);
+  };
+
   useEffect(() => {
     if (!url || cached) return;
     let alive = true;
-    const handle = delayRender('Máscara da pessoa', { timeoutInMilliseconds: 30000 });
+    pending.current = { key, handle: delayRender('Máscara da pessoa', { timeoutInMilliseconds: 30000 }) };
     loadMask(url, mode)
       .then((css) => {
         remember(key, css);
         if (alive) setState({ key, css });
+        else release(key);
       })
-      .catch(() => undefined)
-      .finally(() => continueRender(handle));
+      .catch(() => {
+        if (alive) setState({ key, css: null });
+        release(key);
+      });
     return () => {
       alive = false;
+      release(key);
     };
   }, [key, url, cached, mode]);
+
+  // libera só depois que o quadro com a máscara desta chave foi commitado
+  useEffect(() => {
+    if (state?.key) release(state.key);
+  }, [state]);
+
   if (!url) return null;
-  // enquanto carrega, usa a última máscara (preview não pisca)
-  return cached ?? state?.css ?? null;
+  if (cached) return cached;
+  if (state?.key === key) return state.css;
+  return state?.css ?? null;
 }
 
 const maskStyle = (css: string): React.CSSProperties => ({
@@ -301,8 +326,8 @@ export const CaptionComposition: React.FC<CompositionProps> = ({ project, backgr
   const { fps } = useVideoConfig();
   const tMs = (frame / fps) * 1000;
   const anyBehind = project.occlusion !== false && project.phrases.some((p) => p.behind);
-  const holeMask = useMask(maskUrls, frame, 'hole', layer === 'captions' && anyBehind);
-  const personMask = useMask(maskUrls, frame, 'person', layer === 'person');
+  const holeMask = useMask(maskUrls, tMs, 'hole', layer === 'captions' && anyBehind);
+  const personMask = useMask(maskUrls, tMs, 'person', layer === 'person');
   const bg = background === 'green' ? '#00FF00' : 'transparent';
 
   if (layer === 'person') {

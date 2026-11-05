@@ -55,10 +55,24 @@ describe('edição na timeline', () => {
   });
 });
 
-import { computePeaks } from '../src/app/waveform';
+import { accumulatePeaks, computePeaks, normalizePeaks } from '../src/app/waveform';
 describe('forma de onda', () => {
   it('normaliza picos por balde', () => {
     const p = computePeaks(new Float32Array([0, 0.5, -1, 0.25]), 2);
     expect([...p]).toEqual([0.5, 1]);
+  });
+  it('#2 picos em pedaços (streaming) batem com o cálculo de uma vez', () => {
+    // 2 s a 4 Hz = 8 amostras, 4 baldes; chega em 2 pedaços com timestamp
+    const all = new Float32Array([0.1, -0.2, 0.4, 0, -0.8, 0.3, 0.2, -0.1]);
+    const out = new Float32Array(4);
+    accumulatePeaks(out, all.subarray(0, 3), 0, 4, 2);
+    accumulatePeaks(out, all.subarray(3), 0.75, 4, 2);
+    expect([...normalizePeaks(out)]).toEqual([...computePeaks(all, 4)]);
+  });
+  it('#2 timestamp negativo e amostra além da duração não estouram o array', () => {
+    const out = new Float32Array(2);
+    accumulatePeaks(out, new Float32Array([1, 0.5, 0.25, 0.9]), -0.5, 2, 1);
+    expect(out[0]).toBeCloseTo(0.5);
+    expect(out[1]).toBeCloseTo(0.9);
   });
 });

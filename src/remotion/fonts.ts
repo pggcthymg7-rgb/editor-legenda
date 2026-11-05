@@ -80,7 +80,7 @@ import '@fontsource/playfair-display-sc/700.css';
 import '@fontsource/playfair-display-sc/700-italic.css';
 import '@fontsource/playfair-display-sc/900.css';
 import '@fontsource/playfair-display-sc/900-italic.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { continueRender, delayRender } from 'remotion';
 import { FONT_CSS, fontCss } from '../core/fonts';
 import type { Project, TextStyle } from '../core/types';
@@ -105,7 +105,8 @@ export function usedFontSpecs(project: Project): string[] {
 
 /** Segura o render até as fontes usadas carregarem (evita quadro com fonte errada). */
 export function useFontsReady(project: Project): boolean {
-  const specs = usedFontSpecs(project).join('|');
+  // recalcula só quando frases/presets mudam (não a cada quadro)
+  const specs = useMemo(() => usedFontSpecs(project).join('|'), [project.phrases, project.customPresets]);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const handle = delayRender('Carregando fontes', { timeoutInMilliseconds: 20000 });
@@ -113,6 +114,7 @@ export function useFontsReady(project: Project): boolean {
     Promise.all(specs.split('|').filter(Boolean).map((s) => document.fonts.load(s)))
       .catch(() => undefined)
       .finally(() => {
+        clearMeasureCache(); // larguras medidas com a fonte reserva ficam inválidas
         if (alive) setReady(true);
         continueRender(handle);
       });
@@ -125,14 +127,27 @@ export function useFontsReady(project: Project): boolean {
 }
 
 let measureCtx: CanvasRenderingContext2D | null = null;
+const MEASURE_MAX = 4000;
+const measureCache = new Map<string, number>();
+export const clearMeasureCache = () => measureCache.clear();
+if (typeof document !== 'undefined' && document.fonts?.addEventListener) {
+  document.fonts.addEventListener('loadingdone', clearMeasureCache);
+}
 
-/** Largura do texto em px (canvas), com as fontes já carregadas. */
+/** Largura do texto em px (canvas), com as fontes já carregadas. Cache por fonte+tamanho+texto. */
 export function measureText(text: string, s: TextStyle, sizePx: number): number {
   if (typeof document === 'undefined') return text.length * sizePx * 0.6;
+  const font = `${s.italic ? 'italic ' : ''}${s.fontWeight} ${sizePx}px ${fontCss(s.fontFamily)}`;
+  const key = `${font}|${s.letterSpacing}|${text}`;
+  const hit = measureCache.get(key);
+  if (hit !== undefined) return hit;
   measureCtx ??= document.createElement('canvas').getContext('2d');
   if (!measureCtx) return text.length * sizePx * 0.6;
-  measureCtx.font = `${s.italic ? 'italic ' : ''}${s.fontWeight} ${sizePx}px ${fontCss(s.fontFamily)}`;
-  return measureCtx.measureText(text).width * (1 + s.letterSpacing);
+  measureCtx.font = font;
+  const w = measureCtx.measureText(text).width * (1 + s.letterSpacing);
+  if (measureCache.size >= MEASURE_MAX) measureCache.delete(measureCache.keys().next().value!);
+  measureCache.set(key, w);
+  return w;
 }
 
 /** Diminui fontSize (px @1080) até o texto caber em maxWidth (px @1080). */
