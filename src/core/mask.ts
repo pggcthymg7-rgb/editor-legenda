@@ -105,8 +105,14 @@ export function fillHoles(gray: Uint8ClampedArray, w: number, h: number, thr = 1
       stack[top++] = k;
     }
   };
-  for (let x = 0; x < w; x++) push(x), push((h - 1) * w + x);
-  for (let y = 0; y < h; y++) push(y * w), push(y * w + w - 1);
+  for (let x = 0; x < w; x++) {
+    push(x);
+    push((h - 1) * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    push(y * w);
+    push(y * w + w - 1);
+  }
   while (top) {
     const j = stack[--top];
     const x = j % w;

@@ -122,7 +122,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: { '/api': API, '/media': API },
     },
-    // whisper-webgpu usa onnxruntime-web; não pré-empacotar
-    optimizeDeps: { exclude: ['@remotion/whisper-webgpu', '@huggingface/transformers', 'onnxruntime-web'] },
+    // transformers.js usa onnxruntime-web; não pré-empacotar
+    optimizeDeps: { exclude: ['@huggingface/transformers', 'onnxruntime-web'] },
   };
 });
