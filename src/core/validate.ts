@@ -1,6 +1,8 @@
 // Validação de projeto recebido (servidor). Sem dependência externa.
 import { ENTRANCES, EXITS, type Project } from './types';
 
+export const LOCAL_SRC = /^local:[a-zA-Z0-9_-]{1,64}$/;
+
 type Result = { ok: true; project: Project } | { ok: false; error: string };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -17,7 +19,8 @@ export function validateProject(input: unknown): Result {
   if (!isObj(v)) return fail('vídeo inválido');
   if (!str(v.src, 300)) return fail('src inválido');
   const src = v.src as string;
-  if (src && !/^\/media\/[a-zA-Z0-9_-]+\.(mp4|mov|m4v|webm)$/.test(src)) return fail('src fora de /media');
+  // Mac: arquivo em /media. iPhone (PWA): vídeo guardado no aparelho, referência local:<id>.
+  if (src && !/^\/media\/[a-zA-Z0-9_-]+\.(mp4|mov|m4v|webm)$/.test(src) && !LOCAL_SRC.test(src)) return fail('src fora de /media');
   if (!num(v.width, 16, 8192) || !num(v.height, 16, 8192)) return fail('dimensão inválida');
   if (!num(v.durationMs, 1, 4 * 3600 * 1000)) return fail('duração inválida');
   if (!Array.isArray(p.phrases) || p.phrases.length > 5000) return fail('frases inválidas');

@@ -183,6 +183,12 @@ describe('validação (segurança)', () => {
       expect(validateProject({ ...ok, video: { ...ok.video, src } }).ok).toBe(false);
     }
   });
+  it('aceita vídeo do aparelho (local:<id>) e rejeita variações perigosas', () => {
+    expect(validateProject({ ...ok, video: { ...ok.video, src: 'local:abc_123-X' } }).ok).toBe(true);
+    for (const src of ['local:', 'local:../x', 'local:a/b', 'local:a b', 'local:' + 'a'.repeat(65), 'blob:http://x/1']) {
+      expect(validateProject({ ...ok, video: { ...ok.video, src } }).ok).toBe(false);
+    }
+  });
   it('rejeita CSS com url() e script', () => {
     const bad = structuredClone(ok);
     bad.phrases[0].words[0].text = '<script>alert(1)</script>';

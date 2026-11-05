@@ -12,7 +12,9 @@
     "studio": "remotion studio src/remotion/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "verify": "npm run typecheck && npm test && vite build"
+    "verify": "npm run typecheck && npm test && vite build && vite build --mode pwa",
+    "build:pwa": "vite build --mode pwa",
+    "preview:pwa": "vite preview --mode pwa --outDir dist-pwa --host 127.0.0.1 --port 4173"
   },
   "dependencies": {
     "@fontsource-variable/bodoni-moda": "5.3.0",
@@ -24,13 +26,17 @@
     "@fontsource/instrument-serif": "5.3.0",
     "@fontsource/poppins": "5.3.0",
     "@huggingface/transformers": "4.2.0",
+    "@mediabunny/aac-encoder": "1.64.0",
     "@remotion/bundler": "4.0.540",
     "@remotion/captions": "4.0.540",
     "@remotion/cli": "4.0.540",
+    "@remotion/media": "4.0.540",
     "@remotion/player": "4.0.540",
     "@remotion/renderer": "4.0.540",
+    "@remotion/web-renderer": "4.0.540",
     "@remotion/whisper-webgpu": "4.0.540",
     "express": "5.1.0",
+    "mediabunny": "1.64.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "remotion": "4.0.540"
@@ -42,13 +48,19 @@
     "@types/react-dom": "19.1.6",
     "@vitejs/plugin-react": "4.5.2",
     "concurrently": "9.1.2",
+    "fake-indexeddb": "6.2.7",
     "tsx": "4.20.3",
     "typescript": "5.8.3",
-    "vite": "6.3.5",
-    "vitest": "3.2.4"
+    "vite": "6.4.5",
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "4.1.12"
   },
   "overrides": {
     "adm-zip": "0.6.1",
-    "sharp": "0.35.5"
-  }
+    "sharp": "0.35.5",
+    "workbox-build": {
+      "glob": "14.0.3"
+    }
+  },
+  "packageManager": "npm@11.6.2"
 }

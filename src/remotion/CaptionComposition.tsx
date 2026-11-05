@@ -1,5 +1,6 @@
 import React from 'react';
-import { AbsoluteFill, OffthreadVideo, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Video } from '@remotion/media';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { phraseStart, phraseVisibleEnd } from '../core/grouping';
 import { arcPlacement, computeLines } from '../core/layout';
 import { counterText, wordMotion, wordWindows } from '../core/motion';
@@ -196,7 +197,8 @@ export const CaptionComposition: React.FC<CompositionProps> = ({ project, backgr
   const tMs = (frame / fps) * 1000;
   return (
     <AbsoluteFill style={{ backgroundColor: background === 'green' ? '#00FF00' : 'transparent' }}>
-      {background === 'video' && project.video.src ? <OffthreadVideo src={project.video.src} /> : null}
+      {background === 'video' && project.video.src ? // @remotion/media: funciona no render do servidor e no render dentro do navegador (iPhone)
+        <Video src={project.video.src} /> : null}
       <CaptionLayer project={project} tMs={tMs} />
     </AbsoluteFill>
   );

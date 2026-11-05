@@ -66,6 +66,7 @@ aside.right { border-left: 1px solid var(--line); }
 .handle {
   position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
   border: 2px solid var(--accent); background: rgba(169, 139, 255, 0.25); cursor: grab; z-index: 5;
+  touch-action: none; /* arrastar com o dedo sem rolar a página */
 }
 .export { border-top: 1px solid var(--line); padding-top: 8px; }
 .export h3 { margin: 0; }
@@ -82,3 +83,30 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
 .words { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
 .word.small { opacity: 0.7; font-size: 11px; }
 .word.key { font-weight: 700; }
+
+.keybox { display: flex; flex-direction: column; gap: 4px; padding-left: 22px; }
+.keybox input.text { flex: 1; min-width: 0; }
+.saved .row button:first-child { flex: 1; text-align: left; }
+
+/* Celular / iPhone: uma coluna, alvos de toque maiores */
+@media (max-width: 900px) {
+  :root { font-size: 15px; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  button, select, input[type='number'], input.text, input.name { min-height: 40px; }
+  input[type='text'], input.text, input.name, select { font-size: 16px; } /* evita zoom automático do iOS */
+  .upload { margin: 20px auto; padding: 0 16px; }
+  .editor { height: auto; min-height: 100vh; }
+  header { flex-wrap: wrap; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  header .name { flex: 1 1 100%; max-width: none; }
+  main { display: flex; flex-direction: column; }
+  .center { order: 1; padding: 8px; }
+  aside.right { order: 2; border: none; border-top: 1px solid var(--line); }
+  aside.left { order: 3; border: none; border-top: 1px solid var(--line); }
+  aside { overflow: visible; }
+  .preview { flex: none; height: 62vh; }
+  .handle { width: 36px; height: 36px; margin: -18px 0 0 -18px; }
+  button, .stage, .phrase .time, label { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .field { grid-template-columns: 96px 1fr 56px; }
+  .job { flex-wrap: wrap; }
+  .job progress { width: 100%; }
+}
