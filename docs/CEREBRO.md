@@ -1,118 +1,78 @@
-# Cérebro da sessão: mapa e resumo
+# Cérebro do projeto (memória para retomar)
 
-Leia isto antes de retomar o trabalho. Caminhos marcados como (efêmero) somem quando o container é reciclado. O que está no git sobrevive.
+Leia antes de qualquer trabalho. Atualizado no fim da **Etapa 1** (tag `v1.0-etapa1`).
 
-## Mapa de pastas
+## Onde estamos
+- **Etapa 1 concluída.** O editor de legendas funciona no Mac e no iPhone (PWA), com transcrição na nuvem grátis.
+- **Próxima, Fase 2:** testes em aparelho real, revisão com o Antigravity e melhorias. Plano em `docs/PLANO_REVISAO.md`.
+- **Manual de uso** (todos os botões): `docs/MANUAL.md`.
+- **Relatórios de entrega:** `ENTREGA_PRONTA.md`.
 
+## Links e serviços
 | O quê | Onde |
 |---|---|
-| Editor de legendas (projeto principal) | `/home/user/editor-legenda`, branch `claude/editor-legendas-v1`, repo `pggcthymg7-rgb/editor-legenda` |
-| Análise dos reels + plano | `docs/ANALISE.md` |
-| Regras e mapa de código | `CLAUDE.md` |
-| Lógica pura (modelos, frases, animação, export) | `src/core/` |
-| Composição Remotion e fontes | `src/remotion/` |
-| Interface React | `src/app/` |
-| Servidor local (upload, OpenAI, render) | `server/` |
-| Testes (70) | `tests/` (`core`, `server`, `device`, `edit`, `mask`) |
-| Relatório de entrega | `ENTREGA_PRONTA.md`, `BACKLOG_TAREFAS.md` |
-| UI profissional | `src/app/components/` (`Timeline`, `Preview` = monitor, `PhrasePanel` = inspetor, `Library`, `PersonPanel`, `FontPicker`, `ExportPanel`) |
-| Edição pura (timeline) | `src/core/edit.ts`; máscara: `src/core/mask.ts`; fontes: `src/core/fonts.ts` (58) |
-| Pessoa (segmentação) | `src/app/person/segment.ts` + `public/models/` + plugin `mediapipe` no `vite.config.ts` |
-| Camada Mac × iPhone | `src/app/platform/` (`mac.ts`, `device.ts`, `idb.ts`, `audio.ts`, `openai-browser.ts`) |
-| PWA iPhone (site) | https://editor-legenda.onrender.com (Render static `srv-dbluvl88v5cc73d1d3j0`, build `build:pwa` → `dist-pwa`) |
-| Dados de execução (vídeos, renders, projetos) | `data/` (fora do git) |
-| Bot de imóveis (outro projeto) | `/home/user/secretaria-imoveis-whatsapp`, branch `claude/skills-find-caveman` |
-| Skills find-skills + caveman | `secretaria-imoveis-whatsapp/.claude/skills/` |
-| Skills Remotion + ffmpeg | `editor-legenda/.claude/skills/` |
-| Reels de referência (6 mp4) (efêmero) | `/root/.claude/uploads/1fb9c1c7-0502-54dc-a80e-5974d212e086/` |
-| Atalhos v1–v6, grades de quadros (efêmero) | `/tmp/claude-0/-home-user-secretaria-imoveis-whatsapp/1fb9c1c7-0502-54dc-a80e-5974d212e086/scratchpad/reels/` |
+| Repositório | `pggcthymg7-rgb/editor-legenda`. Código na `main` (merge da Etapa 1) e na branch `claude/editor-legendas-v1` |
+| App iPhone (PWA) | https://editor-legenda.onrender.com (Render static, `srv-dbluvl88v5cc73d1d3j0`, build `npm run build:pwa` → `dist-pwa`) |
+| Proxy da nuvem | https://editor-legenda-api.onrender.com (Render web free, `srv-dbm632rm8hqs73erfa10`, `node cloud/proxy.mjs`) |
+| Chave Groq | Variável `GROQ_API_KEY` no Render (nunca no código). Foi exposta no chat; trocar (item C2 do plano). |
+| Workspace Render | `tea-dbh7qoff3r2c73btlmq0` |
 
-Mapa v1–v6 (prefixo do arquivo enviado): v1 `24a23180`, v2 `5ac019f4`, v3 `88dd67b3`, v4 `bc375648`, v5 `cab1a471`, v6 `d9827f4c`.
+Observações sobre o Render:
+- O deploy automático **não dispara**. Depois de cada push, rode `trigger_deploy` (MCP Render) nos dois serviços.
+- Os serviços apontam para a branch `claude/editor-legendas-v1`.
 
-## Resumo
+## Como funciona (arquitetura)
+- **Lógica pura (testada)** em `src/core/`:
+  - `types`;
+  - `presets`: P1–P8;
+  - `fonts`: 58 fontes OFL;
+  - `grouping`: frases e papéis em PT-BR;
+  - `edit`: timeline (aparar, mover, dividir, buscar/substituir, encaixe);
+  - `mask`: refino da máscara da pessoa;
+  - `motion`, `layout`, `exporters`: SRT/ASS com escala X/Y;
+  - `validate`: segurança do projeto.
+- **Composição Remotion** em `src/remotion/CaptionComposition.tsx`. É a mesma no preview, no render do servidor e no render dentro do navegador.
+  - A legenda atrás da pessoa usa `mask-image`, através de `useMask`.
+  - A camada `layer: 'person'` gera só a pessoa recortada.
+- **Interface** em `src/app/`, com layout de editor profissional:
+  - `Library` (Frases, Modelos, Texto, Pessoa), `Preview` (monitor), `PhrasePanel` (inspetor com abas Frase, Estilo, Animação, Karaokê e Palavra), `Timeline`, `ExportPanel`, `FontPicker`, `UploadScreen`.
+- **Plataforma**, escolhida no build (`src/app/platform/`):
+  - `mac.ts`: servidor local (Express em `server/`, render com `@remotion/renderer`, ProRes alfa).
+  - `device.ts`: iPhone. Vídeo, projetos e máscaras no IndexedDB; render no navegador (`@remotion/web-renderer`), até 1080 px de largura.
+- **Transcrição:**
+  - **Nuvem** (padrão): `src/app/cloud.ts` → `cloud/proxy.mjs` → Groq whisper-large-v3-turbo, com tempo por palavra e prompt pontuado. Aceita a chave do usuário pelo header `x-groq-key` quando o servidor não tiver chave.
+  - **No aparelho:** `src/app/transcribe.ts`, transformers.js com `onnx-community/whisper-*_timestamped`.
+    - GPU no Chrome; CPU (WASM) no Safari, onde o WebGPU quebra.
+    - dtype na CPU: encoder q8 + decoder q4.
+    - Se a nuvem falhar, o app usa este modo sozinho.
+  - **Áudio:** `platform/audio.ts`, mediabunny em pedaços (sem estourar a memória do iPhone).
+- **Pessoa:** `src/app/person/segment.ts`, MediaPipe selfie multiclass no navegador.
+  - Usa a CPU se a GPU for por software.
+  - Gera uma máscara JPEG por quadro, com refino: suavização no tempo, remoção de ilhas, preenchimento de buracos.
+  - Os arquivos `/mediapipe` e `/models` são servidos pelo próprio app.
 
-Instalamos as skills `find-skills` (Vercel) e `caveman` no bot de imóveis. O caveman deixa as respostas curtas, em português.
+## Comandos
+- `npm run verify`: tsc, 82 testes e builds do Mac e da PWA. Precisa de 0 erros.
+- `npm run dev`: Mac (5173 + API 3210).
+- `npm run build:pwa`: gera a PWA.
+- Instalar dependências com **npm 11**: `npx npm@11 install`. O npm 10 tem bug com o vitest 4.
+- O `vite preview` não serve `/mediapipe`. Para testar a PWA use `python3 -m http.server --directory dist-pwa`.
 
-O usuário quer um editor que reproduza as legendas dos reels de @_k.elsie, totalmente editáveis e exportáveis como camada. O Instagram bloqueou o acesso automático. O usuário enviou 6 reels, que analisei por grade de quadros e tiras a 10 fps, só nos trechos com legenda. Achei 8 modelos (P1–P8). Cada frase vira um bloco de 2 a 4 linhas: palavras de ligação pequenas, palavra-chave grande. Fontes misturadas: serif, itálico lilás em degradê, sans fina, sans bold em arco, número neon. Entrada com desfoque subindo em cerca de 250 ms, saída com desfoque. Há texto atrás da pessoa. Ela provavelmente edita no After Effects.
+## Histórico resumido
+1. Análise dos reels de @_k.elsie: 8 modelos (`docs/ANALISE.md`).
+2. Editor Mac com Remotion, exports em camada e SRT/ASS.
+3. PWA iPhone rodando tudo no aparelho.
+4. Layout profissional, 58 fontes, edição por palavra com escala X/Y, karaokê, caixa de fundo, forma de onda e legenda atrás da pessoa.
+5. iPhone real:
+   - "Load failed": a CSP bloqueava os modelos. Corrigido.
+   - "webgpuInit": Safari sem WebGPU no ONNX. Agora usa CPU.
+   - Nuvem grátis com Groq.
 
-Decisões: roda local no Mac. Transcrição por Whisper WebGPU no Chrome ou API OpenAI opcional. Português BR. Remotion para preview e render. Fontes locais (@fontsource). Repo separado.
+## Pendências principais
+Validar no iPhone, CapCut e Premiere reais; trocar a chave do Groq; deploy automático; ESLint/CI. Detalhes em `docs/PLANO_REVISAO.md`.
 
-Construído e verificado (fases 1–4):
-- upload e transcrição;
-- agrupamento em frases com papéis;
-- modelos guardados como dados;
-- editor com lista de frases, abas Frase/Estilo/Palavras, arrastar no preview, desfazer e salvar automático;
-- exports MOV ProRes 4444 transparente, WebM transparente, MP4 verde, MP4 final, SRT e ASS;
-- servidor só local, com proteção contra pedidos de outros sites e contra acesso a arquivos fora da pasta;
-- 41 testes passando, `npm audit` sem vulnerabilidades.
-
-Bugs corrigidos: largura do bloco, frases saindo da tela (encolhe para caber), pacote de render desatualizado, cor do ASS.
-
-Não testado aqui: Whisper local (sem GPU), chamada real da OpenAI, importação no Premiere/CapCut.
-
-Pendente: fase 5, texto atrás da pessoa (MediaPipe ou Robust Video Matting, com export com e sem oclusão). Também abrir PR para a `main`, se o usuário pedir.
-
-## Sessão 2: PWA para iPhone
-
-O usuário pediu para rodar no iPhone como app (PWA), com tudo no aparelho, sem o Mac.
-
-Feito:
-- **Camada `platform`, escolhida no build:** `VITE_TARGET=device` (arquivo `.env.pwa`) usa a versão do aparelho.
-  - Vídeo guardado no IndexedDB como `local:<id>`; projetos também no IndexedDB.
-  - OpenAI chamada direto do navegador, com a chave do usuário guardada no localStorage.
-  - Áudio extraído com o mediabunny.
-  - Render no navegador com `@remotion/web-renderer`: MP4 verde, MP4 final e WebM transparente, quando o aparelho suporta. MOV só no Mac.
-- **Composição:** usa `Video` de `@remotion/media`. O render no servidor do Mac foi testado de novo e continua funcionando.
-- **PWA:** `vite-plugin-pwa`, ícones em `public/icons`, CSP via meta e funcionamento offline.
-- **Celular:** layout em uma coluna abaixo de 900px, wake lock e Compartilhar do iOS no export.
-- **Teste:** Playwright com perfil iPhone 15 (Chromium): upload, edição, arrastar, MP4 verde e final, projeto salvo e offline. Tudo passou.
-- **Dependências:** vite 6.4.5 e vitest 4.1.12. Usar npm 11 (`packageManager`), porque o npm 10 quebra com o erro `edgesOut`.
-
-Pendente:
-- testar no iPhone real, com WebKit;
-- fase 5 (texto atrás da pessoa);
-- PR para a `main`.
-
-## Sessão 3: noturna autônoma (/resolver-tudo)
-
-Pedido: terminar o projeto sem perguntar.
-- auditar;
-- layout de editor profissional;
-- legenda atrás da pessoa, opcional, com camada da frente;
-- mais fontes grátis;
-- palavra individual com escala X/Y;
-- comparar com CapCut, Premiere e Submagic.
-
-Feito, com detalhes em `ENTREGA_PRONTA.md`:
-- **Layout NLE:** biblioteca, monitor, inspetor e timeline com aparar, encaixe, zoom e forma de onda. Usamos as skills `web-design-guidelines` e `ui-ux-pro-max`.
-- **Edição:** 58 fontes OFL com seletor visual, karaokê e caixa de fundo.
-- **Pessoa:** MediaPipe segmenta no navegador e gera uma máscara JPEG por quadro.
-  - Mac: as máscaras vão para o servidor (`/api/masks`).
-  - iPhone: as máscaras ficam no IndexedDB (store `masks`, DB versão 2).
-  - Na composição, a frase com `behind` recebe um `mask-image` com buraco onde está a pessoa. A camada `layer: 'person'` exporta só a pessoa.
-- **Testes:** e2e no desktop e no iPhone passaram e a auditoria foi feita.
-
-Atenção ao testar:
-- O `vite preview` não serve `/mediapipe/` (404). Para testar a PWA use um servidor estático, por exemplo `python3 -m http.server --directory dist-pwa`. No Render funciona.
-
-## Sessão 4: iPhone "Load failed" e nuvem grátis
-
-Causa do erro: a CSP bloqueava `remotion.media` (modelos do Whisper) e `cdn.jsdelivr.net` (ONNX). Corrigido, com `blob:` liberado em `script-src`.
-
-Nuvem:
-- `cloud/proxy.mjs` (Node puro) roda no Render como `editor-legenda-api`, serviço `srv-dbm632rm8hqs73erfa10`, plano free. Repassa ao Groq.
-- Falta o usuário pôr `GROQ_API_KEY` no Render.
-- Cliente em `src/app/cloud.ts`. A UI mostra o status da nuvem e, se ela falhar, cai para o aparelho.
-
-Áudio:
-- `src/app/platform/audio.ts`: `extractAudio` (AAC para a nuvem) e `decodeAudio16k` (PCM para o Whisper local), ambos com mediabunny e em pedaços.
-
-Render:
-- O deploy automático não dispara: use `trigger_deploy` (MCP) nos dois serviços após o push.
-- Site estático: `srv-dbluvl88v5cc73d1d3j0`.
-
-## Sessão 5: iPhone real
-
-- **Whisper local:** saiu o `@remotion/whisper-webgpu`. Agora é transformers.js direto, com CPU no Safari (WebGPU lá quebra) e dtype `{encoder q8, decoder q4}`.
-- **Nuvem:** o usuário cola a chave Groq no app; o proxy aceita o header `x-groq-key`.
-- **Testes e2e:** `scratchpad/e2e-local.cjs` (com `DESKTOP=1` testa a GPU) e `e2e-cloud.cjs`.
+## Skills úteis (já instaladas em `.claude/skills/`)
+- remotion-*, ffmpeg;
+- ui-ux-pro-max, web-design-guidelines;
+- transformers-js;
+- engineering:code-review e security-review (plugins).

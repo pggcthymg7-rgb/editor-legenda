@@ -2,7 +2,7 @@
 
 Editor local de legendas animadas estilo reels (referência: @_k.elsie). Análise dos modelos: `docs/ANALISE.md`.
 
-**Ao retomar: leia primeiro `docs/CEREBRO.md` (mapa de pastas + resumo da sessão).**
+**Ao retomar: leia primeiro `docs/CEREBRO.md` (estado e arquitetura), depois `docs/PLANO_REVISAO.md` (Fase 2) e `AGENTS.md`. Manual de uso: `docs/MANUAL.md`.**
 
 ## Comandos
 - Verificação completa: `npm run verify` (tsc + vitest). Nada está pronto sem 0 erros.

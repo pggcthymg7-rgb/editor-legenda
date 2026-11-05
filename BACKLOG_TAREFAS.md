@@ -34,3 +34,6 @@ Pedido: terminar o projeto em modo autônomo:
   - funciona no render do servidor e no navegador.
 - [x] 7. Auditoria final: segurança, testes, builds, e2e (desktop e iPhone), `npm audit`.
 - [x] 8. Entrega: `ENTREGA_PRONTA.md`, `CEREBRO.md`, push e deploy no Render.
+
+
+## Etapa 1 encerrada (tag `v1.0-etapa1`). Próximos passos: `docs/PLANO_REVISAO.md`.
