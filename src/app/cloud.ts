@@ -3,7 +3,7 @@
 import { fromOpenAi } from '../core/transcript';
 import type { TranscribedWord } from '../core/types';
 
-export const CLOUD_URL = (import.meta.env.VITE_CLOUD_URL ?? 'https://editor-legenda-api.onrender.com').replace(/\/$/, '');
+export const CLOUD_URL = (import.meta.env?.VITE_CLOUD_URL ?? 'https://editor-legenda-api.onrender.com').replace(/\/$/, '');
 
 export type CloudState = 'checking' | 'ready' | 'nokey' | 'offline';
 
@@ -45,7 +45,7 @@ export function cloudHealth(fetchImpl: typeof fetch = fetch): Promise<CloudState
     } finally {
       // se deu offline, libera na hora para tentar de novo; se respondeu, guarda por 60 s
       if (state === 'offline') healthPromise = null;
-      else setTimeout(() => (healthPromise = null), 60_000);
+      else (setTimeout(() => (healthPromise = null), 60_000) as unknown as { unref?: () => void })?.unref?.();
     }
   })();
   return healthPromise;

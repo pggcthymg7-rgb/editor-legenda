@@ -133,4 +133,14 @@ describe('servidor (segurança)', () => {
     expect((await fetch(`${base}/api/render/${id}`, { method: 'DELETE' })).status).toBe(403);
     expect((await fetch(`${base}/api/render/${id}`, { method: 'DELETE', headers: W })).status).toBe(404);
   });
+  it('invariantes de segurança do projeto (validate, CSP, MediaPipe, modelo offline)', async () => {
+    const { existsSync, readFileSync } = await import('node:fs');
+    const val = readFileSync('src/core/validate.ts', 'utf8');
+    expect(val).toContain('url\\s*\\(');
+    expect(val).toContain('<\\/?script');
+    const viteCfg = readFileSync('vite.config.ts', 'utf8');
+    expect(viteCfg).toContain('Content-Security-Policy');
+    expect(viteCfg).toContain('mediapipe-wasm');
+    expect(existsSync('public/models/selfie_multiclass_256x256.tflite')).toBe(true);
+  });
 });

@@ -110,7 +110,8 @@ async function runJob(job: Job, project: Project, format: FormatId, mediaBaseUrl
       layer,
     };
     const serveUrl = await getBundle();
-    const composition = await selectComposition({ serveUrl, id: 'Legendas', inputProps });
+    if (isCanceled(job)) return;
+    const composition = await selectComposition({ serveUrl, id: 'Legendas', inputProps, cancelSignal });
     if (isCanceled(job)) return;
     await renderMedia({
       ...opts,
