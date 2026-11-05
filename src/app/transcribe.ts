@@ -72,13 +72,16 @@ export async function transcribeLocal(
 
   const devices = await devicesToTry();
   let lastErr: unknown = null;
+  type AsrOut = { chunks?: Chunk[] };
+  type AsrRunner = ((audio: Float32Array, opts: Record<string, unknown>) => Promise<AsrOut | AsrOut[]>) & {
+    dispose?: () => Promise<void>;
+  };
   for (const device of devices) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let asr: any = null;
+    let asr: AsrRunner | null = null;
     try {
       const loaded = new Map<string, [number, number]>();
       onStatus('Baixando o modelo de fala (só na primeira vez)…', 0);
-      asr = await pipeline('automatic-speech-recognition', MODEL_IDS[model], {
+      asr = (await pipeline('automatic-speech-recognition', MODEL_IDS[model], {
         device,
         // WebGPU: encoder fp32 + decoder q4 (qualidade/velocidade); CPU: tudo q8 (leve)
         dtype: device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q4' } : WASM_DTYPE,
@@ -93,7 +96,7 @@ export async function transcribeLocal(
           }
           onStatus('Baixando o modelo de fala (só na primeira vez)…', t ? a / t : undefined);
         },
-      });
+      })) as AsrRunner;
       const durationS = audio.length / 16000;
       onStatus(
         device === 'webgpu'

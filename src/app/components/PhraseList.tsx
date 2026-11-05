@@ -28,13 +28,16 @@ export const PhraseList: React.FC<Props> = ({ project, apply, selectedId, onSele
   const update = (id: string, fn: (p: Phrase) => Phrase, merge = false) =>
     apply((proj) => ({ ...proj, phrases: proj.phrases.map((p) => (p.id === id ? fn(p) : p)) }), merge);
 
-  const addAtCursor = () =>
-    apply((proj) => {
-      const ph = buildPhrase([{ text: 'Texto', startMs: currentMs, endMs: currentMs + 800 }], 'p1-editorial', proj.customPresets);
-      const phrases = [...proj.phrases, ph].sort((a, b) => phraseStart(a) - phraseStart(b));
-      onSelect(ph.id);
-      return { ...proj, phrases };
-    });
+  const addAtCursor = () => {
+    const start = Math.max(0, Math.min(currentMs, Math.max(0, project.video.durationMs - 100)));
+    const end = Math.min(project.video.durationMs, Math.max(start + 40, start + 800));
+    const ph = buildPhrase([{ text: 'Texto', startMs: start, endMs: end }], 'p1-editorial', project.customPresets);
+    apply((proj) => ({
+      ...proj,
+      phrases: [...proj.phrases, ph].sort((a, b) => phraseStart(a) - phraseStart(b)),
+    }));
+    onSelect(ph.id);
+  };
 
   return (
     <div className="phrase-list">
@@ -42,7 +45,7 @@ export const PhraseList: React.FC<Props> = ({ project, apply, selectedId, onSele
         <strong>Frases ({project.phrases.length})</strong>
         <button onClick={addAtCursor} title="Nova frase no tempo atual">+ frase</button>
       </div>
-      {project.phrases.map((p) => {
+      {project.phrases.map((p, idx) => {
         const preset = findPreset(p.presetId, project.customPresets);
         const selected = p.id === selectedId;
         return (
@@ -64,7 +67,7 @@ export const PhraseList: React.FC<Props> = ({ project, apply, selectedId, onSele
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   const np = findPreset(e.target.value, project.customPresets);
-                  update(p.id, (ph) => ({ ...ph, presetId: np.id, x: np.position.x, y: np.position.y, roleStyles: undefined }));
+                  update(p.id, (ph) => ({ ...ph, presetId: np.id, x: np.position.x, y: np.position.y, roleStyles: undefined, animation: undefined, highlight: undefined }));
                 }}
               >
                 {[...PRESETS, ...project.customPresets].map((pr) => (
@@ -99,7 +102,11 @@ export const PhraseList: React.FC<Props> = ({ project, apply, selectedId, onSele
                 >
                   Dividir
                 </button>
-                <button onClick={() => apply((proj) => ({ ...proj, phrases: mergeWithNext(proj.phrases, p.id) }))} title="Juntar com a próxima">
+                <button
+                  disabled={idx === project.phrases.length - 1}
+                  onClick={() => apply((proj) => ({ ...proj, phrases: mergeWithNext(proj.phrases, p.id) }))}
+                  title="Juntar com a próxima"
+                >
                   Juntar ↓
                 </button>
                 <button className="danger" onClick={() => apply((proj) => ({ ...proj, phrases: proj.phrases.filter((x) => x.id !== p.id) }))}>

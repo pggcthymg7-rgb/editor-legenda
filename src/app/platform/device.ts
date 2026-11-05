@@ -173,23 +173,25 @@ export const devicePlatform: Platform = {
     ]);
     const { width, height, durationMs } = project.video;
     const layer = opts?.layer ?? 'captions';
-    const inputProps: CompositionProps = {
+    const inputProps: CompositionProps & Record<string, unknown> = {
       project,
       // camada da pessoa: fundo transparente/verde com só a pessoa recortada
       background: layer === 'person' && cfg.background === 'video' ? 'transparent' : cfg.background,
       maskUrls: opts?.maskUrls,
       layer,
     };
+    const component: React.FC<CompositionProps & Record<string, unknown>> = CaptionComposition;
     const result = await renderMediaOnWeb({
       composition: {
-        component: CaptionComposition as unknown as React.FC<Record<string, unknown>>,
+        component,
+        defaultProps: inputProps,
         id: COMPOSITION_ID,
         width,
         height,
         fps: FPS,
         durationInFrames: Math.max(1, Math.ceil((durationMs / 1000) * FPS)),
       },
-      inputProps: inputProps as unknown as Record<string, unknown>,
+      inputProps,
       container: cfg.container,
       videoCodec: cfg.videoCodec,
       transparent: cfg.transparent,

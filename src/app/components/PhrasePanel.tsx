@@ -1,5 +1,6 @@
 import { Link2, Link2Off, RotateCcw } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { setWordTime } from '../../core/edit';
 import { newId, phraseText } from '../../core/grouping';
 import { findPreset, resolveAnimation, resolveWordStyle } from '../../core/presets';
 import { ENTRANCES, EXITS, type Animation, type Phrase, type Preset, type Project, type Role, type TextStyle, type Word } from '../../core/types';
@@ -25,19 +26,44 @@ const ENTRANCE_LABEL: Record<string, string> = {
 const EXIT_LABEL: Record<string, string> = { blurOut: 'Desfoque', fade: 'Fade', zoomOut: 'Zoom', none: 'Corte seco' };
 const MODE_LABEL = { word: 'Palavra a palavra (acumula)', phrase: 'Frase inteira', single: 'Uma palavra por vez' };
 
-export const Slider: React.FC<{ label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (v: number) => void }> = (p) => (
-  <label className="field">
-    <span>{p.label}</span>
-    <input type="range" min={p.min} max={p.max} step={p.step ?? 1} value={p.value} onChange={(e) => p.onChange(Number(e.target.value))} />
-    <input
-      type="number"
-      aria-label={p.label}
-      step={p.step ?? 1}
-      value={Number(p.value.toFixed(3))}
-      onChange={(e) => Number.isFinite(Number(e.target.value)) && p.onChange(Number(e.target.value))}
-    />
-  </label>
-);
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+export const Slider: React.FC<{ label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (v: number) => void }> = (p) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  useEffect(() => {
+    setDraft((d) => (d !== null && d.trim() !== '' && Number(d) === p.value ? d : null));
+  }, [p.value]);
+  const commit = (raw: string | null) => {
+    if (raw !== null && raw.trim() !== '') {
+      const n = Number(raw);
+      if (Number.isFinite(n)) p.onChange(clamp(n, p.min, p.max));
+    }
+    setDraft(null);
+  };
+  return (
+    <label className="field">
+      <span>{p.label}</span>
+      <input type="range" min={p.min} max={p.max} step={p.step ?? 1} value={p.value} onChange={(e) => p.onChange(clamp(Number(e.target.value), p.min, p.max))} />
+      <input
+        type="number"
+        aria-label={p.label}
+        min={p.min}
+        max={p.max}
+        step={p.step ?? 1}
+        value={draft ?? Number(p.value.toFixed(3))}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setDraft(raw);
+          if (raw.trim() === '') return;
+          const n = Number(raw);
+          if (Number.isFinite(n) && n >= p.min && n <= p.max) p.onChange(n);
+        }}
+        onBlur={() => commit(draft)}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      />
+    </label>
+  );
+};
 
 type Tab = 'frase' | 'estilo' | 'animacao' | 'destaque' | 'palavra';
 const TABS: { id: Tab; label: string }[] = [
@@ -50,8 +76,10 @@ const TABS: { id: Tab; label: string }[] = [
 
 /** Inspetor: tudo da frase selecionada e, na aba Palavra, de cada palavra individual. */
 export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelectWord, apply }) => {
-  const [tabState, setTab] = useState<Tab>('frase');
-  const tab: Tab = wordId ? 'palavra' : tabState === 'palavra' ? 'frase' : tabState;
+  const [tab, setTab] = useState<Tab>(() => (wordId ? 'palavra' : 'frase'));
+  useEffect(() => {
+    if (wordId) setTab('palavra');
+  }, [wordId]);
   const [role, setRole] = useState<Role>('key');
   const [lockScale, setLockScale] = useState(true);
   const preset = findPreset(phrase.presetId, project.customPresets);
@@ -66,11 +94,11 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
       }),
       merge,
     );
-  const setAnim = (patch: Partial<Animation>) => set((p) => ({ ...p, animation: { ...p.animation, ...patch } }));
+  const setAnim = (patch: Partial<Animation>, merge = true) => set((p) => ({ ...p, animation: { ...p.animation, ...patch } }), merge);
   const setRoleStyle = (r: Role, patch: Partial<TextStyle>) =>
     set((p) => ({ ...p, roleStyles: { ...p.roleStyles, [r]: { ...p.roleStyles?.[r], ...patch } } }));
-  const setWord = (id: string, patch: Partial<Word>) =>
-    set((p) => ({ ...p, words: p.words.map((w) => (w.id === id ? { ...w, ...patch } : w)) }));
+  const setWord = (id: string, patch: Partial<Word>, merge = true) =>
+    set((p) => ({ ...p, words: p.words.map((w) => (w.id === id ? { ...w, ...patch } : w)) }), merge);
 
   const applyToSamePreset = () =>
     apply((proj) => ({
@@ -96,7 +124,20 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
     apply((proj) => ({
       ...proj,
       phrases: proj.phrases.map((p) =>
-        p.id === phrase.id ? p : { ...p, presetId: phrase.presetId, roleStyles: phrase.roleStyles, animation: phrase.animation, highlight: phrase.highlight },
+        p.id === phrase.id
+          ? p
+          : {
+              ...p,
+              presetId: phrase.presetId,
+              roleStyles: phrase.roleStyles,
+              animation: phrase.animation,
+              highlight: phrase.highlight,
+              scale: phrase.scale,
+              rotation: phrase.rotation,
+              rotateX: phrase.rotateX,
+              rotateY: phrase.rotateY,
+              align: phrase.align,
+            },
       ),
     }));
 
@@ -142,8 +183,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
             aria-selected={tab === t.id}
             className={tab === t.id ? 'on' : ''}
             onClick={() => {
-              if (t.id === 'palavra') onSelectWord(word?.id ?? phrase.words[0]?.id ?? null);
-              else onSelectWord(null);
+              if (t.id === 'palavra' && !word) onSelectWord(phrase.words[0]?.id ?? null);
               setTab(t.id);
             }}
           >
@@ -166,7 +206,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
             <span>Alinhamento</span>
             <div className="seg field-wide" role="group" aria-label="Alinhamento">
               {(['left', 'center', 'right'] as const).map((a) => (
-                <button key={a} className={(phrase.align ?? preset.align) === a ? 'on' : ''} aria-pressed={(phrase.align ?? preset.align) === a} onClick={() => set({ align: a })}>
+                <button key={a} className={(phrase.align ?? preset.align) === a ? 'on' : ''} aria-pressed={(phrase.align ?? preset.align) === a} onClick={() => set({ align: a }, false)}>
                   {a === 'left' ? 'Esq.' : a === 'center' ? 'Centro' : 'Dir.'}
                 </button>
               ))}
@@ -218,7 +258,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
         <div>
           <label className="field">
             <span>Revelar</span>
-            <select value={anim.mode} onChange={(e) => setAnim({ mode: e.target.value as Animation['mode'] })}>
+            <select value={anim.mode} onChange={(e) => setAnim({ mode: e.target.value as Animation['mode'] }, false)}>
               {Object.entries(MODE_LABEL).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
@@ -228,7 +268,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
           </label>
           <label className="field">
             <span>Entrada</span>
-            <select value={anim.entrance} onChange={(e) => setAnim({ entrance: e.target.value as Animation['entrance'] })}>
+            <select value={anim.entrance} onChange={(e) => setAnim({ entrance: e.target.value as Animation['entrance'] }, false)}>
               {ENTRANCES.map((k) => (
                 <option key={k} value={k}>
                   {ENTRANCE_LABEL[k]}
@@ -238,7 +278,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
           </label>
           <label className="field">
             <span>Saída</span>
-            <select value={anim.exit} onChange={(e) => setAnim({ exit: e.target.value as Animation['exit'] })}>
+            <select value={anim.exit} onChange={(e) => setAnim({ exit: e.target.value as Animation['exit'] }, false)}>
               {EXITS.map((k) => (
                 <option key={k} value={k}>
                   {EXIT_LABEL[k]}
@@ -259,7 +299,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
               type="checkbox"
               checked={!!hl}
               onChange={(e) =>
-                set({ highlight: e.target.checked ? { fill: { type: 'solid', color: '#FFE14D' }, box: null } : null }, false)
+                set({ highlight: e.target.checked ? { fill: { type: 'solid', color: '#FFE14D' } } : null }, false)
               }
             />
             Destacar a palavra que está sendo falada
@@ -305,15 +345,15 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
                 <span>Papel</span>
                 <div className="seg field-wide" role="group" aria-label="Papel">
                   {(['small', 'normal', 'key'] as Role[]).map((r) => (
-                    <button key={r} className={word.role === r ? 'on' : ''} aria-pressed={word.role === r} onClick={() => setWord(word.id, { role: r })}>
+                    <button key={r} className={word.role === r ? 'on' : ''} aria-pressed={word.role === r} onClick={() => setWord(word.id, { role: r }, false)}>
                       {ROLE_LABEL[r]}
                     </button>
                   ))}
                 </div>
               </div>
               <h4>Tempo</h4>
-              <Slider label="Início (ms)" value={word.startMs} min={0} max={project.video.durationMs} step={10} onChange={(v) => setWord(word.id, { startMs: v })} />
-              <Slider label="Fim (ms)" value={word.endMs} min={0} max={project.video.durationMs} step={10} onChange={(v) => setWord(word.id, { endMs: Math.max(v, word.startMs + 40) })} />
+              <Slider label="Início (ms)" value={word.startMs} min={0} max={project.video.durationMs} step={10} onChange={(v) => set((p) => setWordTime(p, word.id, v, word.endMs))} />
+              <Slider label="Fim (ms)" value={word.endMs} min={0} max={project.video.durationMs} step={10} onChange={(v) => set((p) => setWordTime(p, word.id, word.startMs, v))} />
               <h4>Transformar só esta palavra</h4>
               <Slider label="Posição X" value={word.dx ?? 0} min={-800} max={800} onChange={(v) => setWord(word.id, { dx: v })} />
               <Slider label="Posição Y" value={word.dy ?? 0} min={-800} max={800} onChange={(v) => setWord(word.id, { dy: v })} />
@@ -326,7 +366,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
                     min={0.1}
                     max={5}
                     step={0.01}
-                    onChange={(v) => setWord(word.id, lockScale ? { scaleX: v, scaleY: v * ((word.scaleY ?? 1) / (word.scaleX ?? 1)) } : { scaleX: v })}
+                    onChange={(v) => setWord(word.id, lockScale ? { scaleX: v, scaleY: clamp(v * ((word.scaleY ?? 1) / (word.scaleX || 1)), 0.1, 5) } : { scaleX: v })}
                   />
                   <Slider
                     label="Escala vert."
@@ -334,7 +374,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
                     min={0.1}
                     max={5}
                     step={0.01}
-                    onChange={(v) => setWord(word.id, lockScale ? { scaleY: v, scaleX: v * ((word.scaleX ?? 1) / (word.scaleY ?? 1)) } : { scaleY: v })}
+                    onChange={(v) => setWord(word.id, lockScale ? { scaleY: v, scaleX: clamp(v * ((word.scaleX ?? 1) / (word.scaleY || 1)), 0.1, 5) } : { scaleY: v })}
                   />
                 </div>
                 <button
@@ -353,7 +393,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
                 sample={word.text}
                 onChange={(patch) => setWord(word.id, { style: { ...word.style, ...patch } })}
               />
-              <button onClick={() => setWord(word.id, { style: undefined, dx: 0, dy: 0, rotation: 0, scaleX: 1, scaleY: 1 })}>
+              <button onClick={() => setWord(word.id, { style: undefined, dx: 0, dy: 0, rotation: 0, scaleX: 1, scaleY: 1 }, false)}>
                 <RotateCcw size={14} aria-hidden="true" /> Limpar ajustes da palavra
               </button>
             </div>

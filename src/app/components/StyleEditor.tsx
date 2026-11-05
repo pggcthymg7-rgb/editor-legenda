@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { fontDef } from '../../core/fonts';
 import { FontPicker } from './FontPicker';
 import type { Fill, TextStyle } from '../../core/types';
@@ -19,6 +19,20 @@ const toHex = (c: string) => {
   return '#ffffff';
 };
 
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+/** Se a cor anterior era rgba(..., a) com alfa < 1, preserva o alfa ao escolher nova cor hex no seletor nativo. */
+const applyHexKeepingAlpha = (hex: string, prev: string): string => {
+  const m = prev.match(/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)$/i);
+  if (!m) return hex;
+  const a = Number(m[1]);
+  if (!Number.isFinite(a) || a >= 1) return hex;
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  return `rgba(${r},${g},${b},${a})`;
+};
+
 const Num: React.FC<{ label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void }> = ({
   label,
   value,
@@ -26,16 +40,53 @@ const Num: React.FC<{ label: string; value: number; min: number; max: number; st
   max,
   step = 1,
   onChange,
-}) => (
-  <label className="field">
-    <span>{label}</span>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
-    <input type="number" min={min} max={max} step={step} value={Number(value.toFixed(3))} onChange={(e) => onChange(Number(e.target.value))} />
-  </label>
-);
+}) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  useEffect(() => {
+    setDraft((d) => (d !== null && d.trim() !== '' && Number(d) === value ? d : null));
+  }, [value]);
+  const commit = (raw: string | null) => {
+    if (raw !== null && raw.trim() !== '') {
+      const n = Number(raw);
+      if (Number.isFinite(n)) onChange(clamp(n, min, max));
+    }
+    setDraft(null);
+  };
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(clamp(Number(e.target.value), min, max))} />
+      <input
+        type="number"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={draft ?? Number(value.toFixed(3))}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setDraft(raw);
+          if (raw.trim() === '') return;
+          const n = Number(raw);
+          if (Number.isFinite(n) && n >= min && n <= max) onChange(n);
+        }}
+        onBlur={() => commit(draft)}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      />
+    </label>
+  );
+};
 
-const Color: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
-  <input type="color" value={toHex(value)} onChange={(e) => safeColor(e.target.value) && onChange(e.target.value)} />
+const Color: React.FC<{ value: string; onChange: (v: string) => void; ariaLabel?: string }> = ({ value, onChange, ariaLabel = 'Cor' }) => (
+  <input
+    type="color"
+    aria-label={ariaLabel}
+    value={toHex(value)}
+    onChange={(e) => {
+      const next = safeColor(e.target.value);
+      if (next) onChange(applyHexKeepingAlpha(next, value));
+    }}
+  />
 );
 
 export const StyleEditor: React.FC<Props> = ({ style, onChange, sample }) => {
@@ -138,8 +189,9 @@ export const StyleEditor: React.FC<Props> = ({ style, onChange, sample }) => {
         </label>
         {style.shadow && (
           <>
-            <Color value={style.shadow.color} onChange={(c) => onChange({ shadow: { ...style.shadow!, color: c } })} />
+            <Color value={style.shadow.color} onChange={(c) => onChange({ shadow: { ...style.shadow!, color: c } })} ariaLabel="Cor da sombra" />
             <Num label="Desfoque" value={style.shadow.blur} min={0} max={80} onChange={(v) => onChange({ shadow: { ...style.shadow!, blur: v } })} />
+            <Num label="X" value={style.shadow.x} min={-40} max={40} onChange={(v) => onChange({ shadow: { ...style.shadow!, x: v } })} />
             <Num label="Y" value={style.shadow.y} min={-40} max={40} onChange={(v) => onChange({ shadow: { ...style.shadow!, y: v } })} />
           </>
         )}
