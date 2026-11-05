@@ -1,6 +1,6 @@
 # Cérebro do projeto (memória para retomar)
 
-Leia antes de qualquer trabalho. Atualizado no fim da **Etapa 1** (tag `v1.0-etapa1`).
+Leia antes de qualquer trabalho. Atualizado no fim da **Etapa 1** (branch `etapa-1` (commit `4d63a18`)).
 
 ## Onde estamos
 - **Etapa 1 concluída.** O editor de legendas funciona no Mac e no iPhone (PWA), com transcrição na nuvem grátis.

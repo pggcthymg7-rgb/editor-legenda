@@ -1,6 +1,6 @@
 # Plano de revisão e auditoria (Fase 2: testes e melhorias)
 
-**Base:** tag `v1.0-etapa1` (branch `main`).
+**Base:** `main`, marco congelado na branch `etapa-1` (commit `4d63a18`).
 **Equipe:** Claude Code e Antigravity em conjunto.
 **Regras para todo ciclo:**
 - 1 item por commit;
