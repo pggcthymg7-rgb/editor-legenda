@@ -13,7 +13,9 @@ Leia isto antes de retomar o trabalho. Caminhos marcados como (efêmero) somem q
 | Composição Remotion e fontes | `src/remotion/` |
 | Interface React | `src/app/` |
 | Servidor local (upload, OpenAI, render) | `server/` |
-| Testes (41) | `tests/` |
+| Testes (50) | `tests/` (inclui `device.test.ts`) |
+| Camada Mac × iPhone | `src/app/platform/` (`mac.ts`, `device.ts`, `idb.ts`, `audio.ts`, `openai-browser.ts`) |
+| PWA iPhone (site) | https://editor-legenda.onrender.com (Render static `srv-dbluvl88v5cc73d1d3j0`, build `build:pwa` → `dist-pwa`) |
 | Dados de execução (vídeos, renders, projetos) | `data/` (fora do git) |
 | Bot de imóveis (outro projeto) | `/home/user/secretaria-imoveis-whatsapp`, branch `claude/skills-find-caveman` |
 | Skills find-skills + caveman | `secretaria-imoveis-whatsapp/.claude/skills/` |
@@ -45,3 +47,24 @@ Bugs corrigidos: largura do bloco, frases saindo da tela (encolhe para caber), p
 Não testado aqui: Whisper local (sem GPU), chamada real da OpenAI, importação no Premiere/CapCut.
 
 Pendente: fase 5, texto atrás da pessoa (MediaPipe ou Robust Video Matting, com export com e sem oclusão). Também abrir PR para a `main`, se o usuário pedir.
+
+## Sessão 2: PWA para iPhone
+
+O usuário pediu para rodar no iPhone como app (PWA), com tudo no aparelho, sem o Mac.
+
+Feito:
+- **Camada `platform`, escolhida no build:** `VITE_TARGET=device` (arquivo `.env.pwa`) usa a versão do aparelho.
+  - Vídeo guardado no IndexedDB como `local:<id>`; projetos também no IndexedDB.
+  - OpenAI chamada direto do navegador, com a chave do usuário guardada no localStorage.
+  - Áudio extraído com o mediabunny.
+  - Render no navegador com `@remotion/web-renderer`: MP4 verde, MP4 final e WebM transparente, quando o aparelho suporta. MOV só no Mac.
+- **Composição:** usa `Video` de `@remotion/media`. O render no servidor do Mac foi testado de novo e continua funcionando.
+- **PWA:** `vite-plugin-pwa`, ícones em `public/icons`, CSP via meta e funcionamento offline.
+- **Celular:** layout em uma coluna abaixo de 900px, wake lock e Compartilhar do iOS no export.
+- **Teste:** Playwright com perfil iPhone 15 (Chromium): upload, edição, arrastar, MP4 verde e final, projeto salvo e offline. Tudo passou.
+- **Dependências:** vite 6.4.5 e vitest 4.1.12. Usar npm 11 (`packageManager`), porque o npm 10 quebra com o erro `edgesOut`.
+
+Pendente:
+- testar no iPhone real, com WebKit;
+- fase 5 (texto atrás da pessoa);
+- PR para a `main`.

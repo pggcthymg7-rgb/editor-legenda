@@ -47,12 +47,39 @@ O ffmpeg vem junto com o Remotion. Não precisa instalar.
 
 Os exports em camada têm a duração e a resolução do vídeo original. Coloque-os no início da timeline, alinhados com o vídeo.
 
+## App no iPhone (PWA)
+
+Versão que roda inteira no aparelho, sem o Mac: https://editor-legenda.onrender.com
+
+1. Abra o link no **Safari** do iPhone. Toque em Compartilhar → **Adicionar à Tela de Início**.
+2. Abra o app pelo ícone **Legendas** e escolha um vídeo do Fotos.
+3. Transcrição:
+   - **OpenAI:** cole sua chave `sk-…` uma vez. Ela fica só no aparelho e pode ser apagada. Só o áudio vai para a OpenAI.
+   - **Local:** experimental no iPhone, só com o modelo small.
+   - **Sem transcrição:** você digita o texto.
+4. Exportar: o vídeo é gerado no próprio iPhone, então deixe o app aberto até terminar.
+   - **MP4 fundo verde** → Compartilhar → CapCut → Sobreposição → Chroma key no verde.
+   - **MP4 final:** vídeo pronto, com legenda e áudio.
+   - **SRT e ASS** também saem.
+   - O MOV transparente (ProRes) só existe na versão do Mac.
+5. Vídeos e projetos ficam guardados no aparelho. Use o ✕ na lista para apagar e liberar espaço.
+
+Build: `npm run build:pwa` gera a pasta `dist-pwa/`. O Render publica sozinho a cada push na branch.
+
 ## Comandos
 
+- `npm run build:pwa` / `npm run preview:pwa`: versão iPhone (porta 4173)
+
 - `npm run dev`: editor (web em 5173 e API em 3210, só localhost)
-- `npm run verify`: typecheck + testes
+- `npm run verify`: typecheck, testes e os dois builds (Mac e iPhone)
 - `npm run studio`: Remotion Studio com exemplo de todos os modelos
 
 ## Licença Remotion
 
 O Remotion é grátis para uso individual e para empresas com até 3 pessoas. Acima disso, exige licença: https://remotion.pro
+
+A versão iPhone bloqueia, pela política de segurança (CSP), o contador de uso do Remotion (`remotion.pro`). Nenhum dado sai do aparelho além do áudio enviado à OpenAI. Se você for uma empresa licenciada, libere esse domínio na CSP do `vite.config.ts`.
+
+Instale as dependências com npm 11: `npx npm@11 install`. O npm 10 tem um bug com o vitest 4.
+
+Alertas do `npm audit`: restam 4 de severidade baixa, todos do `deepmerge` dentro do `workbox-build`. Esse pacote só roda no build da PWA e ainda não tem correção.
