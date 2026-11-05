@@ -36,4 +36,4 @@ Pedido: terminar o projeto em modo autônomo:
 - [x] 8. Entrega: `ENTREGA_PRONTA.md`, `CEREBRO.md`, push e deploy no Render.
 
 
-## Etapa 1 encerrada (tag `v1.0-etapa1`). Próximos passos: `docs/PLANO_REVISAO.md`.
+## Etapa 1 encerrada (branch `etapa-1` (commit `4d63a18`)). Próximos passos: `docs/PLANO_REVISAO.md`.
