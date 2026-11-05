@@ -53,30 +53,58 @@ const WordView: React.FC<WordViewProps> = ({ word, style: rawStyle, tMs, win, ph
   const tx = (extra?.x ?? 0) + (word.dx ?? 0);
   const ty = (extra?.y ?? 0) + (word.dy ?? 0) + st.translateY;
   const rot = (extra?.rotate ?? 0) + (word.rotation ?? 0);
+  const sx = st.scale * (word.scaleX ?? 1);
+  const sy = st.scale * (word.scaleY ?? 1);
+  const fs = style.fontSize * k;
+  const box = style.box;
   return (
     <span
+      data-word-id={word.id}
       style={{
         display: 'inline-block',
         // invisível ainda ocupa espaço: o bloco não "pula" quando palavras entram
         visibility: isHidden && anim.mode !== 'single' ? 'hidden' : undefined,
         opacity: st.opacity * style.opacity,
-        fontFamily: fontFamilyCss(style.fontFamily),
-        fontWeight: style.fontWeight,
-        fontStyle: style.italic ? 'italic' : 'normal',
-        fontSize: style.fontSize * k,
-        letterSpacing: `${style.letterSpacing}em`,
-        lineHeight: 1,
-        whiteSpace: 'pre',
-        padding: `${0.08 * style.fontSize * k}px ${0.06 * style.fontSize * k}px`,
-        transform: `translate(${tx * k}px, ${ty * k}px) rotate(${rot}deg) scale(${st.scale})`,
+        transform: `translate(${tx * k}px, ${ty * k}px) rotate(${rot}deg) scale(${sx}, ${sy})`,
         filter: filterCss(style, st.blur, k),
-        WebkitTextStroke: style.stroke ? `${style.stroke.width * k}px ${style.stroke.color}` : undefined,
-        ...fillCss(style),
+        lineHeight: 1,
+        ...(box
+          ? {
+              backgroundColor: hexA(box.color, box.opacity),
+              padding: `${box.padY * fs}px ${box.padX * fs}px`,
+              borderRadius: box.radius * fs,
+            }
+          : null),
       }}
     >
-      {text}
+      <span
+        style={{
+          display: 'inline-block',
+          fontFamily: fontFamilyCss(style.fontFamily),
+          fontWeight: style.fontWeight,
+          fontStyle: style.italic ? 'italic' : 'normal',
+          fontSize: fs,
+          letterSpacing: `${style.letterSpacing}em`,
+          lineHeight: 1,
+          whiteSpace: 'pre',
+          padding: `${0.08 * fs}px ${0.06 * fs}px`,
+          WebkitTextStroke: style.stroke ? `${style.stroke.width * k}px ${style.stroke.color}` : undefined,
+          paintOrder: 'stroke fill',
+          ...fillCss(style),
+        }}
+      >
+        {text}
+      </span>
     </span>
   );
+};
+
+/** #rrggbb + opacidade → rgba(); outras cores passam direto. */
+export const hexA = (c: string, a: number) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(c);
+  if (!m) return c;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Math.max(0, Math.min(1, a))})`;
 };
 
 export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Project; tMs: number; k: number }> = ({
@@ -108,11 +136,17 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
   );
   const fit = preset.layout !== 'inline' && widest * k * phrase.scale > width * 0.9 ? (width * 0.9) / (widest * k * phrase.scale) : 1;
 
+  const styleOf = (w: Word) => {
+    const base = resolveWordStyle(preset, w.role, phrase.roleStyles, w.style);
+    // destaque (karaoke): palavra sendo falada agora ganha o estilo de destaque
+    const hl = phrase.highlight;
+    return hl && tMs >= w.startMs && tMs < w.endMs ? { ...base, ...hl } : base;
+  };
   const wordEl = (w: Word, extra?: { x: number; y: number; rotate: number }) => (
     <WordView
       key={w.id}
       word={w}
-      style={resolveWordStyle(preset, w.role, phrase.roleStyles, w.style)}
+      style={styleOf(w)}
       tMs={tMs}
       win={winOf.get(w.id)!}
       phrase={phrase}

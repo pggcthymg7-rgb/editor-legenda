@@ -1,15 +1,8 @@
 // Modelo de dados do editor. Tudo aqui é JSON puro (serializável),
 // para salvar projeto, mandar ao render e validar.
 
-export type FontKey =
-  | 'playfair'
-  | 'dmserif'
-  | 'bodoni'
-  | 'instrument'
-  | 'inter'
-  | 'nunito'
-  | 'montserrat'
-  | 'poppins';
+import type { FontKey } from './fonts';
+export type { FontKey };
 
 export type Fill =
   | { type: 'solid'; color: string }
@@ -29,6 +22,8 @@ export type TextStyle = {
   glow: { color: string; blur: number } | null;
   shadow: { color: string; blur: number; x: number; y: number } | null;
   stroke: { color: string; width: number } | null;
+  /** caixa atrás da palavra (estilo CapCut/Submagic); medidas em em */
+  box?: { color: string; opacity: number; padX: number; padY: number; radius: number } | null;
 };
 
 /** Papel da palavra no bloco: ligação pequena, normal ou palavra-chave grande. */
@@ -89,6 +84,9 @@ export type Word = {
   dx?: number;
   dy?: number;
   rotation?: number;
+  /** escala horizontal/vertical só desta palavra (1 = normal) */
+  scaleX?: number;
+  scaleY?: number;
 };
 
 export type Phrase = {
@@ -106,6 +104,10 @@ export type Phrase = {
   animation?: Partial<Animation>;
   /** sobrescreve estilo do papel para todas as palavras da frase */
   roleStyles?: Partial<Record<Role, Partial<TextStyle>>>;
+  /** estilo aplicado à palavra enquanto ela é falada (karaoke) */
+  highlight?: Partial<TextStyle> | null;
+  /** legenda passa atrás da pessoa (precisa da análise de pessoa no vídeo) */
+  behind?: boolean;
 };
 
 export type VideoMeta = {

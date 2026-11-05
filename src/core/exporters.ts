@@ -2,18 +2,9 @@
 import { computeLines } from './layout';
 import { findPreset, resolveWordStyle } from './presets';
 import { phraseEnd, phraseStart } from './grouping';
-import type { FontKey, Project, TextStyle } from './types';
+import { fontName } from './fonts';
+import type { Project, TextStyle } from './types';
 
-export const FONT_NAMES: Record<FontKey, string> = {
-  playfair: 'Playfair Display',
-  dmserif: 'DM Serif Display',
-  bodoni: 'Bodoni Moda',
-  instrument: 'Instrument Serif',
-  inter: 'Inter',
-  nunito: 'Nunito',
-  montserrat: 'Montserrat',
-  poppins: 'Poppins',
-};
 
 const pad = (n: number, w = 2) => String(Math.floor(n)).padStart(w, '0');
 
@@ -69,10 +60,10 @@ export const mainColor = (s: TextStyle) =>
 
 const escapeAss = (t: string) => t.replace(/[{}\\]/g, '');
 
-function wordTags(s: TextStyle, scale: number, width: number): string {
+function wordTags(s: TextStyle, scale: number, width: number, w?: { scaleX?: number; scaleY?: number }): string {
   const px = Math.round(s.fontSize * scale * (width / 1080));
   const tags = [
-    `\\fn${FONT_NAMES[s.fontFamily]}`,
+    `\\fn${fontName(s.fontFamily)}`,
     `\\fs${px}`,
     `\\b${s.fontWeight >= 600 ? 1 : 0}`,
     `\\i${s.italic ? 1 : 0}`,
@@ -87,6 +78,10 @@ function wordTags(s: TextStyle, scale: number, width: number): string {
   if (s.shadow) tags.push(`\\shad${Math.max(1, Math.round(s.shadow.y / 2))}`, `\\4c${assBgr(s.shadow.color)}&`);
   else tags.push('\\shad0');
   if (s.glow) tags.push(`\\blur${Math.min(10, Math.round(s.glow.blur / 6))}`);
+  // escala individual da palavra
+  tags.push(`\\fscx${Math.round((w?.scaleX ?? 1) * 100)}`, `\\fscy${Math.round((w?.scaleY ?? 1) * 100)}`);
+  // espaçamento entre letras (em → px)
+  if (s.letterSpacing) tags.push(`\\fsp${Math.round(s.letterSpacing * px)}`);
   return `{${tags.join('')}}`;
 }
 
@@ -119,7 +114,7 @@ export function toAss(project: Project): string {
             .map((w) => {
               const st = resolveWordStyle(preset, w.role, p.roleStyles, w.style);
               const text = st.uppercase ? w.text.toUpperCase() : w.text;
-              return wordTags(st, p.scale, width) + escapeAss(text);
+              return wordTags(st, p.scale, width, w) + escapeAss(text);
             })
             .join(' '),
         )

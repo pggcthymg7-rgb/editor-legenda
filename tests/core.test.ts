@@ -144,6 +144,15 @@ describe('export', () => {
     expect(ass).toContain('Você');
     expect(ass).not.toMatch(/\\1c&(?!H[0-9A-F]{6}&)/); // cor nunca vazia
   });
+  it('ASS leva escala X/Y da palavra e nome da fonte nova', () => {
+    const p2 = structuredClone(proj);
+    p2.phrases[0].words[0].scaleX = 1.5;
+    p2.phrases[0].words[0].scaleY = 0.5;
+    p2.phrases[0].words[0].style = { fontFamily: 'bebas' };
+    const ass = toAss(p2);
+    expect(ass).toContain('\\fscx150\\fscy50');
+    expect(ass).toContain('\\fnBebas Neue');
+  });
   it('cor ASS é BGR com alfa invertido', () => {
     expect(assColor('#FF0000')).toBe('&H000000FF');
     expect(assColor('rgba(0,0,255,0.5)')).toBe('&H80FF0000');
@@ -188,6 +197,19 @@ describe('validação (segurança)', () => {
     for (const src of ['local:', 'local:../x', 'local:a/b', 'local:a b', 'local:' + 'a'.repeat(65), 'blob:http://x/1']) {
       expect(validateProject({ ...ok, video: { ...ok.video, src } }).ok).toBe(false);
     }
+  });
+  it('valida escala por palavra, fonte e destaque', () => {
+    const good = structuredClone(ok);
+    Object.assign(good.phrases[0].words[0], { scaleX: 1.5, scaleY: 0.7, dx: 10 });
+    good.phrases[0].highlight = { fontFamily: 'bebas' };
+    good.phrases[0].behind = true;
+    expect(validateProject(good).ok).toBe(true);
+    const bad = structuredClone(ok);
+    bad.phrases[0].words[0].scaleX = 0;
+    expect(validateProject(bad).ok).toBe(false);
+    const badFont = structuredClone(ok);
+    badFont.phrases[0].roleStyles = { key: { fontFamily: 'Arial;x' as never } };
+    expect(validateProject(badFont).ok).toBe(false);
   });
   it('rejeita CSS com url() e script', () => {
     const bad = structuredClone(ok);

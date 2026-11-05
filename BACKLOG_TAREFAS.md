@@ -12,7 +12,7 @@ Pedido: terminar o projeto em modo autônomo:
 ## Itens
 
 - [x] 1. Auditoria inicial: segurança, código quebrado, congruência entre Mac e PWA.
-- [ ] 2. Fontes: biblioteca grande de fontes grátis (OFL) e estilizadas, com seletor visual por categoria.
+- [x] 2. Fontes: biblioteca grande de fontes grátis (OFL) e estilizadas, com seletor visual por categoria.
 - [ ] 3. Palavra individual: escala X/Y, posição, rotação, fonte, cor, tamanho e peso por palavra, também no ASS.
 - [ ] 4. Layout profissional, igual nos dois (desktop e PWA):
   - barra superior;

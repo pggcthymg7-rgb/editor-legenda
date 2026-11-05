@@ -1,8 +1,9 @@
 import React from 'react';
-import { FONT_OPTIONS } from '../../core/fonts';
+import { fontDef } from '../../core/fonts';
+import { FontPicker } from './FontPicker';
 import type { Fill, TextStyle } from '../../core/types';
 
-type Props = { style: TextStyle; onChange: (patch: Partial<TextStyle>) => void };
+type Props = { style: TextStyle; onChange: (patch: Partial<TextStyle>) => void; sample?: string };
 
 /** Aceita só cores simples (#hex / rgba) — vão para CSS inline. */
 const safeColor = (c: string) => (/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(c.trim()) ? c.trim() : null);
@@ -37,23 +38,34 @@ const Color: React.FC<{ value: string; onChange: (v: string) => void }> = ({ val
   <input type="color" value={toHex(value)} onChange={(e) => safeColor(e.target.value) && onChange(e.target.value)} />
 );
 
-export const StyleEditor: React.FC<Props> = ({ style, onChange }) => {
+export const StyleEditor: React.FC<Props> = ({ style, onChange, sample }) => {
   const fill = style.fill;
   const setFill = (f: Fill) => onChange({ fill: f });
   return (
     <div className="style-editor">
-      <label className="field">
+      <div className="field">
         <span>Fonte</span>
-        <select value={style.fontFamily} onChange={(e) => onChange({ fontFamily: e.target.value as TextStyle['fontFamily'] })}>
-          {FONT_OPTIONS.map((f) => (
-            <option key={f.key} value={f.key}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-      </label>
+        <div className="field-wide">
+          <FontPicker
+            value={style.fontFamily}
+            sample={sample}
+            onChange={(k) => {
+              // ajusta o peso para a faixa que a fonte tem
+              const [lo, hi] = fontDef(k).weights;
+              onChange({ fontFamily: k, fontWeight: Math.min(hi, Math.max(lo, style.fontWeight)) });
+            }}
+          />
+        </div>
+      </div>
       <Num label="Tamanho" value={style.fontSize} min={16} max={500} onChange={(v) => onChange({ fontSize: v })} />
-      <Num label="Peso" value={style.fontWeight} min={100} max={900} step={100} onChange={(v) => onChange({ fontWeight: v })} />
+      <Num
+        label="Peso"
+        value={style.fontWeight}
+        min={fontDef(style.fontFamily).weights[0]}
+        max={Math.max(fontDef(style.fontFamily).weights[1], fontDef(style.fontFamily).weights[0] + 1)}
+        step={fontDef(style.fontFamily).weights[0] === fontDef(style.fontFamily).weights[1] ? 1 : 50}
+        onChange={(v) => onChange({ fontWeight: v })}
+      />
       <Num label="Espaçamento" value={style.letterSpacing} min={-0.15} max={0.5} step={0.01} onChange={(v) => onChange({ letterSpacing: v })} />
       <Num label="Opacidade" value={style.opacity} min={0} max={1} step={0.05} onChange={(v) => onChange({ opacity: v })} />
       <div className="row">
@@ -129,6 +141,26 @@ export const StyleEditor: React.FC<Props> = ({ style, onChange }) => {
             <Color value={style.shadow.color} onChange={(c) => onChange({ shadow: { ...style.shadow!, color: c } })} />
             <Num label="Desfoque" value={style.shadow.blur} min={0} max={80} onChange={(v) => onChange({ shadow: { ...style.shadow!, blur: v } })} />
             <Num label="Y" value={style.shadow.y} min={-40} max={40} onChange={(v) => onChange({ shadow: { ...style.shadow!, y: v } })} />
+          </>
+        )}
+      </div>
+
+      <div className="sub">
+        <label>
+          <input
+            type="checkbox"
+            checked={!!style.box}
+            onChange={(e) => onChange({ box: e.target.checked ? { color: '#000000', opacity: 0.6, padX: 0.25, padY: 0.08, radius: 0.18 } : null })}
+          />{' '}
+          <strong>Caixa de fundo</strong>
+        </label>
+        {style.box && (
+          <>
+            <Color value={style.box.color} onChange={(c) => onChange({ box: { ...style.box!, color: c } })} />
+            <Num label="Opacidade" value={style.box.opacity} min={0} max={1} step={0.05} onChange={(v) => onChange({ box: { ...style.box!, opacity: v } })} />
+            <Num label="Margem lados" value={style.box.padX} min={0} max={1} step={0.01} onChange={(v) => onChange({ box: { ...style.box!, padX: v } })} />
+            <Num label="Margem alto" value={style.box.padY} min={0} max={0.6} step={0.01} onChange={(v) => onChange({ box: { ...style.box!, padY: v } })} />
+            <Num label="Cantos" value={style.box.radius} min={0} max={0.6} step={0.01} onChange={(v) => onChange({ box: { ...style.box!, radius: v } })} />
           </>
         )}
       </div>

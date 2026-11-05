@@ -1,4 +1,5 @@
 // Validação de projeto recebido (servidor). Sem dependência externa.
+import { isFontKey } from './fonts';
 import { ENTRANCES, EXITS, type Project } from './types';
 
 export const LOCAL_SRC = /^local:[a-zA-Z0-9_-]{1,64}$/;
@@ -33,7 +34,11 @@ export function validateProject(input: unknown): Result {
     for (const w of ph.words) {
       if (!isObj(w) || !str(w.text, 200) || !num(w.startMs, 0) || !num(w.endMs, 0)) return fail('palavra inválida');
       if (!['small', 'normal', 'key'].includes(w.role as string)) return fail('papel inválido');
+      for (const k of ['dx', 'dy', 'rotation'] as const) if (w[k] !== undefined && !num(w[k], -1e4, 1e4)) return fail(`palavra.${k} inválido`);
+      for (const k of ['scaleX', 'scaleY'] as const) if (w[k] !== undefined && !num(w[k], 0.05, 20)) return fail(`palavra.${k} inválido`);
     }
+    if (ph.behind !== undefined && typeof ph.behind !== 'boolean') return fail('behind inválido');
+    if (ph.highlight !== undefined && ph.highlight !== null && !isObj(ph.highlight)) return fail('destaque inválido');
     const a = ph.animation;
     if (a !== undefined) {
       if (!isObj(a)) return fail('animação inválida');
@@ -42,6 +47,14 @@ export function validateProject(input: unknown): Result {
     }
   }
   if (!Array.isArray(p.customPresets) || p.customPresets.length > 200) return fail('presets inválidos');
+  // Fonte só da biblioteca (o nome vira CSS font-family).
+  const fontBad = (o: unknown): boolean => {
+    if (Array.isArray(o)) return o.some(fontBad);
+    if (!isObj(o)) return false;
+    if ('fontFamily' in o && !isFontKey(o.fontFamily)) return true;
+    return Object.values(o).some(fontBad);
+  };
+  if (fontBad(p.phrases) || fontBad(p.customPresets)) return fail('fonte desconhecida');
   // Strings vão para CSS inline no render: bloqueia tentativas de fechar a declaração.
   const json = JSON.stringify(input);
   if (json.length > 15 * 1024 * 1024) return fail('projeto grande demais');
