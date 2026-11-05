@@ -7,7 +7,7 @@ import { pipeline } from 'node:stream/promises';
 import { newId } from '../src/core/grouping';
 import { validateProject } from '../src/core/validate';
 import { hasOpenAiKey, transcribeOpenAi } from './openai';
-import { FORMATS, enqueueRender, getJob, isFormat } from './render';
+import { FORMATS, cancelJob, enqueueRender, getJob, isFormat } from './render';
 import { ALLOWED_VIDEO_EXT, MASK_DIR, MEDIA_DIR, OUT_DIR, PROJECT_DIR, inside, isSafeId, safeMediaName } from './storage';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
@@ -135,6 +135,12 @@ app.get('/api/render/:id', (req, res) => {
   const job = getJob(req.params.id);
   if (!job) return res.status(404).json({ error: 'não encontrado' });
   res.json({ status: job.status, progress: job.progress, error: job.error, ready: job.status === 'done' });
+});
+
+app.delete('/api/render/:id', (req, res) => {
+  const job = cancelJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'não encontrado' });
+  res.json({ status: job.status });
 });
 
 app.get('/api/render/:id/download', (req, res) => {

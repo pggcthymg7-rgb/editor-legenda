@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignRoles, buildPhrases, createProject, groupWords, mergeWithNext, phraseVisibleEnd, retextPhrase, splitPhrase } from '../src/core/grouping';
+import { assignRoles, buildPhrase, buildPhrases, createProject, groupWords, mergeWithNext, phraseVisibleEnd, retextPhrase, splitPhrase } from '../src/core/grouping';
 import { computeLines } from '../src/core/layout';
 import { counterText, entranceState, exitState, wordMotion, wordWindows } from '../src/core/motion';
 import { PRESETS, findPreset, resolveWordStyle } from '../src/core/presets';
@@ -140,7 +140,7 @@ describe('export', () => {
     const ass = toAss(proj);
     expect(ass).toContain('PlayResX: 720');
     expect(ass).toContain('PlayResY: 1280');
-    expect(ass).toMatch(/Dialogue: 0,0:00:00\.00,0:00:01\.23,Default,,0,0,0,,\{\\an5\\pos\(\d+,\d+\)/);
+    expect(ass).toMatch(/Dialogue: 0,0:00:00\.00,0:00:01\.23,[\w-]+,,0,0,0,,\{\\an5\\pos\(\d+,\d+\)/);
     expect(ass).toContain('Você');
     expect(ass).not.toMatch(/\\1c&(?!H[0-9A-F]{6}&)/); // cor nunca vazia
   });
@@ -152,6 +152,28 @@ describe('export', () => {
     const ass = toAss(p2);
     expect(ass).toContain('\\fscx150\\fscy50');
     expect(ass).toContain('\\fnBebas Neue');
+  });
+  it('ASS gera Style do preset usado e karaokê \\kf por palavra', () => {
+    const ass = toAss(proj);
+    const id = proj.phrases[0].presetId;
+    expect(ass).toMatch(new RegExp(`^Style: ${id},[^,]+,\\d+,&H[0-9A-F]{8},&H[0-9A-F]{8},`, 'm'));
+    expect(ass).toContain(`,${id},,0,0,0,,`);
+    // 0–300, 300–600, 600–1234 ms → 30, 30, 63 centésimos
+    expect(ass).toContain('\\kf30}Você');
+    expect(ass).toContain('\\kf63}isso?');
+    const gap = structuredClone(proj);
+    gap.phrases[0].words[1].startMs = 400;
+    expect(toAss(gap)).toContain('\\k10\\kf20}viu');
+  });
+  it('P7: destaque em Fraunces itálica e frase nova com 3D sutil', () => {
+    const p7 = findPreset('p7-misto');
+    expect(p7.roles.key.fontFamily).toBe('fraunces');
+    expect(p7.roles.key.italic).toBe(true);
+    expect(Math.abs(p7.rotateY ?? 0)).toBeGreaterThan(0);
+    expect(Math.abs(p7.rotateY ?? 0)).toBeLessThanOrEqual(25);
+    const ph = buildPhrase([{ text: 'oi', startMs: 0, endMs: 500 }], 'p7-misto');
+    expect(ph.rotateY).toBe(p7.rotateY);
+    expect(toAss(createProject(video, []))).toContain('[V4+ Styles]');
   });
   it('cor ASS é BGR com alfa invertido', () => {
     expect(assColor('#FF0000')).toBe('&H000000FF');

@@ -72,6 +72,9 @@ export type Preset = {
   fitWidth?: boolean;
   /** máximo de palavras por frase no agrupamento automático */
   maxWords: number;
+  /** perspectiva 3D padrão das frases novas, graus (P7) */
+  rotateX?: number;
+  rotateY?: number;
 };
 
 export type Word = {

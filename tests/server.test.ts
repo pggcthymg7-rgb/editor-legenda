@@ -128,4 +128,9 @@ describe('servidor (segurança)', () => {
     const r2 = await fetch(`${base}/api/render`, { method: 'POST', headers: { ...W, 'content-type': 'application/json' }, body: body('person') });
     expect(r2.status).toBe(400);
   });
+  it('cancelar render: exige x-editor e responde 404 para job inexistente', async () => {
+    const id = '00000000-0000-0000-0000-000000000000';
+    expect((await fetch(`${base}/api/render/${id}`, { method: 'DELETE' })).status).toBe(403);
+    expect((await fetch(`${base}/api/render/${id}`, { method: 'DELETE', headers: W })).status).toBe(404);
+  });
 });

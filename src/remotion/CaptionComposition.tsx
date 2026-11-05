@@ -7,7 +7,7 @@ import { phraseStart, phraseVisibleEnd } from '../core/grouping';
 import { arcPlacement, computeLines } from '../core/layout';
 import { counterText, wordMotion, wordWindows } from '../core/motion';
 import { findPreset, resolveAnimation, resolveWordStyle } from '../core/presets';
-import type { CompositionProps, Phrase, Project, TextStyle, Word } from '../core/types';
+import type { Animation, CompositionProps, Phrase, Project, TextStyle, Word } from '../core/types';
 import { fitStyle, fontFamilyCss, measureText, useFontsReady } from './fonts';
 
 export const fillCss = (s: TextStyle): React.CSSProperties => {
@@ -35,17 +35,15 @@ type WordViewProps = {
   style: TextStyle;
   tMs: number;
   win: { inMs: number; outMs: number };
-  phrase: Phrase;
-  project: Project;
+  /** animação já resolvida pela frase (uma vez por quadro, não por palavra) */
+  anim: Animation;
   k: number;
   counter: boolean;
   fitWidth?: number;
   extra?: { x: number; y: number; rotate: number };
 };
 
-const WordView: React.FC<WordViewProps> = ({ word, style: rawStyle, tMs, win, phrase, project, k, counter, fitWidth, extra }) => {
-  const preset = findPreset(phrase.presetId, project.customPresets);
-  const anim = resolveAnimation(preset, phrase.animation);
+const WordView: React.FC<WordViewProps> = ({ word, style: rawStyle, tMs, win, anim, k, counter, fitWidth, extra }) => {
   const m = wordMotion(tMs, win, anim);
   const isHidden = m === null;
   const st = m ?? { opacity: 0, blur: 0, translateY: 0, scale: 1 };
@@ -126,7 +124,9 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
   const { width, height } = project.video;
 
   // encolhe o bloco se a linha mais larga passar de 90% da tela
-  const measureLines = anim.mode === 'single' || preset.fitWidth ? [] : preset.layout === 'arc' ? [phrase.words] : computeLines(phrase.words, preset.layout);
+  // linhas calculadas uma vez: servem para medir e para montar o bloco
+  const lines = preset.layout === 'arc' ? [phrase.words] : computeLines(phrase.words, preset.layout);
+  const measureLines = anim.mode === 'single' || preset.fitWidth ? [] : lines;
   const widest = Math.max(
     0,
     ...measureLines.map((line) =>
@@ -151,8 +151,7 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
       style={styleOf(w)}
       tMs={tMs}
       win={winOf.get(w.id)!}
-      phrase={phrase}
-      project={project}
+      anim={anim}
       k={k}
       counter={preset.counter}
       fitWidth={preset.fitWidth ? width * 0.92 : undefined}
@@ -175,7 +174,6 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
       </div>
     );
   } else {
-    const lines = computeLines(phrase.words, preset.layout);
     content = lines.map((line, li) => (
       <div
         key={li}
@@ -218,6 +216,18 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
 // ---------- Legenda atrás da pessoa ----------
 
 const maskCache = new Map<string, string>();
+
+/**
+ * Limpa máscaras já convertidas (ex.: análise de pessoa refeita).
+ * `prefix` filtra pela URL da máscara (ex.: "/media/masks/m_abc/"); sem ele, limpa tudo.
+ */
+export function clearMaskCache(prefix?: string): void {
+  if (!prefix) return maskCache.clear();
+  for (const key of [...maskCache.keys()]) {
+    const url = key.slice(key.indexOf('|') + 1);
+    if (url.startsWith(prefix) || key.startsWith(prefix)) maskCache.delete(key);
+  }
+}
 const remember = (key: string, v: string) => {
   maskCache.set(key, v);
   if (maskCache.size > 150) maskCache.delete(maskCache.keys().next().value!);

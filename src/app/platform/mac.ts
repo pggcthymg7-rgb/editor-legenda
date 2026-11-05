@@ -51,6 +51,9 @@ const startRender = (project: Project, format: string, layer: 'captions' | 'pers
 const renderStatus = (id: string) =>
   fetch(`/api/render/${encodeURIComponent(id)}`).then((r) => json<{ status: string; progress: number; error?: string }>(r));
 
+const cancelRender = (id: string) =>
+  fetch(`/api/render/${encodeURIComponent(id)}`, { method: 'DELETE', headers: H }).catch(() => undefined);
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const macPlatform: Platform = {
@@ -108,13 +111,22 @@ export const macPlatform: Platform = {
   formats: async () => ALL_FORMATS,
   async render(project, format: FormatId, onProgress, signal, opts) {
     const { id } = await startRender(project, format, opts?.layer ?? 'captions');
-    for (;;) {
-      if (signal?.aborted) throw new Error('cancelado');
-      const s = await renderStatus(id);
-      onProgress(s.progress);
-      if (s.status === 'done') return { url: `/api/render/${encodeURIComponent(id)}/download` };
-      if (s.status === 'error') throw new Error(s.error ?? 'falha no render');
-      await wait(800);
+    // Cancelar no app interrompe o render no servidor (não só o acompanhamento).
+    const onAbort = () => void cancelRender(id);
+    if (signal?.aborted) onAbort();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      for (;;) {
+        if (signal?.aborted) throw new Error('cancelado');
+        const s = await renderStatus(id);
+        onProgress(s.progress);
+        if (s.status === 'done') return { url: `/api/render/${encodeURIComponent(id)}/download` };
+        if (s.status === 'canceled') throw new Error('cancelado');
+        if (s.status === 'error') throw new Error(s.error ?? 'falha no render');
+        await wait(800);
+      }
+    } finally {
+      signal?.removeEventListener('abort', onAbort);
     }
   },
 };

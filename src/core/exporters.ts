@@ -3,7 +3,7 @@ import { computeLines } from './layout';
 import { findPreset, resolveWordStyle } from './presets';
 import { phraseEnd, phraseStart } from './grouping';
 import { fontName } from './fonts';
-import type { Project, TextStyle } from './types';
+import type { Phrase, Preset, Project, TextStyle } from './types';
 
 
 const pad = (n: number, w = 2) => String(Math.floor(n)).padStart(w, '0');
@@ -85,8 +85,61 @@ function wordTags(s: TextStyle, scale: number, width: number, w?: { scaleX?: num
   return `{${tags.join('')}}`;
 }
 
+/** Nome de estilo ASS seguro (sem vírgula, que separa campos). */
+export const assStyleName = (presetId: string) => presetId.replace(/[^a-zA-Z0-9_-]/g, '_') || 'Default';
+
+const ALIGN_AN = { left: 4, center: 5, right: 6 } as const;
+
+/** Linha `Style:` do preset (papel normal como base; cada palavra ainda leva suas tags). */
+export function assStyleLine(preset: Preset, width: number): string {
+  const st = preset.roles.normal;
+  const px = Math.round(st.fontSize * (width / 1080));
+  const primary = assColor(mainColor(st), st.opacity);
+  // karaokê \kf: palavra ainda não falada fica na secundária (semitransparente)
+  const secondary = assColor(mainColor(st), st.opacity * 0.5);
+  const outline = st.stroke ? assColor(st.stroke.color) : '&H00000000';
+  const back = st.shadow ? assColor(st.shadow.color) : '&H64000000';
+  const bord = st.stroke ? st.stroke.width : 0;
+  const shad = st.shadow ? Math.max(1, Math.round(st.shadow.y / 2)) : 0;
+  const spacing = st.letterSpacing ? Math.round(st.letterSpacing * px) : 0;
+  return [
+    `Style: ${assStyleName(preset.id)}`,
+    fontName(st.fontFamily),
+    px,
+    primary,
+    secondary,
+    outline,
+    back,
+    st.fontWeight >= 600 ? -1 : 0,
+    st.italic ? -1 : 0,
+    0,
+    0,
+    100,
+    100,
+    spacing,
+    0,
+    1,
+    bord,
+    shad,
+    ALIGN_AN[preset.align],
+    20,
+    20,
+    20,
+    1,
+  ].join(',');
+}
+
+/** Duração em centésimos para \kf, sem negativos. */
+const cs = (ms: number) => Math.max(0, Math.round(ms / 10));
+
 export function toAss(project: Project): string {
   const { width, height } = project.video;
+  const phrases = project.phrases.filter((p) => p.words.length);
+  const used = new Map<string, Preset>();
+  for (const p of phrases) {
+    const pr = findPreset(p.presetId, project.customPresets);
+    used.set(pr.id, pr);
+  }
   const header = [
     '[Script Info]',
     '; Gerado por editor-legenda',
@@ -99,28 +152,34 @@ export function toAss(project: Project): string {
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
     `Style: Default,Inter,${Math.round(height / 20)},&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,0,1,5,20,20,20,1`,
+    ...[...used.values()].map((pr) => assStyleLine(pr, width)),
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
   ];
-  const events = project.phrases
-    .filter((p) => p.words.length)
-    .map((p) => {
-      const preset = findPreset(p.presetId, project.customPresets);
-      const lines = computeLines(p.words, preset.layout);
-      const body = lines
-        .map((line) =>
-          line
-            .map((w) => {
-              const st = resolveWordStyle(preset, w.role, p.roleStyles, w.style);
-              const text = st.uppercase ? w.text.toUpperCase() : w.text;
-              return wordTags(st, p.scale, width, w) + escapeAss(text);
-            })
-            .join(' '),
-        )
-        .join('\\N');
-      const pos = `{\\an5\\pos(${Math.round(p.x * width)},${Math.round(p.y * height)})${p.rotation ? `\\frz${-p.rotation}` : ''}\\fad(120,120)}`;
-      return `Dialogue: 0,${assTime(phraseStart(p))},${assTime(phraseEnd(p))},Default,,0,0,0,,${pos}${body}`;
-    });
+  const events = phrases.map((p: Phrase) => {
+    const preset = findPreset(p.presetId, project.customPresets);
+    const lines = computeLines(p.words, preset.layout);
+    const t0 = phraseStart(p);
+    // karaokê: cursor em ms desde o início da frase; pausas entre palavras viram \k sem preenchimento
+    let cursor = t0;
+    const body = lines
+      .map((line) =>
+        line
+          .map((w) => {
+            const st = resolveWordStyle(preset, w.role, p.roleStyles, w.style);
+            const text = st.uppercase ? w.text.toUpperCase() : w.text;
+            const gap = cs(w.startMs - cursor);
+            const dur = cs(w.endMs - Math.max(cursor, w.startMs));
+            cursor = Math.max(cursor, w.endMs);
+            const k = `{${gap ? `\\k${gap}` : ''}\\kf${dur}}`;
+            return wordTags(st, p.scale, width, w) + k + escapeAss(text);
+          })
+          .join(' '),
+      )
+      .join('\\N');
+    const pos = `{\\an5\\pos(${Math.round(p.x * width)},${Math.round(p.y * height)})${p.rotation ? `\\frz${-p.rotation}` : ''}${p.rotateX ? `\\frx${-p.rotateX}` : ''}${p.rotateY ? `\\fry${-p.rotateY}` : ''}\\fad(120,120)}`;
+    return `Dialogue: 0,${assTime(t0)},${assTime(phraseEnd(p))},${assStyleName(preset.id)},,0,0,0,,${pos}${body}`;
+  });
   return [...header, ...events, ''].join('\n');
 }

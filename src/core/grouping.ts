@@ -105,8 +105,8 @@ export function buildPhrase(group: TranscribedWord[], presetId: string, custom: 
     y: preset.position.y,
     scale: 1,
     rotation: 0,
-    rotateX: 0,
-    rotateY: 0,
+    rotateX: preset.rotateX ?? 0,
+    rotateY: preset.rotateY ?? 0,
   };
 }
 

@@ -69,6 +69,7 @@ function presetError(pr: unknown): string | null {
   if (!isObj(pr.position) || !num(pr.position.x, -10, 10) || !num(pr.position.y, -10, 10)) return 'preset.position inválido';
   if (!num(pr.lineGap, -10, 10) || typeof pr.counter !== 'boolean' || !Number.isInteger(pr.maxWords) || !num(pr.maxWords, 1, 200)) return 'preset inválido';
   if (pr.fitWidth !== undefined && typeof pr.fitWidth !== 'boolean') return 'preset inválido';
+  for (const k of ['rotateX', 'rotateY'] as const) if (pr[k] !== undefined && !num(pr[k], -90, 90)) return 'preset inválido';
   return null;
 }
 

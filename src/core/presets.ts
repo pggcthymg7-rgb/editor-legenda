@@ -162,11 +162,12 @@ export const PRESETS: Preset[] = [
     roles: {
       small: s({ fontFamily: 'inter', fontWeight: 300, italic: true, fontSize: 70 }),
       normal: s({ fontFamily: 'inter', fontWeight: 300, fontSize: 96 }),
+      // destaque em serif itálica (Fraunces), como no lockup de referência
       key: s({
-        fontFamily: 'montserrat',
-        fontWeight: 800,
-        uppercase: true,
-        fontSize: 120,
+        fontFamily: 'fraunces',
+        fontWeight: 600,
+        italic: true,
+        fontSize: 124,
         fill: { type: 'gradient', colors: ['#FF9BD5', '#E0469B'], angle: 180 },
       }),
     },
@@ -177,6 +178,9 @@ export const PRESETS: Preset[] = [
     lineGap: -0.05,
     counter: false,
     maxWords: 4,
+    // inclinação 3D sutil
+    rotateX: 8,
+    rotateY: -14,
   },
   {
     id: 'p8-destaque',

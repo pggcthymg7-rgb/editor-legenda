@@ -1,6 +1,6 @@
 // Fila de render com Remotion (Node). Uma renderização por vez para não travar o Mac.
 import { bundle } from '@remotion/bundler';
-import { renderMedia, selectComposition, type RenderMediaOptions } from '@remotion/renderer';
+import { makeCancelSignal, renderMedia, selectComposition, type RenderMediaOptions } from '@remotion/renderer';
 import { randomUUID } from 'node:crypto';
 import { rmSync, watch } from 'node:fs';
 import path from 'node:path';
@@ -18,12 +18,17 @@ export const isFormat = (f: unknown): f is FormatId => typeof f === 'string' && 
 
 type Job = {
   id: string;
-  status: 'queued' | 'rendering' | 'done' | 'error';
+  status: 'queued' | 'rendering' | 'done' | 'error' | 'canceled';
   progress: number;
   file?: string;
   error?: string;
   createdAt: number;
 };
+
+/** Cancelamento do render em andamento (só existe enquanto o job está em 'rendering'). */
+const cancels = new Map<string, () => void>();
+// função (não comparação direta): o status muda por fora durante os await
+const isCanceled = (job: Job) => job.status === 'canceled';
 
 const jobs = new Map<string, Job>();
 let bundlePromise: Promise<string> | null = null;
@@ -63,6 +68,18 @@ export function getJob(id: string): Job | undefined {
   return jobs.get(id);
 }
 
+/** Cancela um job: na fila é só marcado; renderizando, interrompe o Remotion e apaga o arquivo parcial. */
+export function cancelJob(id: string): Job | undefined {
+  const job = jobs.get(id);
+  if (!job) return undefined;
+  if (job.status === 'queued' || job.status === 'rendering') {
+    job.status = 'canceled';
+    job.error = 'cancelado';
+    cancels.get(id)?.();
+  }
+  return job;
+}
+
 /** Enfileira render. `mediaBaseUrl` torna o src do vídeo absoluto para o navegador do render. */
 export function enqueueRender(project: Project, format: FormatId, mediaBaseUrl: string, layer: 'captions' | 'person' = 'captions'): Job {
   const job: Job = { id: randomUUID(), status: 'queued', progress: 0, createdAt: Date.now() };
@@ -73,7 +90,11 @@ export function enqueueRender(project: Project, format: FormatId, mediaBaseUrl: 
 }
 
 async function runJob(job: Job, project: Project, format: FormatId, mediaBaseUrl: string, layer: 'captions' | 'person') {
+  if (job.status === 'canceled') return;
   job.status = 'rendering';
+  const { cancelSignal, cancel } = makeCancelSignal();
+  cancels.set(job.id, cancel);
+  const file = `${job.id}${layer === 'person' ? '-pessoa' : ''}.${FORMATS[format].ext}`;
   try {
     const { background, ...opts } = codecOptions(format);
     const src = project.video.src && project.video.src.startsWith('/') ? mediaBaseUrl + project.video.src : project.video.src;
@@ -90,25 +111,33 @@ async function runJob(job: Job, project: Project, format: FormatId, mediaBaseUrl
     };
     const serveUrl = await getBundle();
     const composition = await selectComposition({ serveUrl, id: 'Legendas', inputProps });
-    const file = `${job.id}${layer === 'person' ? '-pessoa' : ''}.${FORMATS[format].ext}`;
+    if (isCanceled(job)) return;
     await renderMedia({
       ...opts,
       composition,
       serveUrl,
       inputProps,
       outputLocation: inside(OUT_DIR, file),
+      cancelSignal,
       // legenda transparente/verde não leva áudio; vídeo final leva
       muted: background !== 'video' || layer === 'person',
       onProgress: ({ progress }) => {
         job.progress = progress;
       },
     } as RenderMediaOptions);
+    if (isCanceled(job)) throw new Error('cancelado');
     job.file = file;
     job.progress = 1;
     job.status = 'done';
   } catch (e) {
-    job.status = 'error';
-    job.error = e instanceof Error ? e.message.split('\n')[0] : String(e);
+    if (isCanceled(job)) {
+      rmSync(inside(OUT_DIR, file), { force: true });
+    } else {
+      job.status = 'error';
+      job.error = e instanceof Error ? e.message.split('\n')[0] : String(e);
+    }
+  } finally {
+    cancels.delete(job.id);
   }
 }
 
