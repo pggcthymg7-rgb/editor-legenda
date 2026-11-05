@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+out/
+.env
+*.log
+.DS_Store
+dist-pwa
