@@ -38,6 +38,8 @@ export interface Platform {
   /** Converte project.video.src em URL tocável (device: blob URL). */
   videoUrl(src: string): Promise<string>;
   transcribeOpenAi(ref: string, onStatus: (msg: string, p?: number) => void): Promise<TranscribedWord[]>;
+  /** Nuvem grátis (proxy → Groq): extrai o áudio aqui e manda só o áudio. */
+  transcribeCloud(ref: string, onStatus: (msg: string, p?: number) => void): Promise<TranscribedWord[]>;
   listProjects(): Promise<ProjectSummary[]>;
   loadProject(id: string): Promise<Project>;
   saveProject(p: Project): Promise<void>;

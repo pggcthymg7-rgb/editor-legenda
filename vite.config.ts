@@ -8,15 +8,18 @@ const API = 'http://127.0.0.1:3210';
 
 // Versão iPhone (PWA): tudo roda no aparelho. Só fala com a OpenAI (se o usuário usar)
 // e com o Hugging Face (modelo do Whisper local, se usar).
+// Proxy de transcrição na nuvem (cloud/proxy.mjs no Render)
+const CLOUD = new URL(process.env.VITE_CLOUD_URL ?? 'https://editor-legenda-api.onrender.com').origin;
+// Whisper no aparelho: modelos em remotion.media; runtime ONNX (wasm) no jsDelivr.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval'",
+  "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "media-src 'self' blob: data:",
   "font-src 'self' data:",
-  "worker-src 'self' blob:",
-  "connect-src 'self' blob: data: https://api.openai.com https://huggingface.co https://*.huggingface.co https://*.hf.co",
+  "worker-src 'self' blob: https://cdn.jsdelivr.net",
+  `connect-src 'self' blob: data: ${CLOUD} https://api.openai.com https://remotion.media https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",

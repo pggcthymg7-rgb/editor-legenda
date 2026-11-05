@@ -57,9 +57,19 @@ export const devicePlatform: Platform = {
     if (!v) throw new Error('Vídeo não encontrado neste aparelho');
     onStatus('Separando o áudio…');
     const { extractAudio } = await import('./audio');
-    const audio = await extractAudio(v.blob);
+    const audio = await extractAudio(v.blob, (p) => onStatus('Separando o áudio…', p));
     onStatus('Transcrevendo na OpenAI…');
     return transcribeWithKey(key, audio, 'audio.m4a');
+  },
+
+  async transcribeCloud(ref, onStatus) {
+    const v = await idbGet<StoredVideo>('videos', ref);
+    if (!v) throw new Error('Vídeo não encontrado neste aparelho');
+    const [{ extractAudio }, { cloudTranscribe }] = await Promise.all([import('./audio'), import('../cloud')]);
+    onStatus('Separando o áudio…', 0);
+    const audio = await extractAudio(v.blob, (p) => onStatus('Separando o áudio…', p));
+    onStatus('Transcrevendo na nuvem…');
+    return cloudTranscribe(audio);
   },
 
   async listProjects() {

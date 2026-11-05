@@ -1,0 +1,48 @@
+// Transcrição na nuvem (proxy grátis no Render → Groq whisper-large-v3-turbo).
+// A chave do provedor fica só no servidor; o app não precisa de chave nenhuma.
+import { fromOpenAi } from '../core/transcript';
+import type { TranscribedWord } from '../core/types';
+
+export const CLOUD_URL = (import.meta.env.VITE_CLOUD_URL ?? 'https://editor-legenda-api.onrender.com').replace(/\/$/, '');
+
+export type CloudState = 'checking' | 'ready' | 'nokey' | 'offline';
+
+let healthPromise: Promise<CloudState> | null = null;
+
+/** Verifica (e acorda) o servidor. O plano grátis dorme: a 1ª chamada pode levar ~30–60 s. */
+export function cloudHealth(fetchImpl: typeof fetch = fetch): Promise<CloudState> {
+  healthPromise ??= (async () => {
+    try {
+      const r = await fetchImpl(`${CLOUD_URL}/health`, { signal: AbortSignal.timeout(75_000) });
+      if (!r.ok) return 'offline';
+      const j = (await r.json()) as { ready?: boolean };
+      return j.ready ? 'ready' : 'nokey';
+    } catch {
+      return 'offline';
+    } finally {
+      // permite checar de novo depois
+      setTimeout(() => (healthPromise = null), 60_000);
+    }
+  })();
+  return healthPromise;
+}
+
+export async function cloudTranscribe(audio: Blob, lang = 'pt', fetchImpl: typeof fetch = fetch): Promise<TranscribedWord[]> {
+  if (audio.size > 25 * 1024 * 1024) throw new Error('Áudio maior que 25 MB (cerca de 100 min). Corte o vídeo.');
+  let r: Response;
+  try {
+    r = await fetchImpl(`${CLOUD_URL}/transcribe?lang=${encodeURIComponent(lang)}`, {
+      method: 'POST',
+      headers: { 'content-type': 'audio/mp4', 'x-app': 'legendas' },
+      body: audio,
+      signal: AbortSignal.timeout(240_000),
+    });
+  } catch {
+    throw new Error('Sem conexão com a nuvem. Tente de novo ou use “No aparelho”.');
+  }
+  const body = (await r.json().catch(() => ({}))) as { error?: string; words?: unknown; text?: string };
+  if (!r.ok) throw new Error(body.error ?? `Nuvem respondeu ${r.status}`);
+  const words = fromOpenAi(body as Parameters<typeof fromOpenAi>[0]);
+  if (!words.length) throw new Error('Não ouvi fala neste vídeo.');
+  return words;
+}

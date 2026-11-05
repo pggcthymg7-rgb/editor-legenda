@@ -4,8 +4,9 @@ import type { Project, TranscribedWord } from '../../core/types';
 import { getKey, isPlausibleKey, setKey } from '../platform/openai-browser';
 import { isIOS, platform, type ProjectSummary } from '../platform';
 import type { LocalModel } from '../transcribe';
+import { cloudHealth, type CloudState } from '../cloud';
 
-type Engine = 'local' | 'openai' | 'none';
+type Engine = 'cloud' | 'local' | 'openai' | 'none';
 
 function readMeta(file: File): Promise<{ width: number; height: number; durationMs: number }> {
   return new Promise((resolve, reject) => {
@@ -74,8 +75,11 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
   const ios = isIOS();
   const device = platform.kind === 'device';
   const [file, setFile] = useState<File | null>(null);
-  const [engine, setEngine] = useState<Engine>(device ? 'openai' : 'local');
-  const [model, setModel] = useState<LocalModel>('small');
+  const [engine, setEngine] = useState<Engine>('cloud');
+  const [model, setModel] = useState<LocalModel>(ios ? 'base' : 'small');
+  const [cloud, setCloud] = useState<CloudState>('checking');
+  // vídeo já guardado/enviado (tentar outro motor não duplica)
+  const [saved1, setSaved1] = useState<{ file: File; up: { src: string; ref: string } } | null>(null);
   const [openai, setOpenai] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -88,12 +92,14 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
   useEffect(() => {
     platform
       .openAiReady()
-      .then((ok) => {
-        setOpenai(ok);
-        if (!ok && device) setEngine('none');
-      })
+      .then(setOpenai)
       .catch(() => setError(device ? 'Erro ao ler as configurações' : 'Servidor local fora do ar. Rode: npm run dev'));
     refreshSaved();
+    // acorda o servidor da nuvem já ao abrir (plano grátis dorme)
+    cloudHealth().then((st) => {
+      setCloud(st);
+      if (st !== 'ready') setEngine((e) => (e === 'cloud' ? 'local' : e));
+    });
   }, []);
 
   const status = (m: string, p?: number) => {
@@ -107,14 +113,28 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
     setError('');
     try {
       const meta = await readMeta(file);
-      status(device ? 'Guardando vídeo no aparelho…' : 'Enviando vídeo…', 0);
-      const up = await platform.saveVideo(file, (p) => status(device ? 'Guardando vídeo no aparelho…' : 'Enviando vídeo…', p));
+      let up = saved1?.file === file ? saved1.up : null;
+      if (!up) {
+        status(device ? 'Guardando vídeo no aparelho…' : 'Enviando vídeo…', 0);
+        up = await platform.saveVideo(file, (p) => status(device ? 'Guardando vídeo no aparelho…' : 'Enviando vídeo…', p));
+        setSaved1({ file, up });
+      }
       let words: TranscribedWord[] = [];
-      if (engine === 'local') {
+      const local = async () => {
         // carrega o Whisper só quando usado (pacote pesado)
         const { transcribeLocal } = await import('../transcribe');
-        words = await transcribeLocal(file, model, status);
+        return transcribeLocal(file, model, status);
+      };
+      if (engine === 'cloud') {
+        try {
+          words = await platform.transcribeCloud(up.ref, status);
+        } catch (e) {
+          // nuvem fora: tenta no aparelho sozinho, sem o usuário precisar fazer nada
+          status(`Nuvem indisponível (${(e as Error).message}). Tentando no aparelho…`);
+          words = await local();
+        }
       }
+      if (engine === 'local') words = await local();
       if (engine === 'openai') words = await platform.transcribeOpenAi(up.ref, status);
       const project = createProject({ src: up.src, ...meta, fps: 30 }, words, file.name.replace(/\.[^.]+$/, ''));
       onReady(project);
@@ -143,29 +163,46 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
 
       <fieldset disabled={busy}>
         <legend>Transcrição</legend>
-        <label title={openai ? '' : device ? 'Salve sua chave abaixo' : 'Coloque OPENAI_API_KEY no arquivo .env e reinicie'}>
-          <input type="radio" checked={engine === 'openai'} onChange={() => setEngine('openai')} disabled={!openai} /> API OpenAI
-          {!openai && <span className="muted">{device ? ' (salve sua chave abaixo)' : ' (sem chave no .env)'}</span>}
-        </label>
-        {device && (
-          <KeySettings
-            onChange={(has) => {
-              setOpenai(has);
-              setEngine(has ? 'openai' : 'none');
-            }}
-          />
-        )}
         <label>
-          <input type="radio" checked={engine === 'local'} onChange={() => setEngine('local')} /> Local, grátis, no aparelho
-          {ios && <span className="muted"> (experimental no iPhone, pode travar)</span>}
+          <input type="radio" checked={engine === 'cloud'} onChange={() => setEngine('cloud')} disabled={cloud === 'nokey' || cloud === 'offline'} /> Nuvem
+          rápida e grátis <span className="badge">recomendado</span>
+          <span className="muted small engine-hint">
+            {cloud === 'checking'
+              ? ' Conectando… (a 1ª vez do dia leva até 1 min)'
+              : cloud === 'ready'
+                ? ' Pronta. Whisper large-v3-turbo: 1 min de vídeo em segundos.'
+                : cloud === 'nokey'
+                  ? ' Servidor sem chave configurada (veja o README).'
+                  : ' Sem conexão com a nuvem agora.'}
+          </span>
+        </label>
+        <label>
+          <input type="radio" checked={engine === 'local'} onChange={() => setEngine('local')} /> No aparelho, offline
+          <span className="muted small engine-hint"> IA roda no próprio {ios ? 'iPhone' : 'computador'}; baixa o modelo uma vez.</span>
         </label>
         {engine === 'local' && (
-          <select value={model} onChange={(e) => setModel(e.target.value as LocalModel)}>
-            <option value="small">small: mais rápido</option>
-            {!ios && <option value="medium">medium: mais preciso</option>}
-            {!ios && <option value="large-v3-turbo">large-v3-turbo: o melhor, mais pesado</option>}
+          <select value={model} onChange={(e) => setModel(e.target.value as LocalModel)} aria-label="Modelo local">
+            <option value="base">base: rápido e leve (~200 MB)</option>
+            <option value="small">small: mais preciso (~500 MB)</option>
+            {!ios && <option value="medium">medium: ainda mais preciso</option>}
+            {!ios && <option value="large-v3-turbo">large-v3-turbo: o melhor, pesado</option>}
           </select>
         )}
+        <details className="adv">
+          <summary>Usar minha própria chave da OpenAI</summary>
+          <label title={openai ? '' : device ? 'Salve sua chave abaixo' : 'Coloque OPENAI_API_KEY no arquivo .env e reinicie'}>
+            <input type="radio" checked={engine === 'openai'} onChange={() => setEngine('openai')} disabled={!openai} /> API OpenAI
+            {!openai && <span className="muted">{device ? ' (salve sua chave abaixo)' : ' (sem chave no .env)'}</span>}
+          </label>
+          {device && (
+            <KeySettings
+              onChange={(has) => {
+                setOpenai(has);
+                if (has) setEngine('openai');
+              }}
+            />
+          )}
+        </details>
         <label>
           <input type="radio" checked={engine === 'none'} onChange={() => setEngine('none')} /> Sem transcrição (eu digito)
         </label>

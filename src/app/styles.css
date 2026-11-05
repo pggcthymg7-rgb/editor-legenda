@@ -70,6 +70,11 @@ fieldset { border: 1px solid var(--line); border-radius: var(--radius); display:
 progress { width: 100%; accent-color: var(--accent); }
 .saved { display: flex; flex-direction: column; gap: 6px; }
 .saved .row button:first-child { flex: 1; text-align: left; justify-content: flex-start; }
+.badge { font-size: 10px; background: var(--accent); color: var(--accent-ink); padding: 1px 6px; border-radius: 99px; margin-left: 4px; vertical-align: middle; }
+.engine-hint { display: block; padding-left: 26px; }
+fieldset > label { line-height: 1.35; }
+.adv summary { cursor: pointer; color: var(--muted); padding: 4px 0; }
+.adv[open] { display: flex; flex-direction: column; gap: 8px; }
 .keybox { display: flex; flex-direction: column; gap: 4px; padding-left: 22px; }
 .keybox input.text { flex: 1; min-width: 0; }
 
