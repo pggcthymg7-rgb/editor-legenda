@@ -24,7 +24,7 @@ import '@fontsource/poppins/700-italic.css';
 // Biblioteca ampliada (todas OFL). @font-face só baixa o arquivo quando a fonte é usada.
 import '@fontsource-variable/oswald/wght.css';
 import '@fontsource-variable/teko/wght.css';
-import '@fontsource-variable/big-shoulders-display/wght.css';
+import '@fontsource-variable/big-shoulders-display/wght';
 import '@fontsource-variable/unbounded/wght.css';
 import '@fontsource-variable/syne/wght.css';
 import '@fontsource-variable/space-grotesk/wght.css';

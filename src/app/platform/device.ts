@@ -2,7 +2,7 @@
 import { newId } from '../../core/grouping';
 import type { CompositionProps, Project } from '../../core/types';
 import { LOCAL_SRC, validateProject } from '../../core/validate';
-import { idbAll, idbDelete, idbGet, idbPut } from './idb';
+import { idbAll, idbDelete, idbDeletePrefix, idbGet, idbPut, idbPutMany } from './idb';
 import { getKey, transcribeWithKey } from './openai-browser';
 import { ALL_FORMATS, type FormatId, type FormatInfo, type Platform, type ProjectSummary } from './types';
 
@@ -19,6 +19,11 @@ export const DEVICE_FORMATS: Partial<
 };
 
 const urlCache = new Map<string, string>();
+const maskCache = new Map<string, string[]>();
+const revokeMasks = (src: string) => {
+  maskCache.get(src)?.forEach((u) => URL.revokeObjectURL(u));
+  maskCache.delete(src);
+};
 
 export const devicePlatform: Platform = {
   kind: 'device',
@@ -85,11 +90,46 @@ export const devicePlatform: Platform = {
     if (LOCAL_SRC.test(src)) {
       // apaga o vídeo só se nenhum outro projeto usa
       const others = await idbAll<StoredProject>('projects');
-      if (!others.some((o) => o.project.video.src === src)) await idbDelete('videos', src.slice('local:'.length));
+      if (!others.some((o) => o.project.video.src === src)) {
+        await idbDelete('videos', src.slice('local:'.length));
+        await idbDeletePrefix('masks', `${src.slice('local:'.length)}:`);
+        revokeMasks(src);
+      }
       const u = urlCache.get(src);
       if (u) URL.revokeObjectURL(u);
       urlCache.delete(src);
     }
+  },
+
+  async saveMasks(src, frames, onProgress) {
+    if (!LOCAL_SRC.test(src)) throw new Error('vídeo inválido');
+    const id = src.slice('local:'.length);
+    await idbDeletePrefix('masks', `${id}:`);
+    revokeMasks(src);
+    const CHUNK = 200;
+    for (let i = 0; i < frames.length; i += CHUNK) {
+      await idbPutMany(
+        'masks',
+        frames.slice(i, i + CHUNK).map((b, j) => [`${id}:${String(i + j).padStart(6, '0')}`, b]),
+      );
+      onProgress(Math.min(1, (i + CHUNK) / frames.length));
+    }
+  },
+
+  async maskUrls(src, count) {
+    if (!LOCAL_SRC.test(src)) return [];
+    const cached = maskCache.get(src);
+    if (cached && cached.length === count) return cached;
+    revokeMasks(src);
+    const id = src.slice('local:'.length);
+    const urls: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const b = await idbGet<Blob>('masks', `${id}:${String(i).padStart(6, '0')}`);
+      if (!b) throw new Error('máscara faltando; refaça a análise');
+      urls.push(URL.createObjectURL(b));
+    }
+    maskCache.set(src, urls);
+    return urls;
   },
 
   async formats(width, height) {
@@ -111,7 +151,7 @@ export const devicePlatform: Platform = {
     return out;
   },
 
-  async render(project, format, onProgress, signal) {
+  async render(project, format, onProgress, signal, opts) {
     const cfg = DEVICE_FORMATS[format];
     if (!cfg) throw new Error('Formato indisponível no aparelho');
     const [{ renderMediaOnWeb }, { CaptionComposition }, { COMPOSITION_ID, FPS }] = await Promise.all([
@@ -120,7 +160,14 @@ export const devicePlatform: Platform = {
       import('../../remotion/Root'),
     ]);
     const { width, height, durationMs } = project.video;
-    const inputProps: CompositionProps = { project, background: cfg.background };
+    const layer = opts?.layer ?? 'captions';
+    const inputProps: CompositionProps = {
+      project,
+      // camada da pessoa: fundo transparente/verde com só a pessoa recortada
+      background: layer === 'person' && cfg.background === 'video' ? 'transparent' : cfg.background,
+      maskUrls: opts?.maskUrls,
+      layer,
+    };
     const result = await renderMediaOnWeb({
       composition: {
         component: CaptionComposition as unknown as React.FC<Record<string, unknown>>,
@@ -141,7 +188,7 @@ export const devicePlatform: Platform = {
     });
     const blob = await result.getBlob();
     const ext = ALL_FORMATS.find((f) => f.id === format)?.ext ?? cfg.container;
-    const file = new File([blob], `${safeName(project.name)}-${format}.${ext}`, { type: blob.type || `video/${cfg.container}` });
+    const file = new File([blob], `${safeName(project.name)}-${layer === 'person' ? 'pessoa-' : ''}${format}.${ext}`, { type: blob.type || `video/${cfg.container}` });
     return { url: URL.createObjectURL(file), file };
   },
 };

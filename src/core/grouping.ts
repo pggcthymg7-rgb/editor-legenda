@@ -157,13 +157,14 @@ export function retextPhrase(p: Phrase, text: string): Phrase {
   const step = (end - start) / tokens.length;
   return {
     ...p,
+    // mantém ajustes individuais (estilo, posição, escala) da palavra na mesma posição
     words: tokens.map((t, i) => ({
+      ...p.words[i],
       id: p.words[i]?.id ?? newId('w'),
       text: t,
       startMs: Math.round(start + step * i),
       endMs: Math.round(start + step * (i + 1)),
       role: roles[i],
-      style: p.words[i]?.style,
     })),
   };
 }

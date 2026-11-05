@@ -1,6 +1,8 @@
 import React from 'react';
 import { Video } from '@remotion/media';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
+import { useEffect, useState } from 'react';
+import { grayToAlpha } from '../core/mask';
 import { phraseStart, phraseVisibleEnd } from '../core/grouping';
 import { arcPlacement, computeLines } from '../core/layout';
 import { counterText, wordMotion, wordWindows } from '../core/motion';
@@ -213,27 +215,112 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
   );
 };
 
-export const CaptionLayer: React.FC<{ project: Project; tMs: number }> = ({ project, tMs }) => {
+// ---------- Legenda atrás da pessoa ----------
+
+const maskCache = new Map<string, string>();
+const remember = (key: string, v: string) => {
+  maskCache.set(key, v);
+  if (maskCache.size > 150) maskCache.delete(maskCache.keys().next().value!);
+};
+
+function loadMask(url: string, mode: 'hole' | 'person'): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (/^https?:/.test(url)) img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext('2d', { willReadFrequently: true })!;
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, c.width, c.height);
+      grayToAlpha(data.data, mode);
+      ctx.putImageData(data, 0, 0);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('máscara não carregou'));
+    img.src = url;
+  });
+}
+
+/** Máscara CSS (data URL com alfa) do quadro atual; segura o render até ficar pronta. */
+export function useMask(urls: string[] | undefined, frame: number, mode: 'hole' | 'person', enabled: boolean): string | null {
+  const url = enabled && urls?.length ? urls[Math.min(frame, urls.length - 1)] : null;
+  const key = url ? `${mode}|${url}` : '';
+  const [state, setState] = useState<{ key: string; css: string } | null>(null);
+  const cached = key ? maskCache.get(key) : undefined;
+  useEffect(() => {
+    if (!url || cached) return;
+    let alive = true;
+    const handle = delayRender('Máscara da pessoa', { timeoutInMilliseconds: 30000 });
+    loadMask(url, mode)
+      .then((css) => {
+        remember(key, css);
+        if (alive) setState({ key, css });
+      })
+      .catch(() => undefined)
+      .finally(() => continueRender(handle));
+    return () => {
+      alive = false;
+    };
+  }, [key, url, cached, mode]);
+  if (!url) return null;
+  // enquanto carrega, usa a última máscara (preview não pisca)
+  return cached ?? state?.css ?? null;
+}
+
+const maskStyle = (css: string): React.CSSProperties => ({
+  maskImage: `url("${css}")`,
+  WebkitMaskImage: `url("${css}")`,
+  maskSize: '100% 100%',
+  WebkitMaskSize: '100% 100%',
+  maskRepeat: 'no-repeat',
+  WebkitMaskRepeat: 'no-repeat',
+});
+
+export const CaptionLayer: React.FC<{ project: Project; tMs: number; holeMask?: string | null }> = ({ project, tMs, holeMask }) => {
   const k = project.video.width / 1080;
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>
-      {project.phrases.map((p, i) => (
-        <PhraseView key={p.id} phrase={p} index={i} project={project} tMs={tMs} k={k} />
-      ))}
+      {project.phrases.map((p, i) =>
+        p.behind && holeMask ? (
+          <AbsoluteFill key={p.id} style={maskStyle(holeMask)}>
+            <PhraseView phrase={p} index={i} project={project} tMs={tMs} k={k} />
+          </AbsoluteFill>
+        ) : (
+          <PhraseView key={p.id} phrase={p} index={i} project={project} tMs={tMs} k={k} />
+        ),
+      )}
     </AbsoluteFill>
   );
 };
 
-export const CaptionComposition: React.FC<CompositionProps> = ({ project, background }) => {
+export const CaptionComposition: React.FC<CompositionProps> = ({ project, background, maskUrls, layer = 'captions' }) => {
   useFontsReady(project);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tMs = (frame / fps) * 1000;
+  const anyBehind = project.occlusion !== false && project.phrases.some((p) => p.behind);
+  const holeMask = useMask(maskUrls, frame, 'hole', layer === 'captions' && anyBehind);
+  const personMask = useMask(maskUrls, frame, 'person', layer === 'person');
+  const bg = background === 'green' ? '#00FF00' : 'transparent';
+
+  if (layer === 'person') {
+    // camada da frente: só a pessoa recortada (para empilhar no Premiere/CapCut)
+    return (
+      <AbsoluteFill style={{ backgroundColor: bg }}>
+        {project.video.src && personMask ? (
+          <AbsoluteFill style={maskStyle(personMask)}>
+            <Video src={project.video.src} muted />
+          </AbsoluteFill>
+        ) : null}
+      </AbsoluteFill>
+    );
+  }
   return (
-    <AbsoluteFill style={{ backgroundColor: background === 'green' ? '#00FF00' : 'transparent' }}>
-      {background === 'video' && project.video.src ? // @remotion/media: funciona no render do servidor e no render dentro do navegador (iPhone)
-        <Video src={project.video.src} /> : null}
-      <CaptionLayer project={project} tMs={tMs} />
+    <AbsoluteFill style={{ backgroundColor: bg }}>
+      {background === 'video' && project.video.src ? <Video src={project.video.src} /> : null}
+      <CaptionLayer project={project} tMs={tMs} holeMask={holeMask} />
     </AbsoluteFill>
   );
 };

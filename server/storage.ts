@@ -6,7 +6,8 @@ export const ROOT = path.resolve(process.env.EDITOR_DATA_DIR ?? path.join(proces
 export const MEDIA_DIR = path.join(ROOT, 'media');
 export const OUT_DIR = path.join(ROOT, 'renders');
 export const PROJECT_DIR = path.join(ROOT, 'projects');
-for (const d of [MEDIA_DIR, OUT_DIR, PROJECT_DIR]) mkdirSync(d, { recursive: true });
+export const MASK_DIR = path.join(MEDIA_DIR, 'masks');
+for (const d of [MEDIA_DIR, OUT_DIR, PROJECT_DIR, MASK_DIR]) mkdirSync(d, { recursive: true });
 
 const SAFE_ID = /^[a-zA-Z0-9_-]{1,80}$/;
 export const ALLOWED_VIDEO_EXT = new Set(['.mp4', '.mov', '.m4v', '.webm']);

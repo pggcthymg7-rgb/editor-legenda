@@ -34,11 +34,18 @@ function uploadVideo(file: File, onProgress: (p: number) => void): Promise<{ nam
   });
 }
 
-const startRender = (project: Project, format: string) =>
+/** "/media/m_abc.mp4" → "m_abc" */
+const mediaId = (src: string) => {
+  const m = /^\/media\/([a-zA-Z0-9_-]+)\.[a-z0-9]+$/.exec(src);
+  if (!m) throw new Error('vídeo inválido');
+  return m[1];
+};
+
+const startRender = (project: Project, format: string, layer: 'captions' | 'person') =>
   fetch('/api/render', {
     method: 'POST',
     headers: { ...H, 'content-type': 'application/json' },
-    body: JSON.stringify({ project, format }),
+    body: JSON.stringify({ project, format, layer }),
   }).then((r) => json<{ id: string }>(r));
 
 const renderStatus = (id: string) =>
@@ -72,9 +79,28 @@ export const macPlatform: Platform = {
       body: JSON.stringify(p),
     }).then((r) => json<{ ok: boolean }>(r));
   },
+  async saveMasks(src, frames, onProgress) {
+    const id = mediaId(src);
+    await fetch(`/api/masks/${id}`, { method: 'DELETE', headers: H }).then((r) => json<{ ok: boolean }>(r));
+    let done = 0;
+    const queue = frames.map((b, i) => [i, b] as const);
+    const worker = async () => {
+      for (let item = queue.shift(); item; item = queue.shift()) {
+        const [i, b] = item;
+        const r = await fetch(`/api/masks/${id}/${i}`, { method: 'PUT', headers: { ...H, 'content-type': 'image/jpeg' }, body: b });
+        await json<{ ok: boolean }>(r);
+        onProgress(++done / frames.length);
+      }
+    };
+    await Promise.all(Array.from({ length: 8 }, worker));
+  },
+  maskUrls: async (src, count) => {
+    const id = mediaId(src);
+    return Array.from({ length: count }, (_, i) => `/media/masks/${id}/${i}.jpg`);
+  },
   formats: async () => ALL_FORMATS,
-  async render(project, format: FormatId, onProgress, signal) {
-    const { id } = await startRender(project, format);
+  async render(project, format: FormatId, onProgress, signal, opts) {
+    const { id } = await startRender(project, format, opts?.layer ?? 'captions');
     for (;;) {
       if (signal?.aborted) throw new Error('cancelado');
       const s = await renderStatus(id);

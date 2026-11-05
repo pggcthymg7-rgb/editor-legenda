@@ -64,23 +64,33 @@ export function getJob(id: string): Job | undefined {
 }
 
 /** Enfileira render. `mediaBaseUrl` torna o src do vídeo absoluto para o navegador do render. */
-export function enqueueRender(project: Project, format: FormatId, mediaBaseUrl: string): Job {
+export function enqueueRender(project: Project, format: FormatId, mediaBaseUrl: string, layer: 'captions' | 'person' = 'captions'): Job {
   const job: Job = { id: randomUUID(), status: 'queued', progress: 0, createdAt: Date.now() };
   jobs.set(job.id, job);
   pruneJobs();
-  chain = chain.then(() => runJob(job, project, format, mediaBaseUrl)).catch(() => undefined);
+  chain = chain.then(() => runJob(job, project, format, mediaBaseUrl, layer)).catch(() => undefined);
   return job;
 }
 
-async function runJob(job: Job, project: Project, format: FormatId, mediaBaseUrl: string) {
+async function runJob(job: Job, project: Project, format: FormatId, mediaBaseUrl: string, layer: 'captions' | 'person') {
   job.status = 'rendering';
   try {
     const { background, ...opts } = codecOptions(format);
     const src = project.video.src && project.video.src.startsWith('/') ? mediaBaseUrl + project.video.src : project.video.src;
-    const inputProps: CompositionProps = { project: { ...project, video: { ...project.video, src } }, background };
+    // máscaras da pessoa: legenda atrás (se ligada) ou camada só da pessoa
+    const mask = project.video.mask;
+    const mediaId = /^\/media\/([a-zA-Z0-9_-]+)\./.exec(project.video.src)?.[1];
+    const useMasks = mask && mediaId && (layer === 'person' || project.occlusion !== false);
+    const maskUrls = useMasks ? Array.from({ length: mask.count }, (_, i) => `${mediaBaseUrl}/media/masks/${mediaId}/${i}.jpg`) : undefined;
+    const inputProps: CompositionProps = {
+      project: { ...project, video: { ...project.video, src } },
+      background: layer === 'person' && background === 'video' ? 'transparent' : background,
+      maskUrls,
+      layer,
+    };
     const serveUrl = await getBundle();
     const composition = await selectComposition({ serveUrl, id: 'Legendas', inputProps });
-    const file = `${job.id}.${FORMATS[format].ext}`;
+    const file = `${job.id}${layer === 'person' ? '-pessoa' : ''}.${FORMATS[format].ext}`;
     await renderMedia({
       ...opts,
       composition,
@@ -88,7 +98,7 @@ async function runJob(job: Job, project: Project, format: FormatId, mediaBaseUrl
       inputProps,
       outputLocation: inside(OUT_DIR, file),
       // legenda transparente/verde não leva áudio; vídeo final leva
-      muted: background !== 'video',
+      muted: background !== 'video' || layer === 'person',
       onProgress: ({ progress }) => {
         job.progress = progress;
       },

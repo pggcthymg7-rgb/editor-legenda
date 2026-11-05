@@ -1,43 +1,159 @@
 import { Player, type PlayerRef } from '@remotion/player';
-import React, { useEffect, useRef } from 'react';
-import type { CompositionProps, Project } from '../../core/types';
+import { ChevronFirst, ChevronLast, Grid3x3, Pause, Play, ScanLine, StepBack, StepForward, Volume2, VolumeX } from 'lucide-react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { CompositionProps, Project, Word } from '../../core/types';
 import { CaptionComposition } from '../../remotion/CaptionComposition';
 import { FPS } from '../../remotion/Root';
+import type { Selection } from './Timeline';
 
 type Props = {
   project: Project;
   playerRef: React.RefObject<PlayerRef | null>;
-  selectedId: string | null;
-  onMove: (id: string, x: number, y: number) => void;
+  selection: Selection;
+  onSelect: (s: Selection) => void;
+  onMovePhrase: (id: string, x: number, y: number) => void;
+  onMoveWord: (phraseId: string, wordId: string, patch: Partial<Word>) => void;
   onTime: (ms: number) => void;
+  onPlaying: (p: boolean) => void;
+  currentMs: number;
+  playing: boolean;
+  maskUrls?: string[];
 };
 
-/** Preview com Player do Remotion + alça para arrastar a frase selecionada. */
-export const Preview: React.FC<Props> = ({ project, playerRef, selectedId, onMove, onTime }) => {
-  const boxRef = useRef<HTMLDivElement>(null);
+export const timecode = (ms: number) => {
+  const t = Math.max(0, ms) / 1000;
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  const f = Math.floor((t * FPS) % FPS);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(f).padStart(2, '0')}`;
+};
+
+type Box = { left: number; top: number; width: number; height: number } | null;
+
+/** Monitor: player + seleção clicando no texto + arrastar frase/palavra + guias de área segura. */
+export const Preview: React.FC<Props> = ({
+  project,
+  playerRef,
+  selection,
+  onSelect,
+  onMovePhrase,
+  onMoveWord,
+  onTime,
+  onPlaying,
+  currentMs,
+  playing,
+  maskUrls,
+}) => {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const holderRef = useRef<HTMLDivElement>(null);
   const { width, height, durationMs } = project.video;
-  const selected = project.phrases.find((p) => p.id === selectedId);
+  const [safe, setSafe] = useState(false);
+  const [grid, setGrid] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [box, setBox] = useState<Box>(null);
+  const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
+  const durationInFrames = Math.max(1, Math.ceil((durationMs / 1000) * FPS));
+
+  // encaixa o palco (proporção do vídeo) no espaço disponível
+  useLayoutEffect(() => {
+    const el = holderRef.current;
+    if (!el) return;
+    const fit = () => {
+      const r = el.getBoundingClientRect();
+      const ar = width / height;
+      let w = r.width;
+      let h = w / ar;
+      if (h > r.height) {
+        h = r.height;
+        w = h * ar;
+      }
+      setStageSize({ w: Math.floor(w), h: Math.floor(h) });
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    fit();
+    return () => ro.disconnect();
+  }, [width, height]);
 
   useEffect(() => {
     const p = playerRef.current;
     if (!p) return;
     const h = (e: { detail: { frame: number } }) => onTime((e.detail.frame / FPS) * 1000);
+    const onPlay = () => onPlaying(true);
+    const onPause = () => onPlaying(false);
     p.addEventListener('frameupdate', h);
     p.addEventListener('seeked', h);
+    p.addEventListener('play', onPlay);
+    p.addEventListener('pause', onPause);
+    p.addEventListener('ended', onPause);
     return () => {
       p.removeEventListener('frameupdate', h);
       p.removeEventListener('seeked', h);
+      p.removeEventListener('play', onPlay);
+      p.removeEventListener('pause', onPause);
+      p.removeEventListener('ended', onPause);
     };
-  }, [playerRef, onTime]);
+  }, [playerRef, onTime, onPlaying]);
 
-  const startDrag = (e: React.PointerEvent) => {
-    if (!selected || !boxRef.current) return;
+  // contorno da seleção (mede o elemento real renderizado)
+  const measure = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return setBox(null);
+    const sel = selection.wordId
+      ? stage.querySelector(`[data-word-id="${CSS.escape(selection.wordId)}"]`)
+      : selection.phraseId
+        ? stage.querySelector(`[data-phrase-id="${CSS.escape(selection.phraseId)}"]`)
+        : null;
+    if (!sel) return setBox(null);
+    const r = sel.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    setBox({ left: r.left - s.left, top: r.top - s.top, width: r.width, height: r.height });
+  }, [selection]);
+  useEffect(() => {
+    const id = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(id);
+  }, [measure, currentMs, project, stageSize]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const stage = stageRef.current;
+    if (!stage || (e.target as HTMLElement).closest('.transport')) return;
+    const hits = document.elementsFromPoint(e.clientX, e.clientY);
+    const phraseEl = hits.find((h) => h instanceof HTMLElement && h.dataset.phraseId) as HTMLElement | undefined;
+    // palavra ainda invisível (revelação palavra a palavra) não recebe clique: acha pela caixa
+    const wordEl =
+      (hits.find((h) => h instanceof HTMLElement && h.dataset.wordId) as HTMLElement | undefined) ??
+      ([...(phraseEl?.querySelectorAll<HTMLElement>('[data-word-id]') ?? [])].find((w) => {
+        const r = w.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      }) as HTMLElement | undefined);
+    if (!phraseEl) {
+      onSelect({ phraseId: null, wordId: null });
+      return;
+    }
+    const phraseId = phraseEl.dataset.phraseId!;
+    const phrase = project.phrases.find((p) => p.id === phraseId);
+    if (!phrase) return;
+    // 1º clique seleciona a frase; clicar de novo numa palavra (ou com Alt) seleciona a palavra
+    const wordId = wordEl && (e.altKey || selection.phraseId === phraseId) ? wordEl.dataset.wordId! : null;
+    onSelect({ phraseId, wordId });
     e.preventDefault();
-    const box = boxRef.current.getBoundingClientRect();
+    const rect = stage.getBoundingClientRect();
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    const word = wordId ? phrase.words.find((w) => w.id === wordId) : null;
+    const start = { x: phrase.x, y: phrase.y, dx: word?.dx ?? 0, dy: word?.dy ?? 0 };
+    // px de tela → unidades da composição (base 1080)
+    const unit = 1080 / rect.width / (phrase.scale || 1);
     const move = (ev: PointerEvent) => {
-      const x = Math.min(1, Math.max(0, (ev.clientX - box.left) / box.width));
-      const y = Math.min(1, Math.max(0, (ev.clientY - box.top) / box.height));
-      onMove(selected.id, x, y);
+      const ddx = ev.clientX - x0;
+      const ddy = ev.clientY - y0;
+      if (word) onMoveWord(phraseId, word.id, { dx: Math.round(start.dx + ddx * unit), dy: Math.round(start.dy + ddy * unit) });
+      else
+        onMovePhrase(
+          phraseId,
+          Math.min(1, Math.max(0, start.x + ddx / rect.width)),
+          Math.min(1, Math.max(0, start.y + ddy / rect.height)),
+        );
     };
     const up = () => {
       window.removeEventListener('pointermove', move);
@@ -47,33 +163,88 @@ export const Preview: React.FC<Props> = ({ project, playerRef, selectedId, onMov
     window.addEventListener('pointerup', up);
   };
 
-  const inputProps: CompositionProps = { project, background: 'video' };
+  const p = playerRef.current;
+  const frame = Math.round((currentMs / 1000) * FPS);
+  const inputProps: CompositionProps = { project, background: 'video', maskUrls };
 
   return (
-    <div className="preview">
-      <div className="stage" ref={boxRef} style={{ aspectRatio: `${width} / ${height}` }}>
-        <Player
-          ref={playerRef}
-          component={CaptionComposition}
-          inputProps={inputProps}
-          durationInFrames={Math.max(1, Math.ceil((durationMs / 1000) * FPS))}
-          fps={FPS}
-          compositionWidth={width}
-          compositionHeight={height}
-          style={{ width: '100%', height: '100%' }}
-          controls
-          clickToPlay={false}
-          spaceKeyToPlayOrPause
-          acknowledgeRemotionLicense
-        />
-        {selected && (
-          <div
-            className="handle"
-            title="Arraste para mover a frase"
-            onPointerDown={startDrag}
-            style={{ left: `${selected.x * 100}%`, top: `${selected.y * 100}%` }}
+    <div className="monitor">
+      <div className="stage-holder" ref={holderRef}>
+        <div
+          className="stage"
+          ref={stageRef}
+          style={{ width: stageSize.w, height: stageSize.h }}
+          onPointerDownCapture={onPointerDown}
+          aria-label="Monitor do vídeo. Clique numa legenda para selecionar e arraste para mover."
+        >
+          <Player
+            ref={playerRef}
+            component={CaptionComposition}
+            inputProps={inputProps}
+            durationInFrames={durationInFrames}
+            fps={FPS}
+            compositionWidth={width}
+            compositionHeight={height}
+            style={{ width: '100%', height: '100%' }}
+            controls={false}
+            clickToPlay={false}
+            spaceKeyToPlayOrPause={false}
+            initiallyMuted={muted}
+            acknowledgeRemotionLicense
           />
-        )}
+          {safe && (
+            <div className="safe" aria-hidden="true">
+              <div className="safe-top" />
+              <div className="safe-bottom" />
+              <div className="safe-right" />
+              <span className="safe-label">Área segura Reels/TikTok</span>
+            </div>
+          )}
+          {grid && <div className="thirds" aria-hidden="true" />}
+          {box && <div className={`selbox ${selection.wordId ? 'word' : ''}`} style={box} aria-hidden="true" />}
+        </div>
+      </div>
+      <div className="transport" role="toolbar" aria-label="Controles de reprodução">
+        <button className="icon" onClick={() => p?.seekTo(0)} aria-label="Início" title="Início (Home)">
+          <ChevronFirst size={18} aria-hidden="true" />
+        </button>
+        <button className="icon" onClick={() => p?.seekTo(Math.max(0, frame - 1))} aria-label="Quadro anterior" title="Quadro anterior (←)">
+          <StepBack size={18} aria-hidden="true" />
+        </button>
+        <button className="icon play" onClick={() => p?.toggle()} aria-label={playing ? 'Pausar' : 'Reproduzir'} title="Play/Pause (Espaço)">
+          {playing ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
+        </button>
+        <button className="icon" onClick={() => p?.seekTo(Math.min(durationInFrames - 1, frame + 1))} aria-label="Próximo quadro" title="Próximo quadro (→)">
+          <StepForward size={18} aria-hidden="true" />
+        </button>
+        <button className="icon" onClick={() => p?.seekTo(durationInFrames - 1)} aria-label="Fim" title="Fim (End)">
+          <ChevronLast size={18} aria-hidden="true" />
+        </button>
+        <span className="tc" aria-live="off">
+          {timecode(currentMs)} <span className="muted">/ {timecode(durationMs)}</span>
+        </span>
+        <span className="tl-grow" />
+        <button
+          className={`icon ${muted ? 'on' : ''}`}
+          onClick={() => {
+            setMuted((m) => {
+              if (m) p?.unmute();
+              else p?.mute();
+              return !m;
+            });
+          }}
+          aria-pressed={muted}
+          aria-label={muted ? 'Ativar som' : 'Silenciar'}
+          title="Som"
+        >
+          {muted ? <VolumeX size={18} aria-hidden="true" /> : <Volume2 size={18} aria-hidden="true" />}
+        </button>
+        <button className={`icon ${safe ? 'on' : ''}`} onClick={() => setSafe((v) => !v)} aria-pressed={safe} aria-label="Área segura" title="Guias de área segura (Reels/TikTok)">
+          <ScanLine size={18} aria-hidden="true" />
+        </button>
+        <button className={`icon ${grid ? 'on' : ''}`} onClick={() => setGrid((v) => !v)} aria-pressed={grid} aria-label="Grade de terços" title="Grade de terços">
+          <Grid3x3 size={18} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

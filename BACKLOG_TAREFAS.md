@@ -13,8 +13,8 @@ Pedido: terminar o projeto em modo autônomo:
 
 - [x] 1. Auditoria inicial: segurança, código quebrado, congruência entre Mac e PWA.
 - [x] 2. Fontes: biblioteca grande de fontes grátis (OFL) e estilizadas, com seletor visual por categoria.
-- [ ] 3. Palavra individual: escala X/Y, posição, rotação, fonte, cor, tamanho e peso por palavra, também no ASS.
-- [ ] 4. Layout profissional, igual nos dois (desktop e PWA):
+- [x] 3. Palavra individual: escala X/Y, posição, rotação, fonte, cor, tamanho e peso por palavra, também no ASS.
+- [x] 4. Layout profissional, igual nos dois (desktop e PWA):
   - barra superior;
   - biblioteca à esquerda (Frases / Modelos / Fontes);
   - monitor no centro com transporte;
@@ -26,7 +26,7 @@ Pedido: terminar o projeto em modo autônomo:
   - buscar e substituir;
   - dividir na agulha;
   - atalhos.
-- [ ] 6. Legenda atrás da pessoa:
+- [x] 6. Legenda atrás da pessoa:
   - análise com segmentação (MediaPipe) no navegador;
   - opção por frase "atrás da pessoa";
   - opção global liga/desliga;

@@ -116,6 +116,8 @@ export type VideoMeta = {
   height: number;
   durationMs: number;
   fps: number;
+  /** análise de pessoa feita (máscaras guardadas fora do projeto) */
+  mask?: { count: number; fps: number; width: number; height: number };
 };
 
 export type Project = {
@@ -125,6 +127,8 @@ export type Project = {
   video: VideoMeta;
   phrases: Phrase[];
   customPresets: Preset[];
+  /** liga/desliga a legenda atrás da pessoa no projeto todo (padrão: ligado se houver análise) */
+  occlusion?: boolean;
 };
 
 /** Palavra transcrita, já com tempos em ms (saída de qualquer motor). */
@@ -135,4 +139,8 @@ export type CompositionProps = {
   project: Project;
   /** 'video' = mostra o vídeo; senão só legenda sobre a cor/transparente */
   background: 'video' | 'transparent' | 'green';
+  /** máscaras da pessoa, uma por quadro (só em tempo de execução, nunca salvas no projeto) */
+  maskUrls?: string[];
+  /** 'captions' = legenda (padrão); 'person' = só a pessoa recortada (camada da frente) */
+  layer?: 'captions' | 'person';
 };

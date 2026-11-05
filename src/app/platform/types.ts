@@ -42,10 +42,20 @@ export interface Platform {
   loadProject(id: string): Promise<Project>;
   saveProject(p: Project): Promise<void>;
   deleteProject?(id: string): Promise<void>;
+  /** Guarda as máscaras da pessoa (uma imagem por quadro). */
+  saveMasks(src: string, frames: Blob[], onProgress: (p: number) => void): Promise<void>;
+  /** URLs das máscaras na ordem dos quadros. */
+  maskUrls(src: string, count: number): Promise<string[]>;
   /** Formatos que este aparelho consegue gerar. */
   formats(width: number, height: number): Promise<FormatInfo[]>;
   /** `project` já com src tocável. */
-  render(project: Project, format: FormatId, onProgress: (p: number) => void, signal?: AbortSignal): Promise<RenderResult>;
+  render(
+    project: Project,
+    format: FormatId,
+    onProgress: (p: number) => void,
+    signal?: AbortSignal,
+    opts?: { layer?: 'captions' | 'person'; maskUrls?: string[] },
+  ): Promise<RenderResult>;
 }
 
 /** iPhone/iPad (iPadOS se apresenta como Mac com toque). */

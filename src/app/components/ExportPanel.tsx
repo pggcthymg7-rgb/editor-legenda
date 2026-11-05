@@ -18,7 +18,7 @@ function saveText(name: string, text: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-type Job = { id: string; format: FormatId; progress: number; status: 'rendering' | 'done' | 'error'; url?: string; file?: File; error?: string };
+type Job = { id: string; layer: 'captions' | 'person'; format: FormatId; progress: number; status: 'rendering' | 'done' | 'error'; url?: string; file?: File; error?: string };
 
 /** Tela não apaga durante o render no iPhone (se apagar, o Safari pausa o app). */
 async function keepAwake(): Promise<() => void> {
@@ -30,7 +30,9 @@ async function keepAwake(): Promise<() => void> {
   }
 }
 
-export const ExportPanel: React.FC<{ project: Project }> = ({ project }) => {
+export const ExportPanel: React.FC<{ project: Project; maskUrls?: string[] }> = ({ project, maskUrls }) => {
+  const [layer, setLayer] = useState<'captions' | 'person'>('captions');
+  const canPerson = Boolean(project.video.mask);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [formats, setFormats] = useState<FormatInfo[] | null>(null);
   const [error, setError] = useState('');
@@ -57,10 +59,14 @@ export const ExportPanel: React.FC<{ project: Project }> = ({ project }) => {
     const id = Math.random().toString(36).slice(2);
     const ctrl = new AbortController();
     aborts.current.set(id, ctrl);
-    setJobs((j) => [{ id, format, progress: 0, status: 'rendering' }, ...j]);
+    setJobs((j) => [{ id, layer, format, progress: 0, status: 'rendering' }, ...j]);
     const release = await keepAwake();
     try {
-      const r = await platform.render(project, format, (p) => update(id, { progress: p }), ctrl.signal);
+      const r = await platform.render(project, format, (p) => update(id, { progress: p }), ctrl.signal, {
+        layer,
+        // pessoa precisa das máscaras mesmo com o efeito desligado
+        maskUrls: layer === 'person' ? (maskUrls ?? (await platform.maskUrls(project.video.src, project.video.mask!.count))) : maskUrls,
+      });
       urls.current.push(r.url);
       update(id, { status: 'done', url: r.url, file: r.file, progress: 1 });
     } catch (e) {
@@ -77,12 +83,34 @@ export const ExportPanel: React.FC<{ project: Project }> = ({ project }) => {
   return (
     <div className="export">
       <h3>Exportar</h3>
+      <div className="field">
+        <span>Camada</span>
+        <div className="seg field-wide" role="group" aria-label="Camada">
+          <button className={layer === 'captions' ? 'on' : ''} aria-pressed={layer === 'captions'} onClick={() => setLayer('captions')}>
+            Legendas
+          </button>
+          <button
+            className={layer === 'person' ? 'on' : ''}
+            aria-pressed={layer === 'person'}
+            disabled={!canPerson}
+            title={canPerson ? '' : 'Faça a análise no painel Pessoa'}
+            onClick={() => setLayer('person')}
+          >
+            Pessoa (frente)
+          </button>
+        </div>
+      </div>
+      <p className="muted small">
+        {layer === 'captions'
+          ? 'Legendas animadas. Frases marcadas “atrás da pessoa” já saem recortadas.'
+          : 'Só a pessoa recortada. Empilhe acima das legendas para colocar qualquer coisa atrás dela.'}
+      </p>
       {platform.kind === 'device' && (
         <p className="muted">O vídeo é gerado no aparelho. Deixe o app aberto até terminar.</p>
       )}
       <div className="row wrap">
         {formats === null && <span className="muted">Checando formatos…</span>}
-        {formats?.map((f) => (
+        {formats?.filter((f) => layer === 'captions' || f.id !== 'mp4-final').map((f) => (
           <button key={f.id} onClick={() => render(f.id)} title={f.hint} disabled={platform.kind === 'device' && busy}>
             {f.label}
           </button>
@@ -98,7 +126,10 @@ export const ExportPanel: React.FC<{ project: Project }> = ({ project }) => {
       {error && <div className="error">{error}</div>}
       {jobs.map((j) => (
         <div key={j.id} className="job">
-          <span>{formats?.find((f) => f.id === j.format)?.label ?? j.format}</span>
+          <span>
+            {j.layer === 'person' ? 'Pessoa · ' : ''}
+            {formats?.find((f) => f.id === j.format)?.label ?? j.format}
+          </span>
           {j.status === 'done' ? (
             <>
               {canShare(j.file) && <button onClick={() => share(j.file!)}>Compartilhar</button>}

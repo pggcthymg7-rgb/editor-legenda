@@ -1,14 +1,14 @@
 // Servidor local do editor. Escuta só em 127.0.0.1 (não aparece na rede).
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { createWriteStream, existsSync } from 'node:fs';
-import { readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { newId } from '../src/core/grouping';
 import { validateProject } from '../src/core/validate';
 import { hasOpenAiKey, transcribeOpenAi } from './openai';
 import { FORMATS, enqueueRender, getJob, isFormat } from './render';
-import { ALLOWED_VIDEO_EXT, MEDIA_DIR, OUT_DIR, PROJECT_DIR, inside, isSafeId, safeMediaName } from './storage';
+import { ALLOWED_VIDEO_EXT, MASK_DIR, MEDIA_DIR, OUT_DIR, PROJECT_DIR, inside, isSafeId, safeMediaName } from './storage';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 
@@ -43,7 +43,40 @@ app.use((req, res, next) => {
   next();
 });
 
+// O render (Chromium do Remotion) roda em outra porta local e precisa ler as máscaras num canvas:
+// libera CORS só para origens locais.
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
+app.use('/media', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && LOCAL_ORIGIN.test(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  next();
+});
 app.use('/media', express.static(MEDIA_DIR, { fallthrough: false, index: false, dotfiles: 'deny' }));
+
+// Máscaras da pessoa: uma JPEG por quadro em data/media/masks/<idDoVídeo>/<n>.jpg
+const MAX_MASK = 1024 * 1024;
+const MAX_MASK_FRAMES = 30 * 60 * 60; // 1 h a 30 fps
+app.delete('/api/masks/:id', async (req, res) => {
+  if (!isSafeId(req.params.id)) return res.status(400).json({ error: 'id inválido' });
+  await rm(inside(MASK_DIR, req.params.id), { recursive: true, force: true });
+  res.json({ ok: true });
+});
+app.put('/api/masks/:id/:n', express.raw({ type: 'image/jpeg', limit: MAX_MASK }), async (req, res) => {
+  const n = Number(req.params.n);
+  if (!isSafeId(req.params.id) || !Number.isInteger(n) || n < 0 || n >= MAX_MASK_FRAMES) return res.status(400).json({ error: 'máscara inválida' });
+  const body = req.body as Buffer;
+  // só JPEG de verdade (assinatura FF D8 FF)
+  if (!Buffer.isBuffer(body) || body.length < 4 || body[0] !== 0xff || body[1] !== 0xd8 || body[2] !== 0xff) {
+    return res.status(400).json({ error: 'máscara não é JPEG' });
+  }
+  const dir = inside(MASK_DIR, req.params.id);
+  await mkdir(dir, { recursive: true });
+  await writeFile(inside(dir, `${n}.jpg`), body);
+  res.json({ ok: true });
+});
 
 app.get('/api/status', (_req, res) => {
   res.json({ openai: hasOpenAiKey(), formats: FORMATS });
@@ -84,14 +117,16 @@ app.post('/api/transcribe/openai', async (req, res) => {
 });
 
 app.post('/api/render', (req, res) => {
-  const { project, format } = req.body ?? {};
+  const { project, format, layer = 'captions' } = req.body ?? {};
   if (!isFormat(format)) return res.status(400).json({ error: 'formato inválido' });
+  if (layer !== 'captions' && layer !== 'person') return res.status(400).json({ error: 'camada inválida' });
   const v = validateProject(project);
   if (!v.ok) return res.status(400).json({ error: v.error });
   if (v.project.video.src && !safeMediaName(v.project.video.src.replace(/^\/media\//, ''))) {
     return res.status(400).json({ error: 'vídeo inválido' });
   }
-  const job = enqueueRender(v.project, format, `http://${HOST}:${PORT}`);
+  if (layer === 'person' && !v.project.video.mask) return res.status(400).json({ error: 'faça a análise de pessoa antes' });
+  const job = enqueueRender(v.project, format, `http://${HOST}:${PORT}`, layer);
   res.json({ id: job.id });
 });
 

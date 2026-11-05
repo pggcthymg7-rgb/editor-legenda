@@ -24,6 +24,13 @@ export function validateProject(input: unknown): Result {
   if (src && !/^\/media\/[a-zA-Z0-9_-]+\.(mp4|mov|m4v|webm)$/.test(src) && !LOCAL_SRC.test(src)) return fail('src fora de /media');
   if (!num(v.width, 16, 8192) || !num(v.height, 16, 8192)) return fail('dimensão inválida');
   if (!num(v.durationMs, 1, 4 * 3600 * 1000)) return fail('duração inválida');
+  if (v.mask !== undefined) {
+    const m = v.mask;
+    if (!isObj(m) || !Number.isInteger(m.count) || !num(m.count, 1, 30 * 3600) || !num(m.fps, 1, 60) || !num(m.width, 8, 4096) || !num(m.height, 8, 4096)) {
+      return fail('máscara inválida');
+    }
+  }
+  if (p.occlusion !== undefined && typeof p.occlusion !== 'boolean') return fail('occlusion inválido');
   if (!Array.isArray(p.phrases) || p.phrases.length > 5000) return fail('frases inválidas');
   for (const ph of p.phrases) {
     if (!isObj(ph) || !str(ph.id, 120) || !str(ph.presetId, 120)) return fail('frase inválida');
