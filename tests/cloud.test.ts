@@ -63,6 +63,7 @@ describe('proxy da nuvem', () => {
     const form = calls[0][1].body as FormData;
     expect(form.get('model')).toBe('whisper-large-v3-turbo');
     expect(form.getAll('timestamp_granularities[]')).toEqual(['word']);
+    expect(String(form.get('prompt'))).toContain('?');
     expect(JSON.stringify(body)).not.toContain('gsk_');
   });
   it('erro do provedor não vaza corpo', async () => {

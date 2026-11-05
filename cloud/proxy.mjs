@@ -14,6 +14,12 @@ const ORIGINS = new Set(
 );
 const AUDIO_TYPES = new Set(['audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac']);
 const LANGS = /^([a-z]{2}|auto)$/;
+// Frase-exemplo pontuada: faz o Whisper devolver maiúsculas e pontuação (sem ela às vezes vem tudo minúsculo)
+const PROMPTS = {
+  pt: 'Olá, tudo bem? Hoje eu vou te mostrar como funciona. Vamos lá!',
+  en: "Hello, how are you? Today I'll show you how it works. Let's go!",
+  es: 'Hola, ¿qué tal? Hoy te voy a mostrar cómo funciona. ¡Vamos!',
+};
 
 const GROQ_KEY = /^gsk_[A-Za-z0-9]{20,200}$/;
 
@@ -118,6 +124,7 @@ export const server = http.createServer(async (req, res) => {
       form.append('response_format', 'verbose_json');
       form.append('timestamp_granularities[]', 'word');
       form.append('temperature', '0');
+      form.append('prompt', PROMPTS[lang] ?? PROMPTS.en);
       const r = await fetch(p.url, {
         method: 'POST',
         headers: { authorization: `Bearer ${p.key}` },
