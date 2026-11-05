@@ -70,6 +70,7 @@ fieldset { border: 1px solid var(--line); border-radius: var(--radius); display:
 progress { width: 100%; accent-color: var(--accent); }
 .saved { display: flex; flex-direction: column; gap: 6px; }
 .saved .row button:first-child { flex: 1; text-align: left; justify-content: flex-start; }
+.lang-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .badge { font-size: 10px; background: var(--accent); color: var(--accent-ink); padding: 1px 6px; border-radius: 99px; margin-left: 4px; vertical-align: middle; }
 .engine-hint { display: block; padding-left: 26px; }
 fieldset > label { line-height: 1.35; }

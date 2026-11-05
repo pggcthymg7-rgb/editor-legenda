@@ -6,11 +6,14 @@ import type { TranscribedWord } from '../core/types';
 import { decodeAudio16k } from './platform/audio';
 
 export type LocalModel = 'base' | 'small' | 'medium' | 'large-v3-turbo';
+/** idioma falado no vídeo; 'auto' = o Whisper detecta */
+export type Lang = 'pt' | 'en' | 'es' | 'auto';
 
 export async function transcribeLocal(
   file: Blob,
   model: LocalModel,
   onStatus: (msg: string, progress?: number) => void,
+  lang: Lang = 'pt',
 ): Promise<TranscribedWord[]> {
   const support = await canUseWhisperWebGpu();
   if (!support.supported) {
@@ -27,8 +30,8 @@ export async function transcribeLocal(
   }
   onStatus('Lendo o áudio…', 0);
   const channelWaveform = await decodeAudio16k(file, (p) => onStatus('Lendo o áudio…', p));
-  onStatus('Transcrevendo no aparelho…');
-  const out = await transcribe({ channelWaveform, model, language: 'pt' });
+  onStatus('Transcrevendo no aparelho… (cerca de 1 a 3 min por minuto de vídeo; deixe o app aberto)');
+  const out = await transcribe({ channelWaveform, model, language: lang === 'auto' ? undefined : lang });
   const { captions } = toCaptions({ whisperWebGpuOutput: out });
   return fromRemotionCaptions(captions);
 }

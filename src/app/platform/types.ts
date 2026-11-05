@@ -37,9 +37,9 @@ export interface Platform {
   saveVideo(file: File, onProgress: (p: number) => void): Promise<SavedVideo>;
   /** Converte project.video.src em URL tocável (device: blob URL). */
   videoUrl(src: string): Promise<string>;
-  transcribeOpenAi(ref: string, onStatus: (msg: string, p?: number) => void): Promise<TranscribedWord[]>;
+  transcribeOpenAi(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string): Promise<TranscribedWord[]>;
   /** Nuvem grátis (proxy → Groq): extrai o áudio aqui e manda só o áudio. */
-  transcribeCloud(ref: string, onStatus: (msg: string, p?: number) => void): Promise<TranscribedWord[]>;
+  transcribeCloud(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string): Promise<TranscribedWord[]>;
   listProjects(): Promise<ProjectSummary[]>;
   loadProject(id: string): Promise<Project>;
   saveProject(p: Project): Promise<void>;

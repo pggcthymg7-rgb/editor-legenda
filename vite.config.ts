@@ -13,7 +13,7 @@ const CLOUD = new URL(process.env.VITE_CLOUD_URL ?? 'https://editor-legenda-api.
 // Whisper no aparelho: modelos em remotion.media; runtime ONNX (wasm) no jsDelivr.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
+  "script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "media-src 'self' blob: data:",

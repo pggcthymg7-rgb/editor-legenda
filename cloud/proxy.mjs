@@ -13,7 +13,7 @@ const ORIGINS = new Set(
     .filter(Boolean),
 );
 const AUDIO_TYPES = new Set(['audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac']);
-const LANGS = /^[a-z]{2}$/;
+const LANGS = /^([a-z]{2}|auto)$/;
 
 /** Provedor ativo: Groq (grátis) > OpenAI. */
 export function provider(env = process.env) {
@@ -109,7 +109,7 @@ export const server = http.createServer(async (req, res) => {
       const ext = type.includes('mpeg') ? 'mp3' : type.includes('wav') ? 'wav' : type.includes('webm') ? 'webm' : type.includes('ogg') ? 'ogg' : type.includes('flac') ? 'flac' : 'm4a';
       form.append('file', new Blob([audio], { type }), `audio.${ext}`);
       form.append('model', p.model);
-      form.append('language', lang);
+      if (lang !== 'auto') form.append('language', lang);
       form.append('response_format', 'verbose_json');
       form.append('timestamp_granularities[]', 'word');
       form.append('temperature', '0');

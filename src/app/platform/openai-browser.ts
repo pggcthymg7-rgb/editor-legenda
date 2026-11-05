@@ -25,10 +25,11 @@ export function setKey(k: string | null) {
 }
 
 export function buildTranscriptionForm(audio: Blob, filename: string, language = 'pt'): FormData {
+  // 'auto' = sem idioma: o Whisper detecta
   const form = new FormData();
   form.append('file', audio, filename);
   form.append('model', 'whisper-1');
-  form.append('language', language);
+  if (language !== 'auto') form.append('language', language);
   form.append('response_format', 'verbose_json');
   form.append('timestamp_granularities[]', 'word');
   return form;
@@ -39,12 +40,13 @@ export async function transcribeWithKey(
   audio: Blob,
   filename: string,
   fetchImpl: typeof fetch = fetch,
+  language = 'pt',
 ): Promise<TranscribedWord[]> {
   if (audio.size > MAX_AUDIO_BYTES) throw new Error('Áudio maior que 25 MB. Corte o vídeo.');
   const res = await fetchImpl(OPENAI_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}` },
-    body: buildTranscriptionForm(audio, filename),
+    body: buildTranscriptionForm(audio, filename, language),
   });
   // nunca repassa corpo cru nem a chave na mensagem de erro
   if (res.status === 401) throw new Error('Chave da OpenAI recusada (401). Confira a chave.');

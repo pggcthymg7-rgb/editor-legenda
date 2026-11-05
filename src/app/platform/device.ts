@@ -50,7 +50,7 @@ export const devicePlatform: Platform = {
     return url;
   },
 
-  async transcribeOpenAi(ref, onStatus) {
+  async transcribeOpenAi(ref, onStatus, lang = 'pt') {
     const key = getKey();
     if (!key) throw new Error('Coloque sua chave da OpenAI nas configurações');
     const v = await idbGet<StoredVideo>('videos', ref);
@@ -59,17 +59,17 @@ export const devicePlatform: Platform = {
     const { extractAudio } = await import('./audio');
     const audio = await extractAudio(v.blob, (p) => onStatus('Separando o áudio…', p));
     onStatus('Transcrevendo na OpenAI…');
-    return transcribeWithKey(key, audio, 'audio.m4a');
+    return transcribeWithKey(key, audio, 'audio.m4a', fetch, lang);
   },
 
-  async transcribeCloud(ref, onStatus) {
+  async transcribeCloud(ref, onStatus, lang = 'pt') {
     const v = await idbGet<StoredVideo>('videos', ref);
     if (!v) throw new Error('Vídeo não encontrado neste aparelho');
     const [{ extractAudio }, { cloudTranscribe }] = await Promise.all([import('./audio'), import('../cloud')]);
     onStatus('Separando o áudio…', 0);
     const audio = await extractAudio(v.blob, (p) => onStatus('Separando o áudio…', p));
     onStatus('Transcrevendo na nuvem…');
-    return cloudTranscribe(audio);
+    return cloudTranscribe(audio, lang);
   },
 
   async listProjects() {
@@ -148,9 +148,11 @@ export const devicePlatform: Platform = {
     for (const f of ALL_FORMATS) {
       const cfg = DEVICE_FORMATS[f.id];
       if (!cfg) continue;
+      const sc = deviceScale(width);
       const r = await canRenderMediaOnWeb({
         width,
         height,
+        scale: sc,
         container: cfg.container,
         videoCodec: cfg.videoCodec,
         transparent: cfg.transparent,
@@ -193,6 +195,8 @@ export const devicePlatform: Platform = {
       transparent: cfg.transparent,
       muted: cfg.muted,
       videoBitrate: 'high',
+      // vídeo 4K do iPhone: exporta em até 1080 de largura (memória e tempo); legenda escala junto
+      scale: deviceScale(width),
       signal: signal ?? null,
       onProgress: (p) => onProgress(p.progress),
     });
@@ -201,6 +205,13 @@ export const devicePlatform: Platform = {
     const file = new File([blob], `${safeName(project.name)}-${layer === 'person' ? 'pessoa-' : ''}${format}.${ext}`, { type: blob.type || `video/${cfg.container}` });
     return { url: URL.createObjectURL(file), file };
   },
+};
+
+/** Fator para exportar no máximo 1080 px de largura (par, exigido pelo H.264). */
+export const deviceScale = (width: number) => {
+  if (width <= 1080) return 1;
+  const w = Math.floor(1080 / 2) * 2;
+  return w / width;
 };
 
 export const safeName = (n: string) => n.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 60) || 'legendas';

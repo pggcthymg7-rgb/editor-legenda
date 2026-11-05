@@ -3,7 +3,7 @@ import { createProject } from '../../core/grouping';
 import type { Project, TranscribedWord } from '../../core/types';
 import { getKey, isPlausibleKey, setKey } from '../platform/openai-browser';
 import { isIOS, platform, type ProjectSummary } from '../platform';
-import type { LocalModel } from '../transcribe';
+import type { Lang, LocalModel } from '../transcribe';
 import { cloudHealth, type CloudState } from '../cloud';
 
 type Engine = 'cloud' | 'local' | 'openai' | 'none';
@@ -78,6 +78,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
   const [engine, setEngine] = useState<Engine>('cloud');
   const [model, setModel] = useState<LocalModel>(ios ? 'base' : 'small');
   const [cloud, setCloud] = useState<CloudState>('checking');
+  const [lang, setLang] = useState<Lang>('pt');
   // vídeo já guardado/enviado (tentar outro motor não duplica)
   const [saved1, setSaved1] = useState<{ file: File; up: { src: string; ref: string } } | null>(null);
   const [openai, setOpenai] = useState(false);
@@ -123,11 +124,11 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
       const local = async () => {
         // carrega o Whisper só quando usado (pacote pesado)
         const { transcribeLocal } = await import('../transcribe');
-        return transcribeLocal(file, model, status);
+        return transcribeLocal(file, model, status, lang);
       };
       if (engine === 'cloud') {
         try {
-          words = await platform.transcribeCloud(up.ref, status);
+          words = await platform.transcribeCloud(up.ref, status, lang);
         } catch (e) {
           // nuvem fora: tenta no aparelho sozinho, sem o usuário precisar fazer nada
           status(`Nuvem indisponível (${(e as Error).message}). Tentando no aparelho…`);
@@ -135,7 +136,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
         }
       }
       if (engine === 'local') words = await local();
-      if (engine === 'openai') words = await platform.transcribeOpenAi(up.ref, status);
+      if (engine === 'openai') words = await platform.transcribeOpenAi(up.ref, status, lang);
       const project = createProject({ src: up.src, ...meta, fps: 30 }, words, file.name.replace(/\.[^.]+$/, ''));
       onReady(project);
     } catch (e) {
@@ -163,6 +164,15 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
 
       <fieldset disabled={busy}>
         <legend>Transcrição</legend>
+        <label className="lang-row">
+          Idioma falado
+          <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Idioma falado no vídeo">
+            <option value="pt">Português</option>
+            <option value="en">Inglês</option>
+            <option value="es">Espanhol</option>
+            <option value="auto">Detectar sozinho</option>
+          </select>
+        </label>
         <label>
           <input type="radio" checked={engine === 'cloud'} onChange={() => setEngine('cloud')} disabled={cloud === 'nokey' || cloud === 'offline'} /> Nuvem
           rápida e grátis <span className="badge">recomendado</span>
@@ -172,7 +182,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
               : cloud === 'ready'
                 ? ' Pronta. Whisper large-v3-turbo: 1 min de vídeo em segundos.'
                 : cloud === 'nokey'
-                  ? ' Servidor sem chave configurada (veja o README).'
+                  ? ' Ainda sem chave grátis no servidor: por enquanto use “No aparelho”.'
                   : ' Sem conexão com a nuvem agora.'}
           </span>
         </label>

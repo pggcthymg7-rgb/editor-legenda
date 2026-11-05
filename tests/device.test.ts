@@ -88,3 +88,12 @@ describe('aparelho: OpenAI direto com a chave do usuário', () => {
     expect(isPlausibleKey('sk-<script>')).toBe(false);
   });
 });
+
+import { deviceScale } from '../src/app/platform/device';
+describe('export no aparelho', () => {
+  it('limita a 1080 de largura', () => {
+    expect(deviceScale(720)).toBe(1);
+    expect(deviceScale(2160)).toBeCloseTo(0.5);
+    expect(Math.round(3840 * deviceScale(2160)) % 2).toBe(0);
+  });
+});

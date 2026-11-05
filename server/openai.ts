@@ -31,7 +31,7 @@ export async function transcribeOpenAi(mediaName: string, language = 'pt'): Prom
     const form = new FormData();
     form.append('file', new Blob([buf], { type: 'audio/mpeg' }), 'audio.mp3');
     form.append('model', 'whisper-1');
-    form.append('language', language);
+    if (language !== 'auto') form.append('language', language);
     form.append('response_format', 'verbose_json');
     form.append('timestamp_granularities[]', 'word');
     const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {

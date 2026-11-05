@@ -61,21 +61,21 @@ export const macPlatform: Platform = {
     return { src: up.url, ref: up.name };
   },
   videoUrl: async (src) => src,
-  async transcribeOpenAi(ref, onStatus) {
+  async transcribeOpenAi(ref, onStatus, lang = 'pt') {
     onStatus('Transcrevendo na OpenAI…');
     const r = await fetch('/api/transcribe/openai', {
       method: 'POST',
       headers: { ...H, 'content-type': 'application/json' },
-      body: JSON.stringify({ name: ref }),
+      body: JSON.stringify({ name: ref, lang }),
     });
     return (await json<{ words: TranscribedWord[] }>(r)).words;
   },
-  async transcribeCloud(ref, onStatus) {
+  async transcribeCloud(ref, onStatus, lang = 'pt') {
     const [{ extractAudio }, { cloudTranscribe }] = await Promise.all([import('./audio'), import('../cloud')]);
     onStatus('Separando o áudio…', 0);
     const audio = await extractAudio(`/media/${encodeURIComponent(ref)}`, (p) => onStatus('Separando o áudio…', p));
     onStatus('Transcrevendo na nuvem…');
-    return cloudTranscribe(audio);
+    return cloudTranscribe(audio, lang);
   },
   listProjects: () => fetch('/api/projects').then((r) => json<{ id: string; name: string }[]>(r)),
   loadProject: (id) => fetch(`/api/projects/${encodeURIComponent(id)}`).then((r) => json<Project>(r)),

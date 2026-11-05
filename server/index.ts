@@ -110,7 +110,8 @@ app.post('/api/transcribe/openai', async (req, res) => {
   const name = safeMediaName(req.body?.name);
   if (!name) return res.status(400).json({ error: 'mídia inválida' });
   try {
-    res.json({ words: await transcribeOpenAi(name, 'pt') });
+    const lang = typeof req.body?.lang === 'string' && /^([a-z]{2}|auto)$/.test(req.body.lang) ? req.body.lang : 'pt';
+    res.json({ words: await transcribeOpenAi(name, lang) });
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : 'falha na transcrição' });
   }
