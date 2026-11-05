@@ -95,12 +95,21 @@ export function counterText(text: string, p: number): string {
   const m = text.match(/^(\D*)([\d.,]+)(.*)$/);
   if (!m) return text;
   const [, pre, num, post] = m;
-  const sepThousand = /\d[.,]\d{3}(\D|$)/.test(num) ? (num.match(/[.,]/)?.[0] ?? '') : '';
-  // decimal ("2,5") não anima: contar 0→25 seria errado
-  if (/[.,]/.test(num) && !sepThousand) return text;
-  const digits = Number(num.replace(/[.,]/g, ''));
-  if (!Number.isFinite(digits)) return text;
-  const cur = Math.round(digits * easeOut(clamp01(p)));
-  const body = sepThousand ? cur.toString().replace(/\B(?=(\d{3})+(?!\d))/g, sepThousand) : String(cur);
+  // com "." e "," juntos, o último é o decimal ("1.500,00", "1,500.50")
+  const both = num.includes('.') && num.includes(',');
+  const decSep = both ? num[Math.max(num.lastIndexOf('.'), num.lastIndexOf(','))] : '';
+  const intStr = decSep ? num.slice(0, num.lastIndexOf(decSep)) : num;
+  const frac = decSep ? num.slice(num.lastIndexOf(decSep) + 1) : '';
+  const sepThousand = /\d[.,]\d{3}(\D|$)/.test(intStr) ? (intStr.match(/[.,]/)?.[0] ?? '') : '';
+  // decimal sozinho ("2,5") não anima: contar 0→25 seria errado
+  if (!decSep && /[.,]/.test(num) && !sepThousand) return text;
+  if (/[^\d]/.test(frac)) return text;
+  const units = Number(intStr.replace(/[.,]/g, '') + frac);
+  if (!Number.isFinite(units)) return text;
+  const cur = Math.round(units * easeOut(clamp01(p)));
+  const scale = 10 ** frac.length;
+  const intCur = Math.floor(cur / scale);
+  const intBody = sepThousand ? intCur.toString().replace(/\B(?=(\d{3})+(?!\d))/g, sepThousand) : String(intCur);
+  const body = decSep ? intBody + decSep + String(cur % scale).padStart(frac.length, '0') : intBody;
   return pre + body + post;
 }

@@ -69,7 +69,8 @@ export async function analyzePerson(
     for await (const wrapped of sink.canvasesAtTimestamps(times)) {
       if (signal?.aborted) throw new Error('cancelado');
       if (wrapped) {
-        const res = segmenter.segmentForVideo(wrapped.canvas as HTMLCanvasElement, Math.round(times[i] * 1000) + 1);
+        const res = // MediaPipe exige tempo ≥ 0 e crescente; MOV com B-frames pode começar negativo
+        segmenter.segmentForVideo(wrapped.canvas as HTMLCanvasElement, Math.round((i * 1000) / MASK_FPS) + 1);
         const masks = res.confidenceMasks ?? [];
         // classe 0 = fundo → pessoa = 1 - fundo
         const bg = masks[0]?.getAsFloat32Array();
@@ -92,6 +93,7 @@ export async function analyzePerson(
       i++;
       if (i % 5 === 0) onProgress(i / count, `Analisando a pessoa… ${i}/${count}`);
     }
+    if (!frames.length || !prev) throw new Error('Não deu para ler os quadros do vídeo');
     while (frames.length < count) frames.push(frames[frames.length - 1]);
     onProgress(1, 'Pronto');
     return { frames, width: w, height: h, fps: MASK_FPS };

@@ -331,7 +331,7 @@ export const App: React.FC = () => {
             <button className="icon close" onClick={() => setExportOpen(false)} aria-label="Fechar">
               <X size={18} aria-hidden="true" />
             </button>
-            <ExportPanel project={playable} maskUrls={activeMasks} />
+            <ExportPanel project={playable} maskUrls={activeMasks} personMasks={maskUrls} />
           </div>
         </div>
       )}

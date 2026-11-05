@@ -149,7 +149,8 @@ export function retextPhrase(p: Phrase, text: string): Phrase {
   const tokens = text.split(/\s+/).filter(Boolean);
   if (!tokens.length) return { ...p, words: [] };
   const start = phraseStart(p);
-  const end = phraseEnd(p);
+  // frase sem palavras não tem tempo: usa janela padrão
+  const end = phraseEnd(p) > start ? phraseEnd(p) : start + 800;
   const roles = assignRoles(tokens);
   if (tokens.length === p.words.length) {
     return { ...p, words: p.words.map((w, i) => ({ ...w, text: tokens[i] })) };
@@ -190,12 +191,15 @@ export function mergeWithNext(phrases: Phrase[], phraseId: string): Phrase[] {
 
 /** Ajusta tempo da frase inteira (desloca todas as palavras). */
 export function shiftPhrase(p: Phrase, deltaMs: number): Phrase {
+  // não passa de 0: desloca tudo igual em vez de esmagar as palavras no início
+  const d = Math.max(-phraseStart(p), deltaMs);
+  if (d === 0) return p;
   return {
     ...p,
     words: p.words.map((w) => ({
       ...w,
-      startMs: Math.max(0, w.startMs + deltaMs),
-      endMs: Math.max(40, w.endMs + deltaMs),
+      startMs: w.startMs + d,
+      endMs: w.endMs + d,
     })),
   };
 }

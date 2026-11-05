@@ -30,7 +30,7 @@ async function keepAwake(): Promise<() => void> {
   }
 }
 
-export const ExportPanel: React.FC<{ project: Project; maskUrls?: string[] }> = ({ project, maskUrls }) => {
+export const ExportPanel: React.FC<{ project: Project; maskUrls?: string[]; personMasks?: string[] }> = ({ project, maskUrls, personMasks }) => {
   const [layer, setLayer] = useState<'captions' | 'person'>('captions');
   const canPerson = Boolean(project.video.mask);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -65,7 +65,7 @@ export const ExportPanel: React.FC<{ project: Project; maskUrls?: string[] }> = 
       const r = await platform.render(project, format, (p) => update(id, { progress: p }), ctrl.signal, {
         layer,
         // pessoa precisa das máscaras mesmo com o efeito desligado
-        maskUrls: layer === 'person' ? (maskUrls ?? (await platform.maskUrls(project.video.src, project.video.mask!.count))) : maskUrls,
+        maskUrls: layer === 'person' ? (personMasks ?? maskUrls ?? (await platform.maskUrls(project.video.src, project.video.mask!.count))) : maskUrls,
       });
       urls.current.push(r.url);
       update(id, { status: 'done', url: r.url, file: r.file, progress: 1 });
