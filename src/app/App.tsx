@@ -139,10 +139,23 @@ export const App: React.FC = () => {
     setSelection({ phraseId: null, wordId: null });
   }, [apply, selection.phraseId]);
 
+  // avisa antes de fechar com alteração ainda não salva
+  useEffect(() => {
+    if (saveState === 'ok') return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [saveState]);
+
   // atalhos de teclado estilo NLE
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
+      if (e.key === 'Escape' && (exportOpen || helpOpen)) {
+        setExportOpen(false);
+        setHelpOpen(false);
+        return;
+      }
       if (el.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return;
       const mod = e.metaKey || e.ctrlKey;
       const p = playerRef.current;
@@ -177,7 +190,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, currentMs, project]);
+  }, [undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, currentMs, project, exportOpen, helpOpen]);
 
   // seleção some se a frase foi apagada (desfazer etc.)
   useEffect(() => {

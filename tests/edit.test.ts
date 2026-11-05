@@ -54,3 +54,11 @@ describe('edição na timeline', () => {
     expect(snap(1100, [0, 1000, 2000], 50)).toBe(1100);
   });
 });
+
+import { computePeaks } from '../src/app/waveform';
+describe('forma de onda', () => {
+  it('normaliza picos por balde', () => {
+    const p = computePeaks(new Float32Array([0, 0.5, -1, 0.25]), 2);
+    expect([...p]).toEqual([0.5, 1]);
+  });
+});

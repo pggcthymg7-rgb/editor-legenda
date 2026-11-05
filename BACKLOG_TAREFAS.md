@@ -20,7 +20,7 @@ Pedido: terminar o projeto em modo autônomo:
   - monitor no centro com transporte;
   - inspetor à direita;
   - timeline embaixo, com régua, playhead, blocos arrastáveis e redimensionáveis, zoom e atalhos.
-- [ ] 5. Paridade com os editores de ponta (CapCut, Premiere, Submagic):
+- [x] 5. Paridade com os editores de ponta (CapCut, Premiere, Submagic):
   - guias de área segura (Reels/TikTok);
   - destaque da palavra falada (karaoke);
   - buscar e substituir;

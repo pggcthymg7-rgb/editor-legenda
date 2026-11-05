@@ -31,6 +31,7 @@ button {
   background: var(--raised); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px; transition: background-color 120ms, border-color 120ms;
 }
+button, input, select, label, .clip, .wclip { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:active:not(:disabled) { background: var(--panel-2); }
 button:disabled { opacity: 0.4; cursor: default; }
@@ -224,7 +225,8 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
 .wclip.inphrase { background: #31507a; }
 .wclip.key { font-weight: 700; }
 .wclip.sel { background: #b9932a; border-color: #ffd34d; color: #111; }
-.vclip { background: #1d2a24; border: 1px solid #2f4a3c; color: #9bd3b5; cursor: pointer; }
+.vclip { background: #14201b; border: 1px solid #2f4a3c; color: #9bd3b5; cursor: pointer; }
+.wave { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.85; }
 .grip { position: absolute; top: 0; bottom: 0; width: 8px; cursor: ew-resize; z-index: 2; }
 .grip.l { left: 0; }
 .grip.r { right: 0; }
@@ -233,10 +235,10 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
 .playhead::before { content: ''; position: absolute; top: 0; left: -5px; border: 6px solid transparent; border-top-color: var(--playhead); }
 
 /* ---------- Export / modais ---------- */
-.modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.modal-back { overscroll-behavior: contain; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
 .modal {
   position: relative; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 12px; padding: 18px; width: min(560px, 100%);
-  max-height: calc(100dvh - 32px); overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
 }
 .modal .close { position: absolute; right: 8px; top: 8px; }
 .export h3, .modal h3 { margin: 0 0 10px; }

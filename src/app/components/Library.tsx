@@ -2,6 +2,7 @@ import { CaseSensitive, Layers, ListOrdered, Replace, UserRound, WholeWord } fro
 import React, { useState } from 'react';
 import { countMatches, replaceAll } from '../../core/edit';
 import { fontCss } from '../../core/fonts';
+import { shiftPhrase } from '../../core/grouping';
 import { PRESETS, findPreset } from '../../core/presets';
 import type { Phrase, Project } from '../../core/types';
 import { PhraseList } from './PhraseList';
@@ -148,6 +149,16 @@ export const Library: React.FC<Props> = ({ project, apply, selection, onSelect, 
               Substituir tudo
             </button>
             {msg && <p className="muted small" role="status">{msg}</p>}
+
+            <h4>Sincronia (todas as legendas)</h4>
+            <div className="row wrap">
+              {[-500, -100, 100, 500].map((d) => (
+                <button key={d} onClick={() => apply((proj) => ({ ...proj, phrases: proj.phrases.map((p) => shiftPhrase(p, d)) }))}>
+                  {d > 0 ? '+' : '−'}
+                  {Math.abs(d) / 1000}s
+                </button>
+              ))}
+            </div>
 
             <h4>Texto em massa</h4>
             <div className="row wrap">

@@ -4,6 +4,7 @@ import { movePhraseTo, retimePhrase, setWordTime, snap, snapPoints, sortPhrases 
 import { phraseEnd, phraseStart, phraseText } from '../../core/grouping';
 import { findPreset } from '../../core/presets';
 import type { Phrase, Project } from '../../core/types';
+import { loadPeaks } from '../waveform';
 
 export type Selection = { phraseId: string | null; wordId: string | null };
 
@@ -145,6 +146,31 @@ export const Timeline: React.FC<Props> = (props) => {
 
   const selPhrase = project.phrases.find((p) => p.id === selection.phraseId) ?? null;
 
+  // forma de onda do áudio
+  const waveRef = useRef<HTMLCanvasElement>(null);
+  const [peaks, setPeaks] = useState<Float32Array | null>(null);
+  useEffect(() => {
+    let alive = true;
+    if (project.video.src) loadPeaks(project.video.src).then((p) => alive && setPeaks(p));
+    return () => {
+      alive = false;
+    };
+  }, [project.video.src]);
+  useEffect(() => {
+    const c = waveRef.current;
+    if (!c || !peaks) return;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    c.width = peaks.length;
+    c.height = 60;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#5ee0a0';
+    for (let i = 0; i < peaks.length; i++) {
+      const h = Math.max(1, peaks[i] * 56);
+      ctx.fillRect(i, 30 - h / 2, 1, h);
+    }
+  }, [peaks]);
+
   return (
     <section className="timeline" aria-label="Linha do tempo">
       <div className="tl-toolbar" role="toolbar" aria-label="Ferramentas da timeline">
@@ -196,7 +222,7 @@ export const Timeline: React.FC<Props> = (props) => {
           <div className="tl-head ruler-h" />
           <div className="tl-head">Legendas</div>
           <div className="tl-head">Palavras</div>
-          <div className="tl-head">Vídeo</div>
+          <div className="tl-head">Áudio</div>
         </div>
         <div className="tl-scroll" ref={scrollRef}>
           <div className="tl-content" style={{ width: totalW }}>
@@ -273,7 +299,7 @@ export const Timeline: React.FC<Props> = (props) => {
 
             <div className="tl-track video" onPointerDown={(e) => seekMs(xToMs(contentX(e.clientX)))}>
               <div className="vclip" style={{ left: 12, width: msToX(project.video.durationMs) }}>
-                <span className="clip-label">{project.name}</span>
+                {peaks ? <canvas ref={waveRef} className="wave" aria-hidden="true" /> : <span className="clip-label">{project.name}</span>}
               </div>
             </div>
 
