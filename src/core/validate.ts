@@ -118,6 +118,7 @@ export function validateProject(input: unknown): Result {
       const e = styleError(ph.highlight);
       if (e) return fail(`destaque: ${e}`);
     }
+    if (ph.highlightScale !== undefined && !num(ph.highlightScale, 0.5, 3)) return fail('destaque: escala inválida');
     if (ph.roleStyles !== undefined) {
       if (!isObj(ph.roleStyles) || Object.keys(ph.roleStyles).some((k) => !(ROLES as readonly string[]).includes(k))) return fail('roleStyles inválido');
       for (const r of ROLES) {

@@ -1,7 +1,8 @@
-import { Link2, Link2Off, RotateCcw } from 'lucide-react';
+import { Link2, Link2Off, RotateCcw, Scissors } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { setWordTime } from '../../core/edit';
-import { newId, phraseText } from '../../core/grouping';
+import { suggestEmojis, suggestForText, withEmoji } from '../../core/emojis';
+import { newId, phraseText, splitPhrase } from '../../core/grouping';
 import { findPreset, resolveAnimation, resolveWordStyle } from '../../core/presets';
 import { ENTRANCES, EXITS, type Animation, type Phrase, type Preset, type Project, type Role, type TextStyle, type Word } from '../../core/types';
 import { StyleEditor } from './StyleEditor';
@@ -110,6 +111,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
               roleStyles: phrase.roleStyles,
               animation: phrase.animation,
               highlight: phrase.highlight,
+              highlightScale: phrase.highlightScale,
               scale: phrase.scale,
               rotation: phrase.rotation,
               rotateX: phrase.rotateX,
@@ -132,6 +134,7 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
               roleStyles: phrase.roleStyles,
               animation: phrase.animation,
               highlight: phrase.highlight,
+              highlightScale: phrase.highlightScale,
               scale: phrase.scale,
               rotation: phrase.rotation,
               rotateX: phrase.rotateX,
@@ -166,6 +169,8 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
   };
 
   const word = phrase.words.find((w) => w.id === wordId) ?? null;
+  const wordEmojis = word ? suggestEmojis(word.text) : [];
+  const phraseEmojis = suggestForText(phrase.words.map((w) => w.text));
   const hl = phrase.highlight ?? null;
   const hlBase = resolveWordStyle(preset, 'key', phrase.roleStyles);
 
@@ -195,6 +200,26 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
       {tab === 'frase' && (
         <div>
           <p className="muted small">{preset.description}</p>
+          {phraseEmojis.length > 0 && (
+            <div className="field">
+              <span>Emojis</span>
+              <div className="row field-wide" role="group" aria-label="Emojis sugeridos para a frase">
+                {phraseEmojis.map((em) => {
+                  const target = phrase.words.find((w) => w.role === 'key') ?? phrase.words[phrase.words.length - 1];
+                  return (
+                    <button
+                      key={em}
+                      className="small-btn"
+                      onClick={() => target && setWord(target.id, { text: withEmoji(target.text, em) }, false)}
+                      aria-label={`Adicionar ${em} na frase`}
+                    >
+                      {em}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <h4>Transformar</h4>
           <Slider label="Posição X" value={phrase.x} min={0} max={1} step={0.005} onChange={(v) => set({ x: v })} />
           <Slider label="Posição Y" value={phrase.y} min={0} max={1} step={0.005} onChange={(v) => set({ y: v })} />
@@ -306,6 +331,16 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
           </label>
           <p className="muted small">Estilo karaokê (CapCut/Submagic): só os campos alterados aqui mudam na palavra ativa.</p>
           {hl && (
+            <Slider
+              label="Pop (escala)"
+              value={phrase.highlightScale ?? 1}
+              min={1}
+              max={1.6}
+              step={0.05}
+              onChange={(v) => set({ highlightScale: v })}
+            />
+          )}
+          {hl && (
             <StyleEditor
               style={{ ...hlBase, ...hl }}
               sample={phrase.words[0]?.text}
@@ -341,6 +376,28 @@ export const PhrasePanel: React.FC<Props> = ({ project, phrase, wordId, onSelect
                   onChange={(e) => setWord(word.id, { text: e.target.value.slice(0, 200) })}
                 />
               </label>
+              {wordEmojis.length > 0 && (
+                <div className="field">
+                  <span>Emoji</span>
+                  <div className="row field-wide" role="group" aria-label="Sugestões de emoji">
+                    {wordEmojis.map((em) => (
+                      <button key={em} className="small-btn" onClick={() => setWord(word.id, { text: withEmoji(word.text, em) }, false)} aria-label={`Adicionar ${em}`}>
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button
+                disabled={phrase.words.findIndex((w) => w.id === word.id) <= 0}
+                title="A frase passa a começar nesta palavra (como S na agulha)"
+                onClick={() => {
+                  const at = phrase.words.findIndex((w) => w.id === word.id);
+                  apply((proj) => ({ ...proj, phrases: splitPhrase(proj.phrases, phrase.id, at) }), false);
+                }}
+              >
+                <Scissors size={14} aria-hidden="true" /> Dividir nesta palavra
+              </button>
               <div className="field">
                 <span>Papel</span>
                 <div className="seg field-wide" role="group" aria-label="Papel">

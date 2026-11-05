@@ -134,6 +134,13 @@ fieldset > label { line-height: 1.35; }
   background: radial-gradient(120% 120% at 30% 20%, #2b2b38, #101015);
 }
 .preset-meta { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; gap: 6px; }
+/* prévia animada do modelo ao passar o mouse / tocar */
+.preset-prev > span { transition: transform 160ms ease-out; }
+.preset-prev:hover:not(:disabled) > span:first-child, .preset-prev:focus-visible > span:first-child { animation: prev-in 600ms ease-out both; }
+.preset-prev:hover:not(:disabled) > span:last-child, .preset-prev:focus-visible > span:last-child { animation: prev-pop 700ms 120ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes prev-in { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes prev-pop { 0% { opacity: 0; transform: scale(0.6); } 60% { opacity: 1; transform: scale(1.12); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .preset-prev > span { animation: none !important; } }
 .small-btn { padding: 3px 8px; font-size: 12px; }
 .findrep { display: flex; flex-direction: column; gap: 8px; }
 .stack-label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; }
@@ -152,6 +159,14 @@ fieldset > label { line-height: 1.35; }
 .snap-line { position: absolute; pointer-events: none; background: rgba(94, 224, 160, 0.85); z-index: 6; }
 .snap-line.x { top: 0; bottom: 0; left: 50%; width: 1px; }
 .snap-line.y { left: 0; right: 0; top: 50%; height: 1px; }
+.handle {
+  position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; z-index: 7;
+  background: #fff; border: 2px solid var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); touch-action: none;
+}
+.handle.scale { cursor: nwse-resize; border-radius: 3px; }
+.handle.rotate { cursor: grab; }
+.handle.rotate::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1.5px; height: 10px; background: var(--accent); transform: translateX(-50%); }
+@media (pointer: coarse) { .handle { width: 24px; height: 24px; margin: -12px 0 0 -12px; } }
 .safe { position: absolute; inset: 0; pointer-events: none; }
 .safe > div { position: absolute; background: rgba(255, 77, 109, 0.16); border: 1px dashed rgba(255, 77, 109, 0.7); }
 .safe-top { left: 0; right: 0; top: 0; height: 12%; }

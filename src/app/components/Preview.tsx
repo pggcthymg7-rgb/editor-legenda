@@ -13,6 +13,8 @@ type Props = {
   onSelect: (s: Selection) => void;
   onMovePhrase: (id: string, x: number, y: number) => void;
   onMoveWord: (phraseId: string, wordId: string, patch: Partial<Word>) => void;
+  /** alças do monitor: escala e rotação da frase */
+  onTransformPhrase?: (id: string, patch: { scale?: number; rotation?: number }) => void;
   onTime: (ms: number) => void;
   onPlaying: (p: boolean) => void;
   currentMs: number;
@@ -38,6 +40,7 @@ export const Preview: React.FC<Props> = ({
   onSelect,
   onMovePhrase,
   onMoveWord,
+  onTransformPhrase,
   onTime,
   onPlaying,
   currentMs,
@@ -118,6 +121,44 @@ export const Preview: React.FC<Props> = ({
   const onPointerDown = (e: React.PointerEvent) => {
     const stage = stageRef.current;
     if (!stage || (e.target as HTMLElement).closest('.transport')) return;
+    const handle = (e.target as HTMLElement).closest<HTMLElement>('[data-handle]');
+    if (handle && box && selection.phraseId && onTransformPhrase) {
+      const phrase = project.phrases.find((p) => p.id === selection.phraseId);
+      if (!phrase) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const s = stage.getBoundingClientRect();
+      const cx = s.left + box.left + box.width / 2;
+      const cy = s.top + box.top + box.height / 2;
+      const kind = handle.dataset.handle as 'scale' | 'rotate';
+      const d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy));
+      const a0 = Math.atan2(e.clientY - cy, e.clientX - cx);
+      const scale0 = phrase.scale || 1;
+      const rot0 = phrase.rotation || 0;
+      const id = phrase.id;
+      const move = (ev: PointerEvent) => {
+        if (kind === 'scale') {
+          const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+          onTransformPhrase(id, { scale: Math.round(Math.min(5, Math.max(0.2, (scale0 * d) / d0)) * 100) / 100 });
+        } else {
+          let r = rot0 + ((Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180) / Math.PI;
+          r = ((((r + 180) % 360) + 360) % 360) - 180;
+          // ímã a cada 15° (ou livre com Alt)
+          const near = Math.round(r / 15) * 15;
+          if (!ev.altKey && Math.abs(r - near) < 3) r = near;
+          onTransformPhrase(id, { rotation: Math.round(r) });
+        }
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+      return;
+    }
     const hits = document.elementsFromPoint(e.clientX, e.clientY);
     const phraseEl = hits.find((h) => h instanceof HTMLElement && h.dataset.phraseId) as HTMLElement | undefined;
     // palavra ainda invisível (revelação palavra a palavra) não recebe clique: acha pela caixa
@@ -227,6 +268,24 @@ export const Preview: React.FC<Props> = ({
           {snapGuide.x && <div className="snap-line x" aria-hidden="true" />}
           {snapGuide.y && <div className="snap-line y" aria-hidden="true" />}
           {box && <div className={`selbox ${selection.wordId ? 'word' : ''}`} style={box} aria-hidden="true" />}
+          {box && !selection.wordId && onTransformPhrase && !playing && (
+            <>
+              <div
+                className="handle scale"
+                data-handle="scale"
+                style={{ left: box.left + box.width, top: box.top + box.height }}
+                title="Arraste para mudar o tamanho"
+                aria-hidden="true"
+              />
+              <div
+                className="handle rotate"
+                data-handle="rotate"
+                style={{ left: box.left + box.width / 2, top: box.top - 22 }}
+                title="Arraste para girar (ímã a cada 15°, Alt = livre)"
+                aria-hidden="true"
+              />
+            </>
+          )}
         </div>
       </div>
       <div className="transport" role="toolbar" aria-label="Controles de reprodução">

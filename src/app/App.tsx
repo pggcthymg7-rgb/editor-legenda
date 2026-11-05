@@ -102,6 +102,11 @@ export const App: React.FC = () => {
       apply((p) => ({ ...p, phrases: p.phrases.map((ph) => (ph.id === id ? { ...ph, x, y } : ph)) }), true),
     [apply],
   );
+  const onTransformPhrase = useCallback(
+    (id: string, patch: { scale?: number; rotation?: number }) =>
+      apply((p) => ({ ...p, phrases: p.phrases.map((ph) => (ph.id === id ? { ...ph, ...patch } : ph)) }), true),
+    [apply],
+  );
   const onMoveWord = useCallback(
     (phraseId: string, wordId: string, patch: Partial<Word>) =>
       apply(
@@ -299,6 +304,7 @@ export const App: React.FC = () => {
               }}
               onMovePhrase={onMovePhrase}
               onMoveWord={onMoveWord}
+              onTransformPhrase={onTransformPhrase}
               onTime={setCurrentMs}
               onPlaying={setPlaying}
               currentMs={currentMs}

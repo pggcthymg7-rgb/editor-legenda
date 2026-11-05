@@ -90,6 +90,19 @@ export function wordMotion(
   return combine(a, b);
 }
 
+/**
+ * Karaokê 2.0: fator de escala da palavra falada. Cresce rápido (pop) no início da palavra,
+ * fica no máximo enquanto ela é falada e volta a 1 fora dela.
+ */
+export function highlightPop(tMs: number, word: { startMs: number; endMs: number }, scale = 1, riseMs = 90): number {
+  if (!(scale > 0) || scale === 1 || tMs < word.startMs || tMs >= word.endMs) return 1;
+  const p = Math.min(1, (tMs - word.startMs) / Math.max(1, riseMs));
+  // easeOutBack: passa um pouco do alvo e assenta (sensação de "pop")
+  const c = 1.70158;
+  const e = 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2);
+  return 1 + (scale - 1) * e;
+}
+
 /** Valor do contador (P6): "260,000" anima de 0 a 260000 mantendo o formato. */
 export function counterText(text: string, p: number): string {
   const m = text.match(/^(\D*)([\d.,]+)(.*)$/);

@@ -109,6 +109,8 @@ export type Phrase = {
   roleStyles?: Partial<Record<Role, Partial<TextStyle>>>;
   /** estilo aplicado à palavra enquanto ela é falada (karaoke) */
   highlight?: Partial<TextStyle> | null;
+  /** karaokê 2.0: a palavra falada cresce até este fator (1 = sem pop) */
+  highlightScale?: number;
   /** legenda passa atrás da pessoa (precisa da análise de pessoa no vídeo) */
   behind?: boolean;
 };

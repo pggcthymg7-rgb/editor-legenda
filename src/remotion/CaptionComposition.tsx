@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { grayToAlpha, maskIndexAt } from '../core/mask';
 import { phraseStart, phraseVisibleEnd } from '../core/grouping';
 import { arcPlacement, computeLines } from '../core/layout';
-import { counterText, wordMotion, wordWindows } from '../core/motion';
+import { counterText, highlightPop, wordMotion, wordWindows } from '../core/motion';
 import { findPreset, resolveAnimation, resolveWordStyle } from '../core/presets';
 import type { Animation, CompositionProps, Phrase, Project, TextStyle, Word } from '../core/types';
 import { fitStyle, fontFamilyCss, measureText, useFontsReady } from './fonts';
@@ -41,9 +41,11 @@ type WordViewProps = {
   counter: boolean;
   fitWidth?: number;
   extra?: { x: number; y: number; rotate: number };
+  /** karaokê 2.0: escala extra da palavra falada (1 = nenhuma) */
+  pop?: number;
 };
 
-const WordView: React.FC<WordViewProps> = ({ word, style: rawStyle, tMs, win, anim, k, counter, fitWidth, extra }) => {
+const WordView: React.FC<WordViewProps> = ({ word, style: rawStyle, tMs, win, anim, k, counter, fitWidth, extra, pop = 1 }) => {
   const m = wordMotion(tMs, win, anim);
   const isHidden = m === null;
   const st = m ?? { opacity: 0, blur: 0, translateY: 0, scale: 1 };
@@ -53,8 +55,8 @@ const WordView: React.FC<WordViewProps> = ({ word, style: rawStyle, tMs, win, an
   const tx = (extra?.x ?? 0) + (word.dx ?? 0);
   const ty = (extra?.y ?? 0) + (word.dy ?? 0) + st.translateY;
   const rot = (extra?.rotate ?? 0) + (word.rotation ?? 0);
-  const sx = st.scale * (word.scaleX ?? 1);
-  const sy = st.scale * (word.scaleY ?? 1);
+  const sx = st.scale * (word.scaleX ?? 1) * pop;
+  const sy = st.scale * (word.scaleY ?? 1) * pop;
   const fs = style.fontSize * k;
   const box = style.box;
   return (
@@ -156,6 +158,7 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
       counter={preset.counter}
       fitWidth={preset.fitWidth ? width * 0.92 : undefined}
       extra={extra}
+      pop={phrase.highlight ? highlightPop(tMs, w, phrase.highlightScale ?? 1) : 1}
     />
   );
 
