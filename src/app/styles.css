@@ -149,6 +149,9 @@ fieldset > label { line-height: 1.35; }
 .stage { position: relative; background: #000; box-shadow: 0 0 0 1px var(--line); touch-action: none; user-select: none; -webkit-user-select: none; }
 .selbox { position: absolute; border: 1.5px solid var(--accent); border-radius: 4px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
 .selbox.word { border-color: #ffd34d; border-style: dashed; }
+.snap-line { position: absolute; pointer-events: none; background: rgba(94, 224, 160, 0.85); z-index: 6; }
+.snap-line.x { top: 0; bottom: 0; left: 50%; width: 1px; }
+.snap-line.y { left: 0; right: 0; top: 50%; height: 1px; }
 .safe { position: absolute; inset: 0; pointer-events: none; }
 .safe > div { position: absolute; background: rgba(255, 77, 109, 0.16); border: 1px dashed rgba(255, 77, 109, 0.7); }
 .safe-top { left: 0; right: 0; top: 0; height: 12%; }
@@ -270,30 +273,42 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
   html, body, .editor { max-width: 100vw; overflow-x: hidden; }
   .workspace > * { min-width: 0; max-width: 100%; }
   .topbar { gap: 4px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
-  .topbar .name { min-width: 0; width: 0; }
-  .tl-toolbar { flex-wrap: wrap; }
+  .topbar .name { min-width: 0; width: 0; flex: 1 1 auto; }
+  .save { font-size: 11px; white-space: nowrap; }
+  .tl-toolbar { flex-wrap: nowrap; overflow-x: auto; }
   .tabs { overflow-x: auto; }
   .tabs button { flex: 0 0 auto; padding: 6px 10px; }
   .editor { height: 100dvh; grid-template-rows: auto minmax(0, 1fr); }
-  .topbar .name { flex: 1 1 auto; }
-  .save { display: none; }
-  .workspace { display: flex; flex-direction: column; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
-  .viewer { flex: none; height: 46vh; }
-  .stage-holder { padding: 6px; }
-  .timeline { flex: none; height: 200px; order: 2; }
+  /* Layout CapCut: Monitor + Timeline fixos no topo, painel inferior com rolagem independente */
+  .workspace { display: flex; flex-direction: column; overflow: hidden; min-height: 0; height: 100%; }
+  .viewer { flex: none; height: 38dvh; min-height: 190px; max-height: 44dvh; order: 1; }
+  .stage-holder { padding: 4px; }
+  .timeline { flex: none; height: 156px; order: 2; }
   .tl-heads { width: 54px; }
-  .tl-zoom { width: 70px; }
-  .mobile-tabs { display: flex; order: 3; gap: 4px; padding: 6px; background: var(--panel); border-top: 1px solid var(--line); position: sticky; top: 0; z-index: 4; }
+  .tl-head { height: 34px; font-size: 10px; padding-left: 5px; }
+  .tl-head.ruler-h, .tl-ruler { height: 20px; }
+  .tl-track { height: 34px; }
+  .tl-heads .tl-head:nth-child(3), .tl-track.words { height: 28px; }
+  .tl-heads .tl-head:nth-child(4), .tl-track.video { height: 24px; }
+  .mobile-tabs { display: flex; flex: none; order: 3; gap: 4px; padding: 4px 6px; background: var(--panel); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); z-index: 4; }
   .mobile-tabs button { flex: 1; justify-content: center; }
-  .panel.left, .panel.right { order: 4; border: none; overflow: visible; flex: none; min-height: 50vh; }
+  .panel.left, .panel.right {
+    order: 4; border: none; flex: 1 1 0%; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
   .editor[data-mtab='inspetor'] .panel.left { display: none; }
   .editor[data-mtab='biblioteca'] .panel.right { display: none; }
-  .lib-body { overflow: visible; }
+  .lib-body { overflow-y: auto; flex: 1; min-height: 0; }
   .field { grid-template-columns: 88px minmax(0, 1fr) 58px; }
-  .fontpicker-pop { left: 0; }
-  .transport { overflow-x: auto; }
+  .fontpicker-pop {
+    position: fixed; left: 12px; right: 12px; top: auto; bottom: max(12px, env(safe-area-inset-bottom));
+    max-height: 62dvh; z-index: 60;
+  }
+  .transport { overflow-x: auto; padding: 2px 6px; }
   .tc { font-size: 12px; margin-left: 4px; }
   .tc .muted { display: none; }
   .grip { width: 14px; }
+  .clip:not(.sel) > .grip, .wclip:not(.sel) > .grip { pointer-events: none; }
+  .vclip { touch-action: pan-x; }
   button, .stage, label { -webkit-touch-callout: none; }
 }

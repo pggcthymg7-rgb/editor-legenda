@@ -18,7 +18,10 @@ function readMeta(file: File): Promise<{ width: number; height: number; duration
       resolve({ width: v.videoWidth, height: v.videoHeight, durationMs: Math.round(v.duration * 1000) });
       URL.revokeObjectURL(v.src);
     };
-    v.onerror = () => reject(new Error('Não consegui ler o vídeo'));
+    v.onerror = () => {
+      URL.revokeObjectURL(v.src);
+      reject(new Error('Não consegui ler o vídeo'));
+    };
     v.src = URL.createObjectURL(file);
   });
 }
@@ -292,7 +295,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
       {busy && (
         <div className="status">
           {msg}
-          {progress !== undefined && <progress value={progress} max={1} />}
+          {progress !== undefined ? <progress value={progress} max={1} /> : <progress />}
         </div>
       )}
       {error && <div className="error">{error}</div>}

@@ -46,7 +46,14 @@ export const FontPicker: React.FC<Props> = ({ value, onChange, sample }) => {
       </button>
       {open && (
         <div className="fontpicker-pop" role="dialog" aria-label="Escolher fonte">
-          <input className="text" placeholder="Buscar fonte…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus aria-label="Buscar fonte" />
+          <input
+            className="text"
+            placeholder="Buscar fonte…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            autoFocus={typeof window !== 'undefined' && !window.matchMedia?.('(pointer: coarse)').matches}
+            aria-label="Buscar fonte"
+          />
           <div className="chips" role="tablist">
             <button type="button" className={cat === 'all' ? 'on' : ''} onClick={() => setCat('all')}>
               Todas ({FONTS.length})

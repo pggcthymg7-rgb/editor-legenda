@@ -24,6 +24,17 @@ const revokeMasks = (src: string) => {
   maskCache.get(src)?.forEach((u) => URL.revokeObjectURL(u));
   maskCache.delete(src);
 };
+const revokeOther = (keepSrc: string) => {
+  for (const [k, u] of urlCache) {
+    if (k !== keepSrc) {
+      URL.revokeObjectURL(u);
+      urlCache.delete(k);
+    }
+  }
+  for (const k of [...maskCache.keys()]) {
+    if (k !== keepSrc) revokeMasks(k);
+  }
+};
 
 export const devicePlatform: Platform = {
   kind: 'device',
@@ -40,7 +51,12 @@ export const devicePlatform: Platform = {
   },
 
   async videoUrl(src) {
+    if (!src) {
+      revokeOther('');
+      return '';
+    }
     if (!LOCAL_SRC.test(src)) return src;
+    revokeOther(src);
     const cached = urlCache.get(src);
     if (cached) return cached;
     const v = await idbGet<StoredVideo>('videos', src.slice('local:'.length));

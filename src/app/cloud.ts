@@ -32,16 +32,20 @@ let healthPromise: Promise<CloudState> | null = null;
 /** Verifica (e acorda) o servidor. O plano grátis dorme: a 1ª chamada pode levar ~30–60 s. */
 export function cloudHealth(fetchImpl: typeof fetch = fetch): Promise<CloudState> {
   healthPromise ??= (async () => {
+    let state: CloudState = 'offline';
     try {
+      await Promise.resolve();
       const r = await fetchImpl(`${CLOUD_URL}/health`, { signal: AbortSignal.timeout(75_000) });
       if (!r.ok) return 'offline';
       const j = (await r.json()) as { ready?: boolean };
-      return j.ready || getGroqKey() ? 'ready' : 'nokey';
+      state = j.ready || getGroqKey() ? 'ready' : 'nokey';
+      return state;
     } catch {
       return 'offline';
     } finally {
-      // permite checar de novo depois
-      setTimeout(() => (healthPromise = null), 60_000);
+      // se deu offline, libera na hora para tentar de novo; se respondeu, guarda por 60 s
+      if (state === 'offline') healthPromise = null;
+      else setTimeout(() => (healthPromise = null), 60_000);
     }
   })();
   return healthPromise;

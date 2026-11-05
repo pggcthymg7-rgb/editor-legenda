@@ -67,7 +67,17 @@ export const PhraseList: React.FC<Props> = ({ project, apply, selectedId, onSele
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   const np = findPreset(e.target.value, project.customPresets);
-                  update(p.id, (ph) => ({ ...ph, presetId: np.id, x: np.position.x, y: np.position.y, roleStyles: undefined, animation: undefined, highlight: undefined }));
+                  update(p.id, (ph) => ({
+                    ...ph,
+                    presetId: np.id,
+                    x: np.position.x,
+                    y: np.position.y,
+                    rotateX: np.rotateX ?? 0,
+                    rotateY: np.rotateY ?? 0,
+                    roleStyles: undefined,
+                    animation: undefined,
+                    highlight: undefined,
+                  }));
                 }}
               >
                 {[...PRESETS, ...project.customPresets].map((pr) => (

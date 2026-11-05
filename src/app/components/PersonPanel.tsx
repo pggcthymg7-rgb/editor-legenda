@@ -1,6 +1,7 @@
 import { Loader2, UserRound } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import type { Project } from '../../core/types';
+import { clearMaskCache } from '../../remotion/CaptionComposition';
 import { platform } from '../platform';
 
 type Props = {
@@ -33,6 +34,7 @@ export const PersonPanel: React.FC<Props> = ({ project, playableSrc, apply, hasM
       const r = await analyzePerson(playableSrc, project.video.durationMs, (p, m) => (setProgress(p * 0.85), setMsg(m)), ctrl.signal);
       setMsg('Guardando máscaras…');
       await platform.saveMasks(project.video.src, r.frames, (p) => setProgress(0.85 + p * 0.15));
+      clearMaskCache();
       apply((proj) => ({
         ...proj,
         occlusion: true,

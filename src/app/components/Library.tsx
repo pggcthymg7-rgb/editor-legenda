@@ -1,5 +1,5 @@
 import { CaseSensitive, Layers, ListOrdered, Replace, UserRound, WholeWord } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { countMatches, replaceAll } from '../../core/edit';
 import { fontCss } from '../../core/fonts';
 import { shiftPhrase } from '../../core/grouping';
@@ -28,7 +28,17 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 
 const applyPreset = (p: Phrase, id: string, project: Project): Phrase => {
   const np = findPreset(id, project.customPresets);
-  return { ...p, presetId: np.id, x: np.position.x, y: np.position.y, roleStyles: undefined, animation: undefined, highlight: undefined };
+  return {
+    ...p,
+    presetId: np.id,
+    x: np.position.x,
+    y: np.position.y,
+    rotateX: np.rotateX ?? 0,
+    rotateY: np.rotateY ?? 0,
+    roleStyles: undefined,
+    animation: undefined,
+    highlight: undefined,
+  };
 };
 
 /** Painel da esquerda: lista de frases, galeria de modelos, buscar/substituir e análise de pessoa. */
@@ -39,7 +49,7 @@ export const Library: React.FC<Props> = ({ project, apply, selection, onSelect, 
   const [cs, setCs] = useState(false);
   const [ww, setWw] = useState(true);
   const [msg, setMsg] = useState('');
-  const matches = countMatches(project, find, { caseSensitive: cs, wholeWord: ww });
+  const matches = useMemo(() => countMatches(project, find, { caseSensitive: cs, wholeWord: ww }), [project, find, cs, ww]);
   const sel = project.phrases.find((p) => p.id === selection.phraseId);
 
   return (
@@ -172,7 +182,7 @@ export const Library: React.FC<Props> = ({ project, apply, selection, onSelect, 
           </div>
         )}
 
-        {tab === 'pessoa' && personPanel}
+        <div style={{ display: tab === 'pessoa' ? 'block' : 'none' }}>{personPanel}</div>
       </div>
     </div>
   );

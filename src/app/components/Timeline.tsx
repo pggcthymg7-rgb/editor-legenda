@@ -47,6 +47,7 @@ export const Timeline: React.FC<Props> = (props) => {
   const [pps, setPps] = useState<number | null>(null); // px por segundo; null = ajustar à largura
   const [snapOn, setSnapOn] = useState(true);
   const drag = useRef<Drag | null>(null);
+  const dragActive = useRef(false);
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -109,6 +110,8 @@ export const Timeline: React.FC<Props> = (props) => {
     const d = drag.current;
     if (!d) return;
     if (d.kind === 'scrub') return seekMs(xToMs(contentX(e.clientX)));
+    if (!dragActive.current && Math.abs(e.clientX - d.x0) < 4) return;
+    dragActive.current = true;
     const dMs = ((e.clientX - d.x0) / scale) * 1000;
     const updatePhrase = (fn: (p: Phrase) => Phrase) =>
       apply((proj) => ({ ...proj, phrases: sortPhrases(proj.phrases.map((p) => (p.id === d.id ? fn(p) : p))) }), true);
@@ -135,15 +138,19 @@ export const Timeline: React.FC<Props> = (props) => {
   };
   const onUp = () => {
     drag.current = null;
+    dragActive.current = false;
     window.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
   };
   const begin = (e: React.PointerEvent, d: Drag) => {
     e.stopPropagation();
     e.preventDefault();
     drag.current = d;
+    dragActive.current = false;
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   };
 
   const selPhrase = project.phrases.find((p) => p.id === selection.phraseId) ?? null;

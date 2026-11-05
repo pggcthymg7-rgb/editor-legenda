@@ -1,8 +1,8 @@
 import type { PlayerRef } from '@remotion/player';
 import { Clapperboard, Download, FilePlus2, Keyboard, Redo2, SlidersHorizontal, Undo2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { duplicatePhrase, sortPhrases, splitPhraseAt } from '../core/edit';
-import { buildPhrase, phraseEnd, phraseStart } from '../core/grouping';
+import { duplicatePhrase, setWordTime, sortPhrases, splitPhraseAt } from '../core/edit';
+import { buildPhrase, phraseEnd, phraseStart, shiftPhrase } from '../core/grouping';
 import type { Project, Word } from '../core/types';
 import { FPS } from '../remotion/Root';
 import { ExportPanel } from './components/ExportPanel';
@@ -20,6 +20,7 @@ type MobileTab = 'biblioteca' | 'inspetor';
 const SHORTCUTS: [string, string][] = [
   ['Espaço', 'Play / pause'],
   ['← / →', 'Quadro anterior / próximo (Shift = 1 s)'],
+  ['Alt + ← / →', 'Deslocar frase/palavra (±50 ms)'],
   ['Home / End', 'Início / fim'],
   ['S', 'Dividir frase na agulha'],
   ['T', 'Nova frase na agulha'],
@@ -37,6 +38,7 @@ export const App: React.FC = () => {
   const [playing, setPlaying] = useState(false);
   const [saveState, setSaveState] = useState<'ok' | 'saving' | 'error'>('ok');
   const [exportOpen, setExportOpen] = useState(false);
+  const [exportMounted, setExportMounted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('inspetor');
   const playerRef = useRef<PlayerRef | null>(null);
@@ -122,9 +124,12 @@ export const App: React.FC = () => {
   }, [apply, currentMs, project]);
 
   const splitAtPlayhead = useCallback(() => {
-    if (!selection.phraseId) return;
-    apply((proj) => ({ ...proj, phrases: splitPhraseAt(proj.phrases, selection.phraseId!, currentMs) }));
-  }, [apply, selection.phraseId, currentMs]);
+    if (!project) return;
+    const targetId =
+      selection.phraseId ?? project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p))?.id;
+    if (!targetId) return;
+    apply((proj) => ({ ...proj, phrases: splitPhraseAt(proj.phrases, targetId, currentMs) }));
+  }, [apply, project, selection.phraseId, currentMs]);
 
   const duplicate = useCallback(() => {
     if (!project || !selection.phraseId) return;
@@ -178,8 +183,26 @@ export const App: React.FC = () => {
         p?.toggle();
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
-        const d = (e.shiftKey ? FPS : 1) * (e.key === 'ArrowLeft' ? -1 : 1);
-        p?.seekTo(Math.max(0, frame + d));
+        if (e.altKey && selection.phraseId) {
+          const delta = (e.shiftKey ? 10 : 50) * (e.key === 'ArrowLeft' ? -1 : 1);
+          apply(
+            (proj) => ({
+              ...proj,
+              phrases: proj.phrases.map((ph) => {
+                if (ph.id !== selection.phraseId) return ph;
+                if (selection.wordId) {
+                  const w = ph.words.find((x) => x.id === selection.wordId);
+                  if (w) return setWordTime(ph, w.id, w.startMs + delta, w.endMs + delta);
+                }
+                return shiftPhrase(ph, delta);
+              }),
+            }),
+            e.repeat,
+          );
+        } else {
+          const d = (e.shiftKey ? FPS : 1) * (e.key === 'ArrowLeft' ? -1 : 1);
+          p?.seekTo(Math.max(0, frame + d));
+        }
       } else if (e.key === 'Home') p?.seekTo(0);
       else if (e.key === 'End' && project) p?.seekTo(Math.ceil((project.video.durationMs / 1000) * FPS) - 1);
       else if (k === 's') splitAtPlayhead();
@@ -190,7 +213,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, currentMs, project, exportOpen, helpOpen]);
+  }, [undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, apply, selection, currentMs, project, exportOpen, helpOpen]);
 
   // seleção some se a frase foi apagada (desfazer etc.)
   useEffect(() => {
@@ -229,10 +252,24 @@ export const App: React.FC = () => {
         <button className="icon kbd-btn" onClick={() => setHelpOpen(true)} title="Atalhos (?)" aria-label="Atalhos de teclado">
           <Keyboard size={18} aria-hidden="true" />
         </button>
-        <button onClick={() => load(null)} title="Abrir outro vídeo">
+        <button
+          onClick={async () => {
+            if (project && saveState === 'saving') await platform.saveProject(project).catch(() => undefined);
+            setExportOpen(false);
+            setExportMounted(false);
+            load(null);
+          }}
+          title="Abrir outro vídeo"
+        >
           <FilePlus2 size={16} aria-hidden="true" /> <span className="hide-sm">Novo</span>
         </button>
-        <button className="primary" onClick={() => setExportOpen(true)}>
+        <button
+          className="primary"
+          onClick={() => {
+            setExportMounted(true);
+            setExportOpen(true);
+          }}
+        >
           <Download size={16} aria-hidden="true" /> Exportar
         </button>
       </header>
@@ -325,8 +362,12 @@ export const App: React.FC = () => {
         />
       </main>
 
-      {exportOpen && playable && (
-        <div className="modal-back" onPointerDown={(e) => e.target === e.currentTarget && setExportOpen(false)}>
+      {(exportOpen || exportMounted) && playable && (
+        <div
+          className="modal-back"
+          style={{ display: exportOpen ? 'flex' : 'none' }}
+          onPointerDown={(e) => e.target === e.currentTarget && setExportOpen(false)}
+        >
           <div className="modal" role="dialog" aria-modal="true" aria-label="Exportar">
             <button className="icon close" onClick={() => setExportOpen(false)} aria-label="Fechar">
               <X size={18} aria-hidden="true" />

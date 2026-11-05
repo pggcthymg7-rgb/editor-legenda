@@ -51,6 +51,7 @@ export const Preview: React.FC<Props> = ({
   const [grid, setGrid] = useState(false);
   const [muted, setMuted] = useState(false);
   const [box, setBox] = useState<Box>(null);
+  const [snapGuide, setSnapGuide] = useState<{ x: boolean; y: boolean }>({ x: false, y: false });
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
   const durationInFrames = Math.max(1, Math.ceil((durationMs / 1000) * FPS));
 
@@ -133,34 +134,56 @@ export const Preview: React.FC<Props> = ({
     const phraseId = phraseEl.dataset.phraseId!;
     const phrase = project.phrases.find((p) => p.id === phraseId);
     if (!phrase) return;
-    // 1º clique seleciona a frase; clicar de novo numa palavra (ou com Alt) seleciona a palavra
-    const wordId = wordEl && (e.altKey || selection.phraseId === phraseId) ? wordEl.dataset.wordId! : null;
-    onSelect({ phraseId, wordId });
+    const hitWordId = wordEl?.dataset.wordId ?? null;
+    const wasPhraseSelected = selection.phraseId === phraseId;
+    // Alt+clique ou palavra já selecionada arrasta a palavra; senão arrasta a frase inteira
+    // e clique simples (sem arrastar) numa frase já selecionada passa a selecionar a palavra.
+    const initialWordId = hitWordId && (e.altKey || selection.wordId === hitWordId) ? hitWordId : null;
+    onSelect({ phraseId, wordId: initialWordId });
     e.preventDefault();
     const rect = stage.getBoundingClientRect();
     const x0 = e.clientX;
     const y0 = e.clientY;
-    const word = wordId ? phrase.words.find((w) => w.id === wordId) : null;
+    const word = initialWordId ? phrase.words.find((w) => w.id === initialWordId) : null;
     const start = { x: phrase.x, y: phrase.y, dx: word?.dx ?? 0, dy: word?.dy ?? 0 };
     // px de tela → unidades da composição (base 1080)
     const unit = 1080 / rect.width / (phrase.scale || 1);
+    const rad = -((phrase.rotation || 0) * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    let dragged = false;
     const move = (ev: PointerEvent) => {
       const ddx = ev.clientX - x0;
       const ddy = ev.clientY - y0;
-      if (word) onMoveWord(phraseId, word.id, { dx: Math.round(start.dx + ddx * unit), dy: Math.round(start.dy + ddy * unit) });
-      else
-        onMovePhrase(
-          phraseId,
-          Math.min(1, Math.max(0, start.x + ddx / rect.width)),
-          Math.min(1, Math.max(0, start.y + ddy / rect.height)),
-        );
+      if (!dragged && Math.hypot(ddx, ddy) < 4) return;
+      dragged = true;
+      if (word) {
+        const rdx = ddx * cos - ddy * sin;
+        const rdy = ddx * sin + ddy * cos;
+        onMoveWord(phraseId, word.id, { dx: Math.round(start.dx + rdx * unit), dy: Math.round(start.dy + rdy * unit) });
+      } else {
+        let nx = Math.min(1, Math.max(0, start.x + ddx / rect.width));
+        let ny = Math.min(1, Math.max(0, start.y + ddy / rect.height));
+        const sx = Math.abs(nx - 0.5) < 0.015;
+        const sy = Math.abs(ny - 0.5) < 0.015;
+        if (sx) nx = 0.5;
+        if (sy) ny = 0.5;
+        setSnapGuide({ x: sx, y: sy });
+        onMovePhrase(phraseId, nx, ny);
+      }
     };
     const up = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      setSnapGuide({ x: false, y: false });
+      if (!dragged && wasPhraseSelected && hitWordId && !initialWordId) {
+        onSelect({ phraseId, wordId: hitWordId });
+      }
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   };
 
   const p = playerRef.current;
@@ -201,6 +224,8 @@ export const Preview: React.FC<Props> = ({
             </div>
           )}
           {grid && <div className="thirds" aria-hidden="true" />}
+          {snapGuide.x && <div className="snap-line x" aria-hidden="true" />}
+          {snapGuide.y && <div className="snap-line y" aria-hidden="true" />}
           {box && <div className={`selbox ${selection.wordId ? 'word' : ''}`} style={box} aria-hidden="true" />}
         </div>
       </div>
