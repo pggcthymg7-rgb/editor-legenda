@@ -112,3 +112,42 @@ Ainda não feito: emojis animados, transcrição de vários idiomas na mesma tel
 
 ## Observação
 - O modelo de IA de pessoa (`public/models/selfie_multiclass_256x256.tflite`, 16 MB, licença Apache 2.0) está no repositório para funcionar offline.
+
+
+---
+
+# Entrega 2: transcrição no iPhone ("Load failed")
+
+## Causa do erro no iPhone
+- O Whisper local baixa o modelo de `https://remotion.media/` e o runtime ONNX do `cdn.jsdelivr.net`. A política de segurança (CSP) da PWA só liberava huggingface, então o Safari bloqueava e mostrava "Load failed".
+- O site no Render também estava numa versão antiga, porque o deploy automático não disparava. Agora o deploy é disparado a cada entrega.
+
+## Como os apps fazem
+- O CapCut transcreve na nuvem: o celular manda o áudio e o servidor devolve o texto com os tempos. Fontes: a ajuda oficial do CapCut diz que o reconhecimento usa processamento em nuvem.
+- Apps nativos de iPhone podem usar o reconhecimento de fala da Apple. Um PWA não tem acesso a ele.
+- O app "Letr" não foi encontrado nas buscas.
+
+## Solução implantada (grátis)
+1. **Nuvem (padrão):** `cloud/proxy.mjs`, um serviço grátis no Render (`editor-legenda-api.onrender.com`) que repassa ao Groq whisper-large-v3-turbo, com tempos por palavra.
+   - O iPhone extrai só o áudio (AAC mono 16 kHz) em pedaços, com mediabunny e WebCodecs, e envia cerca de 0,25 MB por minuto.
+   - A chave fica só no servidor (variável `GROQ_API_KEY`). No app há apenas um header público e a lista de origens permitidas.
+   - Limite de 60 transcrições por hora por IP, até 25 MB, tipos de áudio validados, sem repassar erro do provedor e sem guardar áudio.
+2. **No aparelho (reserva automática):** Whisper WebGPU (modelo base no iPhone, small no Mac).
+   - CSP corrigida.
+   - O áudio é decodificado em pedaços, não com `decodeAudioData` do arquivo inteiro, que estourava a memória do iPhone com MOV grande.
+   - Se a nuvem falhar, o app tenta no aparelho sozinho.
+3. **Idioma da fala:** português, inglês, espanhol ou detecção automática.
+4. **Export no iPhone:** limitado a 1080 px de largura (vídeo 4K do iPhone).
+
+## Testes
+- 78 testes unitários, incluindo 7 do proxy: origem, header, tipo, idioma, limite, chave só no servidor e erro sem vazamento. Builds do Mac e da PWA passam.
+- **E2E da PWA no perfil iPhone, Whisper no aparelho com WebGPU:**
+  - clipe MP4 em português: 16 palavras;
+  - clipe **MOV** de 15 s em inglês: 53 palavras corretas ("People say you can't sell real estate from social media…").
+  - Sem erros de console.
+- **E2E completo da PWA:** editor, palavra, pessoa, export verde e da pessoa, offline. Passou.
+- **Proxy publicado:** `/health`, preflight CORS 204 e 503 claro sem chave.
+
+## Falta uma ação sua (1 minuto)
+- Criar a chave grátis do Groq e colar em Render → `editor-legenda-api` → Environment → `GROQ_API_KEY`.
+- Sem ela, a opção Nuvem aparece desligada e o app usa a IA no aparelho.

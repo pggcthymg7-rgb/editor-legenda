@@ -94,3 +94,19 @@ Feito, com detalhes em `ENTREGA_PRONTA.md`:
 
 Atenção ao testar:
 - O `vite preview` não serve `/mediapipe/` (404). Para testar a PWA use um servidor estático, por exemplo `python3 -m http.server --directory dist-pwa`. No Render funciona.
+
+## Sessão 4: iPhone "Load failed" e nuvem grátis
+
+Causa do erro: a CSP bloqueava `remotion.media` (modelos do Whisper) e `cdn.jsdelivr.net` (ONNX). Corrigido, com `blob:` liberado em `script-src`.
+
+Nuvem:
+- `cloud/proxy.mjs` (Node puro) roda no Render como `editor-legenda-api`, serviço `srv-dbm632rm8hqs73erfa10`, plano free. Repassa ao Groq.
+- Falta o usuário pôr `GROQ_API_KEY` no Render.
+- Cliente em `src/app/cloud.ts`. A UI mostra o status da nuvem e, se ela falhar, cai para o aparelho.
+
+Áudio:
+- `src/app/platform/audio.ts`: `extractAudio` (AAC para a nuvem) e `decodeAudio16k` (PCM para o Whisper local), ambos com mediabunny e em pedaços.
+
+Render:
+- O deploy automático não dispara: use `trigger_deploy` (MCP) nos dois serviços após o push.
+- Site estático: `srv-dbluvl88v5cc73d1d3j0`.

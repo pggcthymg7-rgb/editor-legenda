@@ -59,10 +59,10 @@ Versão que roda inteira no aparelho, sem o Mac: https://editor-legenda.onrender
 
 1. Abra o link no **Safari** do iPhone. Toque em Compartilhar → **Adicionar à Tela de Início**.
 2. Abra o app pelo ícone **Legendas** e escolha um vídeo do Fotos.
-3. Transcrição:
-   - **OpenAI:** cole sua chave `sk-…` uma vez. Ela fica só no aparelho e pode ser apagada. Só o áudio vai para a OpenAI.
-   - **Local:** experimental no iPhone, só com o modelo small.
-   - **Sem transcrição:** você digita o texto.
+3. Transcrição (escolha o idioma falado: português, inglês, espanhol ou automático):
+   - **Nuvem rápida e grátis (recomendado):** o app tira só o áudio no iPhone (cerca de 0,25 MB por minuto) e manda para o nosso servidor grátis no Render. O servidor repassa ao Groq (Whisper large-v3-turbo), que transcreve 1 minuto em segundos. É o mesmo modelo que o CapCut usa: transcrição na nuvem. Você não digita chave nenhuma no celular.
+   - **No aparelho, offline:** a IA (Whisper em WebGPU) roda no próprio iPhone. Baixa o modelo uma vez (base ≈ 200 MB). Leva alguns minutos e é a reserva automática se a nuvem cair.
+   - **Sua chave da OpenAI** (avançado) ou **sem transcrição**.
 4. Exportar: o vídeo é gerado no próprio iPhone, então deixe o app aberto até terminar.
    - **MP4 fundo verde** → Compartilhar → CapCut → Sobreposição → Chroma key no verde.
    - **MP4 final:** vídeo pronto, com legenda e áudio.
@@ -71,6 +71,14 @@ Versão que roda inteira no aparelho, sem o Mac: https://editor-legenda.onrender
 5. Vídeos e projetos ficam guardados no aparelho. Use o ✕ na lista para apagar e liberar espaço.
 
 Build: `npm run build:pwa` gera a pasta `dist-pwa/`. O Render publica sozinho a cada push na branch.
+
+### Ativar a nuvem (uma vez só, grátis)
+
+1. Crie uma conta grátis em https://console.groq.com e gere uma API key (começa com `gsk_`).
+2. No Render, abra o serviço **editor-legenda-api**, vá em **Environment** e adicione `GROQ_API_KEY` com a chave. Salve; ele reinicia sozinho.
+3. Pronto. A chave fica só no servidor, nunca no app nem no GitHub.
+
+O plano grátis do Groq permite 2.000 transcrições/dia e cerca de 8 h de áudio por dia. O servidor grátis do Render dorme após 15 min sem uso; o app já acorda ele ao abrir, então a 1ª transcrição do dia pode levar ~1 min a mais. Limite de proteção: 60 transcrições por hora por IP (`LIMIT_PER_HOUR`).
 
 ## Comandos
 
