@@ -2,6 +2,8 @@
 
 Editor local de legendas animadas estilo reels (referência: @_k.elsie). Análise dos modelos: `docs/ANALISE.md`.
 
+**Ao retomar: leia primeiro `docs/CEREBRO.md` (mapa de pastas + resumo da sessão).**
+
 ## Comandos
 - Verificação completa: `npm run verify` (tsc + vitest). Nada está pronto sem 0 erros.
 - Rodar: `npm run dev` → http://localhost:5173 (API 127.0.0.1:3210)
