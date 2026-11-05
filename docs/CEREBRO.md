@@ -13,7 +13,11 @@ Leia isto antes de retomar o trabalho. Caminhos marcados como (efêmero) somem q
 | Composição Remotion e fontes | `src/remotion/` |
 | Interface React | `src/app/` |
 | Servidor local (upload, OpenAI, render) | `server/` |
-| Testes (50) | `tests/` (inclui `device.test.ts`) |
+| Testes (70) | `tests/` (`core`, `server`, `device`, `edit`, `mask`) |
+| Relatório de entrega | `ENTREGA_PRONTA.md`, `BACKLOG_TAREFAS.md` |
+| UI profissional | `src/app/components/` (`Timeline`, `Preview` = monitor, `PhrasePanel` = inspetor, `Library`, `PersonPanel`, `FontPicker`, `ExportPanel`) |
+| Edição pura (timeline) | `src/core/edit.ts`; máscara: `src/core/mask.ts`; fontes: `src/core/fonts.ts` (58) |
+| Pessoa (segmentação) | `src/app/person/segment.ts` + `public/models/` + plugin `mediapipe` no `vite.config.ts` |
 | Camada Mac × iPhone | `src/app/platform/` (`mac.ts`, `device.ts`, `idb.ts`, `audio.ts`, `openai-browser.ts`) |
 | PWA iPhone (site) | https://editor-legenda.onrender.com (Render static `srv-dbluvl88v5cc73d1d3j0`, build `build:pwa` → `dist-pwa`) |
 | Dados de execução (vídeos, renders, projetos) | `data/` (fora do git) |
@@ -68,3 +72,25 @@ Pendente:
 - testar no iPhone real, com WebKit;
 - fase 5 (texto atrás da pessoa);
 - PR para a `main`.
+
+## Sessão 3: noturna autônoma (/resolver-tudo)
+
+Pedido: terminar o projeto sem perguntar.
+- auditar;
+- layout de editor profissional;
+- legenda atrás da pessoa, opcional, com camada da frente;
+- mais fontes grátis;
+- palavra individual com escala X/Y;
+- comparar com CapCut, Premiere e Submagic.
+
+Feito, com detalhes em `ENTREGA_PRONTA.md`:
+- **Layout NLE:** biblioteca, monitor, inspetor e timeline com aparar, encaixe, zoom e forma de onda. Usamos as skills `web-design-guidelines` e `ui-ux-pro-max`.
+- **Edição:** 58 fontes OFL com seletor visual, karaokê e caixa de fundo.
+- **Pessoa:** MediaPipe segmenta no navegador e gera uma máscara JPEG por quadro.
+  - Mac: as máscaras vão para o servidor (`/api/masks`).
+  - iPhone: as máscaras ficam no IndexedDB (store `masks`, DB versão 2).
+  - Na composição, a frase com `behind` recebe um `mask-image` com buraco onde está a pessoa. A camada `layer: 'person'` exporta só a pessoa.
+- **Testes:** e2e no desktop e no iPhone passaram e a auditoria foi feita.
+
+Atenção ao testar:
+- O `vite preview` não serve `/mediapipe/` (404). Para testar a PWA use um servidor estático, por exemplo `python3 -m http.server --directory dist-pwa`. No Render funciona.

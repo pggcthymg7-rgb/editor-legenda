@@ -32,5 +32,5 @@ Pedido: terminar o projeto em modo autônomo:
   - opção global liga/desliga;
   - export da "camada da pessoa (frente)" opcional;
   - funciona no render do servidor e no navegador.
-- [ ] 7. Auditoria final: segurança, testes, builds, e2e (desktop e iPhone), `npm audit`.
-- [ ] 8. Entrega: `ENTREGA_PRONTA.md`, `CEREBRO.md`, push e deploy no Render.
+- [x] 7. Auditoria final: segurança, testes, builds, e2e (desktop e iPhone), `npm audit`.
+- [x] 8. Entrega: `ENTREGA_PRONTA.md`, `CEREBRO.md`, push e deploy no Render.

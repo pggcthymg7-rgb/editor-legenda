@@ -18,32 +18,38 @@ O ffmpeg vem junto com o Remotion. Não precisa instalar.
 
 ## Uso
 
-1. Escolha o vídeo e o motor de transcrição:
-   - **Local**: grátis e roda no Mac. Baixa o modelo na primeira vez (`small` ≈ 250 MB).
-   - **API OpenAI**: copie `.env.example` para `.env`, preencha `OPENAI_API_KEY` e reinicie.
-2. O editor cria as frases e sugere um modelo para cada uma:
-   - hook (primeiros 6 s): serif, lilás ou bold;
-   - frases com número: neon;
-   - resto: palavra única.
-3. Na lista da esquerda: corrigir texto, trocar modelo, adiantar/atrasar, dividir, juntar e apagar.
-4. No painel da direita, três abas:
-   - **Frase**: posição, escala, rotação, 3D, animação.
-   - **Estilo**: fonte, cor/degradê, brilho, sombra e contorno de cada papel (ligação, normal, chave).
-   - **Palavras**: estilo, posição e tempo de cada palavra.
-5. Arraste o círculo no vídeo para mover a frase selecionada.
-6. Use "Salvar como modelo" para criar um modelo seu.
-7. Desfazer e refazer: ⌘Z / ⇧⌘Z. O projeto salva sozinho em `data/projects/`.
+A tela segue a lógica de editor profissional (Premiere/CapCut):
+
+| Área | O que faz |
+|---|---|
+| **Barra de cima** | Nome do projeto, desfazer/refazer, status de salvamento, atalhos e **Exportar** |
+| **Biblioteca (esquerda)** | **Frases** (lista e texto), **Modelos** (galeria; clique aplica), **Texto** (buscar e substituir, sincronia global, caixa alta), **Pessoa** (legenda atrás da pessoa) |
+| **Monitor (centro)** | Player com transporte (quadro a quadro, timecode), guias de área segura Reels/TikTok e grade de terços. Clique numa legenda para selecionar e arraste para mover. Clique de novo numa palavra (ou Alt + clique) para editar só ela |
+| **Inspetor (direita)** | Abas **Frase** (posição, escala, rotação, 3D, profundidade), **Estilo** (por papel), **Animação**, **Karaokê** (destaque da palavra falada) e **Palavra** (texto, tempo, posição, rotação, **escala horizontal e vertical**, fonte e cor só dela) |
+| **Timeline (baixo)** | Régua, agulha, faixa de legendas (arrastar move, bordas aparam), faixa de palavras (bordas ajustam o tempo de cada palavra) e forma de onda do áudio. Ímã de encaixe e zoom (⌘ + roda) |
+
+Fontes: 58 fontes grátis (licença OFL), em 5 categorias: serifadas, sem serifa, impacto, manuscritas e retrô. O seletor mostra cada fonte escrita nela mesma e tem busca.
+
+Atalhos: Espaço (play), ← → (quadro; com Shift, 1 s), S (dividir na agulha), T (nova frase), ⌘D (duplicar), Delete (apagar), Esc (tirar a seleção), ⌘Z / ⇧⌘Z, ? (ajuda).
+
+### Legenda atrás da pessoa (opcional)
+
+1. Abra a aba **Pessoa** e clique em **Analisar pessoa**. Uma IA (MediaPipe, roda no próprio aparelho) recorta a pessoa quadro a quadro. Num Mac com GPU são segundos para um reel.
+2. No Inspetor, aba Frase, marque **Legenda atrás da pessoa**. Também dá para usar "Todas atrás" ou "Todas na frente".
+3. Desligue **Ativar efeito** para voltar à camada original sem perder a análise.
+4. Na exportação, a camada **Legendas** já sai recortada atrás da pessoa. A camada **Pessoa (frente)** sai só com a pessoa recortada, para empilhar no Premiere ou no CapCut.
 
 ## Exportar
 
 | Botão | Onde usar |
 |---|---|
-| MOV transparente (ProRes 4444) | Premiere e CapCut desktop: camada acima do vídeo |
+| MOV transparente (ProRes 4444) | Premiere e CapCut desktop: camada acima do vídeo (só no Mac) |
 | MP4 fundo verde | CapCut celular: Sobreposição → Remover fundo → Chroma key no verde |
 | WebM transparente | alternativa transparente leve |
 | MP4 final | vídeo pronto para postar |
 | SRT | só texto e tempo |
-| ASS | texto com fonte, cor e posição, sem animação |
+| ASS | texto com fonte, cor, posição e escala X/Y por palavra, sem animação. Instale a fonte grátis de mesmo nome no computador |
+| Camada **Pessoa (frente)** | MOV/WebM transparente ou MP4 verde só com a pessoa |
 
 Os exports em camada têm a duração e a resolução do vídeo original. Coloque-os no início da timeline, alinhados com o vídeo.
 

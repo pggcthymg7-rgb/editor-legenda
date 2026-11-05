@@ -18,4 +18,5 @@ Editor local de legendas animadas estilo reels (referência: @_k.elsie). Anális
 ## Regras
 - Estilo é dado (JSON). Modelo novo = entrada em `PRESETS`, não código novo.
 - Strings de estilo vão para CSS inline: a validação bloqueia `url(`/script. Não afrouxar.
-- Fase 5 pendente: texto atrás da pessoa (segmentação).
+- Texto atrás da pessoa: `src/app/person/segment.ts` (MediaPipe) → máscaras → `useMask` em `CaptionComposition.tsx`. Opcional por frase (`behind`) e global (`occlusion`).
+- Relatório da última entrega: `ENTREGA_PRONTA.md`.

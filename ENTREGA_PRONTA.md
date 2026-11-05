@@ -1,0 +1,114 @@
+# Entrega: editor de legendas profissional (sessão noturna)
+
+Branch: `claude/editor-legendas-v1`. App iPhone (PWA): https://editor-legenda.onrender.com. Mac: `npm install && npm run dev`.
+
+## O que mudou
+
+### 1. Layout de editor profissional (desktop e PWA)
+- **Estrutura de NLE:** barra superior, biblioteca à esquerda, monitor no centro, inspetor à direita e timeline embaixo.
+- **Timeline:**
+  - régua e agulha;
+  - faixa de legendas: arrastar move a frase, as bordas aparam;
+  - faixa de palavras: as bordas ajustam o tempo de cada palavra;
+  - forma de onda do áudio;
+  - ímã de encaixe e zoom.
+- **Monitor:**
+  - clicar seleciona a frase; clicar de novo seleciona a palavra;
+  - arrastar move a frase ou a palavra;
+  - contorno de seleção;
+  - transporte quadro a quadro com timecode;
+  - guias de área segura (Reels/TikTok) e grade de terços.
+- **Inspetor contextual:** abas Frase / Estilo / Animação / Karaokê / Palavra.
+- **Atalhos:** Espaço, ← →, S, T, ⌘D, Delete, Esc, ⌘Z, ?.
+- **Celular:** coluna única, sem estouro de largura, alvos de toque de 40 px e abas Inspetor / Frases.
+- **Skills usadas:**
+  - `find-skills` instalou `web-design-guidelines` (Vercel) e `ui-ux-pro-max`;
+  - as regras aplicadas foram: foco visível, rótulos em botões de ícone, `prefers-reduced-motion`, `touch-action`, `overscroll` em modais, aviso de alteração não salva e Esc fechando modais.
+
+### 2. Palavra individual
+- **Escala horizontal e vertical** (com cadeado de proporção), posição X/Y, rotação, texto, papel e tempo.
+- Fonte, cor, degradê, brilho, sombra, contorno e caixa de fundo só daquela palavra.
+- O export ASS leva `\fscx`/`\fscy` e o espaçamento entre letras.
+
+### 3. Fontes
+- **58 fontes grátis (OFL)** em 5 categorias (serifadas, sem serifa, impacto, manuscritas, retrô).
+- Seletor visual com busca, cada fonte escrita nela mesma.
+- O peso se ajusta à faixa que a fonte tem.
+- A validação só aceita fontes da biblioteca.
+
+### 4. Legenda atrás da pessoa (opcional)
+- **Análise:** MediaPipe Image Segmenter (selfie multiclass) roda no aparelho, quadro a quadro.
+- **Refino da máscara:**
+  - suavização no tempo;
+  - borda suave;
+  - remoção de manchas soltas;
+  - preenchimento de buracos (roupa clara).
+- **Liga/desliga:** por frase ("Legenda atrás da pessoa") e no projeto todo ("Ativar efeito"). Com o efeito desligado volta a camada original.
+- **Export:**
+  - a camada **Legendas** já sai recortada;
+  - a camada **Pessoa (frente)** sai em MOV/WebM transparente ou MP4 verde.
+- **Funciona em três lugares:**
+  - preview;
+  - render do servidor no Mac (máscaras em `data/media/masks`);
+  - render no iPhone (máscaras no IndexedDB).
+
+### 5. Paridade com os editores de ponta
+| Recurso (CapCut / Premiere / Submagic) | Status |
+|---|---|
+| Timeline com aparar, mover e dividir na agulha | feito |
+| Ajuste de tempo por palavra | feito (faixa de palavras) |
+| Karaokê (destaque da palavra falada) | feito (aba Karaokê) |
+| Caixa de fundo atrás do texto | feito |
+| Buscar e substituir, sincronia global | feito |
+| Guias de área segura | feito |
+| Forma de onda do áudio | feito |
+| Legenda atrás da pessoa + camada da pessoa | feito |
+| Modelos (presets) com galeria e "aplicar em todas" | feito |
+| Export em camada para Premiere/CapCut + SRT/ASS | feito |
+
+Ainda não feito: emojis animados, transcrição de vários idiomas na mesma tela e trilha de B-roll. Ficam como próximos passos.
+
+## Bugs corrigidos
+- **Monitor:** não dava para clicar numa palavra ainda invisível (revelação palavra a palavra). Agora ela é achada pela caixa.
+- **Forma de onda:** no iPhone tentava ler o endereço `local:` e o navegador bloqueava. Agora usa o endereço do vídeo no aparelho.
+- **Servidor:** arquivo inexistente em `/media` respondia 500. Agora responde 404 e erros 4xx não expõem caminho de arquivo.
+- **PWA no celular:** a página estourava a largura da tela e o timecode quebrava em duas linhas.
+- **PWA, arquivos para offline:** pré-carregava cerca de 120 arquivos de fonte japonesa e os de alfabetos que não usamos. Agora só os de alfabeto latino entram (6,8 MB); o resto é baixado quando usado.
+- **Pacote de fonte:** o `@fontsource-variable/big-shoulders-display` usa um formato antigo e quebrava o build.
+- **Pessoa em máquina sem GPU:** a GPU por software era mais lenta que a CPU. Agora detecta e usa a CPU direto.
+- **Texto da frase:** reescrever o texto apagava os ajustes individuais das palavras.
+
+## Testes
+- `npm run verify`: tipos, 70 testes unitários e de servidor, build do Mac e build da PWA. Tudo com 0 erros.
+- **E2E desktop** (Playwright, servidor do Mac):
+  - upload, nova frase (T), aparar na timeline;
+  - selecionar palavra no monitor, escala 1,8 × 0,7 e fonte Bebas Neue só nela;
+  - análise de pessoa (121 quadros) e máscara aplicada no preview;
+  - MP4 final com a legenda atrás da pessoa (conferido no quadro);
+  - MOV ProRes 4444 com alfa da camada da pessoa.
+- **E2E iPhone 15** (PWA, tudo no aparelho):
+  - service worker ativo e layout sem estouro;
+  - inspetor e escala por palavra;
+  - análise de pessoa;
+  - MP4 verde e MP4 verde da camada da pessoa;
+  - funciona offline;
+  - nenhuma requisição externa.
+- **Não testado aqui (sem aparelho):** Safari de um iPhone real, GPU real e importação no Premiere/CapCut.
+
+## Auditoria de segurança
+- **Segredos:** nenhum no repositório nem nos builds. `.env` fora do git. A chave da OpenAI no iPhone fica só no aparelho.
+- **Rotas novas de máscara:**
+  - id validado;
+  - índice inteiro limitado;
+  - só JPEG de verdade (assinatura FF D8 FF), até 1 MB;
+  - `inside()` contra path traversal;
+  - header `x-editor` contra CSRF.
+  - Os testes cobrem todos esses casos.
+- **CORS de `/media`:** só para origens `localhost`/`127.0.0.1`, necessário para o render ler as máscaras. Teste confirma que outra origem não recebe.
+- **Cabeçalhos:** `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, `COOP`. A PWA bloqueia ser aberta dentro de iframe.
+- **CSP da PWA:** bloqueia os contadores de uso enviados pelo Remotion e pelo MediaPipe. Nenhum dado sai do aparelho, exceto o áudio enviado à OpenAI quando o usuário escolhe.
+- **Validação do projeto:** fontes, escalas, máscara, `behind`/`occlusion`; `url(` e `<script` continuam bloqueados.
+- **`npm audit`:** 4 alertas baixos, todos do `deepmerge` dentro do `workbox-build`, que só roda no build e ainda não tem correção. Antes havia 2 críticos (vitest/tinypool) e 1 alto (vite), corrigidos ao subir para vitest 4.1.12 e vite 6.4.5.
+
+## Observação
+- O modelo de IA de pessoa (`public/models/selfie_multiclass_256x256.tflite`, 16 MB, licença Apache 2.0) está no repositório para funcionar offline.
