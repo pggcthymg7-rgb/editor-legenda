@@ -86,7 +86,7 @@ export default defineConfig(({ mode }) => {
               workbox: {
                 // app + fontes ficam offline; Whisper local (wasm grande) só quando usado
                 globPatterns: ['**/*.{js,css,html,woff2,png,svg,webmanifest}'],
-                globIgnores: ['**/*ort*.wasm', '**/transformers*.js', '**/mediabunny-mp3*', '**/mediabunny-flac*', 'mediapipe/**', 'models/**', '**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,hebrew,devanagari,math,symbols,japanese,korean,thai,tamil,gujarati,arabic}*'],
+                globIgnores: ['**/*ort*.wasm', '**/transformers*.js', '**/mediabunny-mp3*', '**/mediabunny-flac*', 'mediapipe/**', 'models/**', '**/dela-gothic-one-[0-9]*', '**/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,hebrew,devanagari,math,symbols,japanese,korean,thai,tamil,gujarati,arabic}*'],
                 maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
                 navigateFallback: 'index.html',
                 runtimeCaching: [

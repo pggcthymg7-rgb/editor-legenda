@@ -20,6 +20,8 @@ type Props = {
   onDuplicate: () => void;
   onDelete: () => void;
   onAdd: () => void;
+  /** URL tocável do vídeo (blob no iPhone) para a forma de onda */
+  mediaUrl?: string | null;
 };
 
 const STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300];
@@ -151,11 +153,11 @@ export const Timeline: React.FC<Props> = (props) => {
   const [peaks, setPeaks] = useState<Float32Array | null>(null);
   useEffect(() => {
     let alive = true;
-    if (project.video.src) loadPeaks(project.video.src).then((p) => alive && setPeaks(p));
+    if (props.mediaUrl) loadPeaks(props.mediaUrl).then((p) => alive && setPeaks(p));
     return () => {
       alive = false;
     };
-  }, [project.video.src]);
+  }, [props.mediaUrl]);
   useEffect(() => {
     const c = waveRef.current;
     if (!c || !peaks) return;

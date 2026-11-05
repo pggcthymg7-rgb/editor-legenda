@@ -156,7 +156,7 @@ progress { width: 100%; accent-color: var(--accent); }
 }
 .transport { display: flex; align-items: center; gap: 2px; padding: 4px 10px; border-top: 1px solid var(--line); background: var(--panel); }
 .transport .play { background: var(--raised); border-color: var(--line); min-width: 38px; }
-.tc { font: 600 13px ui-monospace, 'SF Mono', Menlo, monospace; margin-left: 10px; font-variant-numeric: tabular-nums; }
+.tc { font: 600 13px ui-monospace, 'SF Mono', Menlo, monospace; margin-left: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ---------- Inspetor ---------- */
 .inspector-title { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
@@ -259,7 +259,14 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
   button, select, input[type='number'], input.text { min-height: 40px; }
   button.icon { min-width: 40px; min-height: 40px; }
   input[type='text'], input.text, input.name, select { font-size: 16px; } /* evita zoom automático do iOS */
-  .hide-sm { display: none; }
+  .hide-sm, .brand, .kbd-btn, .tl-zoom { display: none; }
+  html, body, .editor { max-width: 100vw; overflow-x: hidden; }
+  .workspace > * { min-width: 0; max-width: 100%; }
+  .topbar { gap: 4px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+  .topbar .name { min-width: 0; width: 0; }
+  .tl-toolbar { flex-wrap: wrap; }
+  .tabs { overflow-x: auto; }
+  .tabs button { flex: 0 0 auto; padding: 6px 10px; }
   .editor { height: 100dvh; grid-template-rows: auto minmax(0, 1fr); }
   .topbar .name { flex: 1 1 auto; }
   .save { display: none; }
@@ -278,7 +285,8 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
   .field { grid-template-columns: 88px minmax(0, 1fr) 58px; }
   .fontpicker-pop { left: 0; }
   .transport { overflow-x: auto; }
-  .tc { font-size: 12px; }
+  .tc { font-size: 12px; margin-left: 4px; }
+  .tc .muted { display: none; }
   .grip { width: 14px; }
   button, .stage, label { -webkit-touch-callout: none; }
 }

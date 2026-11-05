@@ -226,7 +226,7 @@ export const App: React.FC = () => {
           {saveState === 'ok' ? 'Salvo' : saveState === 'saving' ? 'Salvando…' : 'Erro ao salvar'}
         </span>
         <span className="tl-grow" />
-        <button className="icon" onClick={() => setHelpOpen(true)} title="Atalhos (?)" aria-label="Atalhos de teclado">
+        <button className="icon kbd-btn" onClick={() => setHelpOpen(true)} title="Atalhos (?)" aria-label="Atalhos de teclado">
           <Keyboard size={18} aria-hidden="true" />
         </button>
         <button onClick={() => load(null)} title="Abrir outro vídeo">
@@ -321,6 +321,7 @@ export const App: React.FC = () => {
           onDuplicate={duplicate}
           onDelete={remove}
           onAdd={addAtPlayhead}
+          mediaUrl={playable?.video.src ?? null}
         />
       </main>
 
