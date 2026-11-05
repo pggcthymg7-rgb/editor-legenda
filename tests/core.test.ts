@@ -219,6 +219,60 @@ describe('validação (segurança)', () => {
     bad2.phrases[0].roleStyles = { key: { fill: { type: 'solid', color: 'red;background:url(http://x)' } } };
     expect(validateProject(bad2).ok).toBe(false);
   });
+  it('C5: todos os modelos prontos passam como preset salvo', () => {
+    expect(validateProject({ ...ok, customPresets: structuredClone(PRESETS) }).ok).toBe(true);
+  });
+  it('C5: estilo interno validado (fill, cores, efeitos, preset salvo)', () => {
+    const cases: ((p: typeof ok) => void)[] = [
+      (p) => (p.phrases[0].roleStyles = { key: { fill: { type: 'gradient', colors: null as never, angle: 0 } } }),
+      (p) => (p.phrases[0].roleStyles = { key: { fill: { type: 'solid', color: '\\75rl(http://x)' } } }),
+      (p) => (p.phrases[0].roleStyles = { key: { glow: { color: 'red;x:y', blur: 4 } } }),
+      (p) => (p.phrases[0].roleStyles = { key: { shadow: { color: 'rgba(0,0,0,0.3)', blur: 'x' as never, x: 0, y: 0 } } }),
+      (p) => (p.phrases[0].roleStyles = { evil: {} } as never),
+      (p) => (p.phrases[0].highlight = { fill: { type: 'pattern' } as never }),
+      (p) => (p.phrases[0].words[0].style = { stroke: { color: '#fff)', width: 2 } }),
+      (p) => (p.phrases[0].words[0].style = { opacity: 5 }),
+      (p) => (p.phrases[0].align = 'middle' as never),
+      (p) => (p.customPresets = [{ ...structuredClone(PRESETS[0]), roles: { ...PRESETS[0].roles, key: { fontSize: 10 } as never } }]),
+      (p) => (p.customPresets = [{ ...structuredClone(PRESETS[0]), layout: 'grid' as never }]),
+      (p) => (p.phrases[0].animation = { mode: 'evil' } as never),
+      (p) => (p.phrases[0].animation = { durationMs: -1 } as never),
+      (p) => (p.phrases[0].animation = { holdMs: 'x' } as never),
+    ];
+    for (const mut of cases) {
+      const bad = structuredClone(ok);
+      mut(bad);
+      expect(validateProject(bad).ok, JSON.stringify(bad.phrases[0].roleStyles ?? bad.phrases[0].words[0].style ?? bad.customPresets)).toBe(false);
+    }
+    const good = structuredClone(ok);
+    good.phrases[0].roleStyles = { key: { fill: { type: 'gradient', colors: ['#FFF', 'rgba(169,139,255,0.55)', 'white'], angle: 180 }, shadow: { color: 'rgba(0,0,0,0.35)', blur: 8, x: 0, y: 4 } } };
+    good.phrases[0].words[0].style = { box: { color: '#000000cc', opacity: 0.8, padX: 0.2, padY: 0.1, radius: 0.2 } };
+    expect(validateProject(good).ok).toBe(true);
+  });
+  it('C5: palavra precisa de id e endMs >= startMs', () => {
+    const noId = structuredClone(ok);
+    delete (noId.phrases[0].words[0] as { id?: string }).id;
+    expect(validateProject(noId).ok).toBe(false);
+    const inv = structuredClone(ok);
+    Object.assign(inv.phrases[0].words[0], { startMs: 500, endMs: 100 });
+    expect(validateProject(inv).ok).toBe(false);
+  });
+  it('C5 fuzz: mutações aleatórias nunca quebram o validador e lixo em estilo é rejeitado', () => {
+    let seed = 42;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+    const junk = [null, 0, -1, NaN, Infinity, '', 'url(x)', '\\75rl(', ';}', [], {}, true, 1e12, 'red;x'];
+    for (let i = 0; i < 500; i++) {
+      const bad = structuredClone(ok) as unknown as Record<string, unknown>;
+      const style: Record<string, unknown> = { fill: { type: 'solid', color: '#fff' }, glow: null, fontSize: 40 };
+      const keys = Object.keys(style);
+      const k = keys[Math.floor(rnd() * keys.length)];
+      const j = junk[Math.floor(rnd() * junk.length)];
+      style[k] = k === 'glow' && j === null ? 'x' : k === 'fill' ? { type: 'solid', color: j } : j;
+      (bad.phrases as { roleStyles?: unknown }[])[0].roleStyles = { key: style };
+      expect(() => validateProject(bad)).not.toThrow();
+      expect(validateProject(bad).ok).toBe(false);
+    }
+  });
   it('rejeita números inválidos e tipos errados', () => {
     expect(validateProject({ ...ok, phrases: [{ ...ok.phrases[0], x: Infinity }] }).ok).toBe(false);
     expect(validateProject(null).ok).toBe(false);

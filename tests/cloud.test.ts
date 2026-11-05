@@ -80,6 +80,20 @@ describe('proxy da nuvem', () => {
     for (let i = 0; i < 200 && !blocked; i++) blocked = !mod.allow('9.9.9.9', 1000);
     expect(blocked).toBe(true);
   });
+  it('IP vem do fim do x-forwarded-for (Render acrescenta o real; o início é falsificável)', () => {
+    expect(mod.clientIp('1.1.1.1, 2.2.2.2', '10.0.0.1')).toBe('2.2.2.2');
+    expect(mod.clientIp('falso, 3.3.3.3 ', undefined)).toBe('3.3.3.3');
+    expect(mod.clientIp(undefined, '10.0.0.1')).toBe('10.0.0.1');
+    expect(mod.clientIp(' , ', '10.0.0.1')).toBe('10.0.0.1');
+  });
+  it('muitos IPs não zeram o limite de quem já estourou', () => {
+    for (let i = 0; i < 5100; i++) mod.allow(`ip-${i}`, 2000); // enche o mapa (antes: clear() zerava todos)
+    let blocked = false;
+    for (let i = 0; i < 200 && !blocked; i++) blocked = !mod.allow('8.8.8.8', 2000);
+    expect(blocked).toBe(true);
+    for (let i = 0; i < 100; i++) mod.allow(`novo-${i}`, 2000); // estoura de novo: sai só o mais antigo
+    expect(mod.allow('8.8.8.8', 2000)).toBe(false);
+  });
   it('slim filtra lixo', () => {
     expect(mod.slim({ words: [{ word: 'a', start: 0, end: 1 }, { word: 1 }, null], text: 5 })).toEqual({ text: '', words: [{ word: 'a', start: 0, end: 1 }] });
   });

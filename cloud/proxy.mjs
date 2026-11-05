@@ -36,15 +36,24 @@ export function provider(env = process.env, userKey) {
 // limite por IP: protege a cota grátis contra abuso (janela de 1 h)
 const HITS = new Map();
 const LIMIT_PER_HOUR = Number(process.env.LIMIT_PER_HOUR ?? 60);
+const MAX_IPS = 5000;
+
+/** IP do cliente. O Render ACRESCENTA o IP real no fim do x-forwarded-for; o início é do cliente (falsificável). */
+export function clientIp(xff, remote) {
+  const last = String(xff ?? '').split(',').map((s) => s.trim()).filter(Boolean).pop();
+  return (last ?? String(remote ?? '')).slice(0, 64);
+}
 export function allow(ip, now = Date.now()) {
   const arr = (HITS.get(ip) ?? []).filter((t) => now - t < 3600_000);
+  HITS.delete(ip); // reinsere no fim: ordem do Map = mais antigo primeiro
   if (arr.length >= LIMIT_PER_HOUR) {
     HITS.set(ip, arr);
     return false;
   }
   arr.push(now);
   HITS.set(ip, arr);
-  if (HITS.size > 5000) HITS.clear();
+  // estourou: tira só o IP mais antigo (Map guarda ordem de inserção), sem zerar o limite de todos
+  while (HITS.size > MAX_IPS) HITS.delete(HITS.keys().next().value);
   return true;
 }
 
@@ -108,7 +117,7 @@ export const server = http.createServer(async (req, res) => {
       if (req.headers['x-app'] !== 'legendas') return send(res, 403, { error: 'cliente não permitido' });
       const type = String(req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
       if (!AUDIO_TYPES.has(type)) return send(res, 415, { error: 'formato de áudio não suportado' }, origin);
-      const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '').split(',')[0].trim();
+      const ip = clientIp(req.headers['x-forwarded-for'], req.socket.remoteAddress);
       if (!allow(ip)) return send(res, 429, { error: 'muitas transcrições nesta hora; tente mais tarde' }, origin);
       const p = provider(process.env, req.headers['x-groq-key']);
       if (!p) return send(res, 503, { error: 'servidor sem chave configurada' }, origin);
