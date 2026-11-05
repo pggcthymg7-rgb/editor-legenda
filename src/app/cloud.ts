@@ -7,6 +7,26 @@ export const CLOUD_URL = (import.meta.env.VITE_CLOUD_URL ?? 'https://editor-lege
 
 export type CloudState = 'checking' | 'ready' | 'nokey' | 'offline';
 
+// Chave grátis do Groq do próprio usuário (opcional): guardada só neste aparelho, colada uma vez.
+const KEY = 'editor-legenda.groq-key';
+export const isGroqKey = (k: string) => /^gsk_[A-Za-z0-9]{20,200}$/.test(k.trim());
+export function getGroqKey(): string | null {
+  try {
+    return localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
+export function setGroqKey(k: string | null) {
+  try {
+    if (k) localStorage.setItem(KEY, k.trim());
+    else localStorage.removeItem(KEY);
+  } catch {
+    throw new Error('Não consegui guardar a chave neste aparelho');
+  }
+  healthPromise = null;
+}
+
 let healthPromise: Promise<CloudState> | null = null;
 
 /** Verifica (e acorda) o servidor. O plano grátis dorme: a 1ª chamada pode levar ~30–60 s. */
@@ -16,7 +36,7 @@ export function cloudHealth(fetchImpl: typeof fetch = fetch): Promise<CloudState
       const r = await fetchImpl(`${CLOUD_URL}/health`, { signal: AbortSignal.timeout(75_000) });
       if (!r.ok) return 'offline';
       const j = (await r.json()) as { ready?: boolean };
-      return j.ready ? 'ready' : 'nokey';
+      return j.ready || getGroqKey() ? 'ready' : 'nokey';
     } catch {
       return 'offline';
     } finally {
@@ -33,7 +53,7 @@ export async function cloudTranscribe(audio: Blob, lang = 'pt', fetchImpl: typeo
   try {
     r = await fetchImpl(`${CLOUD_URL}/transcribe?lang=${encodeURIComponent(lang)}`, {
       method: 'POST',
-      headers: { 'content-type': 'audio/mp4', 'x-app': 'legendas' },
+      headers: { 'content-type': 'audio/mp4', 'x-app': 'legendas', ...(getGroqKey() ? { 'x-groq-key': getGroqKey()! } : {}) },
       body: audio,
       signal: AbortSignal.timeout(240_000),
     });

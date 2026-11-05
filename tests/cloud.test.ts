@@ -83,3 +83,12 @@ describe('proxy da nuvem', () => {
     expect(mod.slim({ words: [{ word: 'a', start: 0, end: 1 }, { word: 1 }, null], text: 5 })).toEqual({ text: '', words: [{ word: 'a', start: 0, end: 1 }] });
   });
 });
+
+describe('chave do usuário', () => {
+  it('usa a chave Groq do usuário só se o servidor não tiver e se o formato for válido', () => {
+    expect(mod.provider({}, 'gsk_' + 'a'.repeat(30))?.key).toBe('gsk_' + 'a'.repeat(30));
+    expect(mod.provider({}, 'sk-abc')).toBeNull();
+    expect(mod.provider({}, 'gsk_x\nInjected')).toBeNull();
+    expect(mod.provider({ GROQ_API_KEY: 'gsk_server' }, 'gsk_' + 'b'.repeat(30))?.key).toBe('gsk_server');
+  });
+});

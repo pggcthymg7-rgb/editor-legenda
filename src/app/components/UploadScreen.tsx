@@ -4,7 +4,7 @@ import type { Project, TranscribedWord } from '../../core/types';
 import { getKey, isPlausibleKey, setKey } from '../platform/openai-browser';
 import { isIOS, platform, type ProjectSummary } from '../platform';
 import type { Lang, LocalModel } from '../transcribe';
-import { cloudHealth, type CloudState } from '../cloud';
+import { cloudHealth, getGroqKey, isGroqKey, setGroqKey, type CloudState } from '../cloud';
 
 type Engine = 'cloud' | 'local' | 'openai' | 'none';
 
@@ -64,6 +64,65 @@ const KeySettings: React.FC<{ onChange: (has: boolean) => void }> = ({ onChange 
             <button onClick={save}>Salvar</button>
           </div>
           <span className="muted">Fica só neste aparelho. O áudio vai direto para a OpenAI.</span>
+        </>
+      )}
+      {err && <div className="error">{err}</div>}
+    </div>
+  );
+};
+
+/** Ativa a nuvem com a chave grátis do Groq do próprio usuário (guardada só no aparelho). */
+const GroqKeyBox: React.FC<{ onChange: (has: boolean) => void }> = ({ onChange }) => {
+  const [has, setHas] = useState(Boolean(getGroqKey()));
+  const [value, setValue] = useState('');
+  const [err, setErr] = useState('');
+  const save = () => {
+    if (!isGroqKey(value)) return setErr('A chave do Groq começa com gsk_ (copie inteira).');
+    setGroqKey(value);
+    setValue('');
+    setErr('');
+    setHas(true);
+    onChange(true);
+  };
+  return (
+    <div className="keybox">
+      {has ? (
+        <div className="row">
+          <span className="ok small">Nuvem ativada neste aparelho.</span>
+          <button
+            className="danger"
+            onClick={() => {
+              setGroqKey(null);
+              setHas(false);
+              onChange(false);
+            }}
+          >
+            Remover chave
+          </button>
+        </div>
+      ) : (
+        <>
+          <span className="small">
+            1) Abra{' '}
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">
+              console.groq.com/keys
+            </a>{' '}
+            (grátis, entra com Google) → <em>Create API Key</em> → copie. 2) Cole aqui:
+          </span>
+          <div className="row">
+            <input
+              className="text"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="gsk_…"
+              aria-label="Chave grátis do Groq"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+            <button onClick={save}>Ativar</button>
+          </div>
+          <span className="muted small">Fica só neste aparelho e vai direto ao nosso servidor, que a usa só para transcrever.</span>
         </>
       )}
       {err && <div className="error">{err}</div>}
@@ -174,7 +233,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
           </select>
         </label>
         <label>
-          <input type="radio" checked={engine === 'cloud'} onChange={() => setEngine('cloud')} disabled={cloud === 'nokey' || cloud === 'offline'} /> Nuvem
+          <input type="radio" checked={engine === 'cloud'} onChange={() => setEngine('cloud')} disabled={cloud === 'offline'} /> Nuvem
           rápida e grátis <span className="badge">recomendado</span>
           <span className="muted small engine-hint">
             {cloud === 'checking'
@@ -182,10 +241,18 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
               : cloud === 'ready'
                 ? ' Pronta. Whisper large-v3-turbo: 1 min de vídeo em segundos.'
                 : cloud === 'nokey'
-                  ? ' Ainda sem chave grátis no servidor: por enquanto use “No aparelho”.'
+                  ? ' Falta ativar: cole abaixo sua chave grátis do Groq (uma vez só).'
                   : ' Sem conexão com a nuvem agora.'}
           </span>
         </label>
+        {(cloud === 'nokey' || getGroqKey()) && (
+          <GroqKeyBox
+            onChange={(has) => {
+              setCloud(has ? 'ready' : 'nokey');
+              setEngine(has ? 'cloud' : 'local');
+            }}
+          />
+        )}
         <label>
           <input type="radio" checked={engine === 'local'} onChange={() => setEngine('local')} /> No aparelho, offline
           <span className="muted small engine-hint"> IA roda no próprio {ios ? 'iPhone' : 'computador'}; baixa o modelo uma vez.</span>

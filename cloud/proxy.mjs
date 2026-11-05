@@ -15,8 +15,13 @@ const ORIGINS = new Set(
 const AUDIO_TYPES = new Set(['audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac']);
 const LANGS = /^([a-z]{2}|auto)$/;
 
-/** Provedor ativo: Groq (grátis) > OpenAI. */
-export function provider(env = process.env) {
+const GROQ_KEY = /^gsk_[A-Za-z0-9]{20,200}$/;
+
+/** Provedor ativo: chave do servidor (Groq > OpenAI) ou, sem ela, a chave Groq do próprio usuário. */
+export function provider(env = process.env, userKey) {
+  if (!env.GROQ_API_KEY && !env.OPENAI_API_KEY && typeof userKey === 'string' && GROQ_KEY.test(userKey)) {
+    return { name: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo', key: userKey };
+  }
   if (env.GROQ_API_KEY) return { name: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo', key: env.GROQ_API_KEY };
   if (env.OPENAI_API_KEY) return { name: 'openai', url: 'https://api.openai.com/v1/audio/transcriptions', model: 'whisper-1', key: env.OPENAI_API_KEY };
   return null;
@@ -81,7 +86,7 @@ export const server = http.createServer(async (req, res) => {
       res.writeHead(204, {
         'access-control-allow-origin': origin,
         'access-control-allow-methods': 'POST, GET',
-        'access-control-allow-headers': 'content-type, x-app',
+        'access-control-allow-headers': 'content-type, x-app, x-groq-key',
         'access-control-max-age': '86400',
         vary: 'Origin',
       });
@@ -99,7 +104,7 @@ export const server = http.createServer(async (req, res) => {
       if (!AUDIO_TYPES.has(type)) return send(res, 415, { error: 'formato de áudio não suportado' }, origin);
       const ip = String(req.headers['x-forwarded-for'] ?? req.socket.remoteAddress ?? '').split(',')[0].trim();
       if (!allow(ip)) return send(res, 429, { error: 'muitas transcrições nesta hora; tente mais tarde' }, origin);
-      const p = provider();
+      const p = provider(process.env, req.headers['x-groq-key']);
       if (!p) return send(res, 503, { error: 'servidor sem chave configurada' }, origin);
       const lang = url.searchParams.get('lang') ?? 'pt';
       if (!LANGS.test(lang)) return send(res, 400, { error: 'idioma inválido' }, origin);
