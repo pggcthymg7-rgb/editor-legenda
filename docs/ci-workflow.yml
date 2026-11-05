@@ -1,0 +1,66 @@
+name: CI & Verificação de Segurança (PR)
+
+on:
+  pull_request:
+    branches: [main, "claude/**"]
+  push:
+    branches: [main, "claude/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  security-gate:
+    name: 🔒 Auditoria de Segurança e Segredos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Verificar ausência de chaves/segredos expostos no repositório
+        run: |
+          echo "Verificando se há chaves Groq (gsk_), OpenAI (sk-proj-/sk-) ou chaves privadas no código..."
+          if git grep -E "(gsk_[a-zA-Z0-9]{20,}|sk-(proj-)?[a-zA-Z0-9]{20,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----)" -- . ':!.github/workflows/ci.yml'; then
+            echo "❌ ERRO CRÍTICO: Segredo ou chave de API encontrada no repositório!"
+            exit 1
+          fi
+          echo "✅ Nenhum segredo exposto encontrado."
+
+      - name: Verificar invariantes de segurança (AGENTS.md)
+        run: |
+          echo "Conferindo proteções obrigatórias em validate.ts, server/index.ts e vite.config.ts..."
+          grep -Fq 'url\s*\(' src/core/validate.ts || (echo "❌ Bloqueio de url( ausente em src/core/validate.ts" && exit 1)
+          grep -Fq '<\/?script' src/core/validate.ts || (echo "❌ Bloqueio de <script ausente em src/core/validate.ts" && exit 1)
+          grep -Fq 'inside(' server/index.ts || (echo "❌ Proteção inside() contra path traversal ausente em server/index.ts" && exit 1)
+          grep -Fq 'x-editor' server/index.ts || (echo "❌ Proteção CSRF x-editor ausente em server/index.ts" && exit 1)
+          grep -Fq 'Content-Security-Policy' vite.config.ts || (echo "❌ CSP ausente em vite.config.ts" && exit 1)
+          grep -Fq 'mediapipe-wasm' vite.config.ts || (echo "❌ Plugin mediapipe ausente em vite.config.ts" && exit 1)
+          test -f public/models/selfie_multiclass_256x256.tflite || (echo "❌ Modelo offline MediaPipe ausente em public/models/" && exit 1)
+          echo "✅ Todas as invariantes de segurança estão ativas."
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Auditoria de dependências de produção (npm audit)
+        run: npx --yes npm@11 audit --omit=dev --audit-level=moderate
+
+  verify:
+    name: ✅ Tipos, Testes e Builds (Mac + PWA)
+    runs-on: ubuntu-latest
+    needs: security-gate
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências (npm 11 ci determinístico)
+        run: npx --yes npm@11 ci
+
+      - name: Rodar verificação completa (tsc + vitest + build Mac + build PWA)
+        run: npm run verify

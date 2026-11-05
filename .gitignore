@@ -6,3 +6,8 @@ out/
 *.log
 .DS_Store
 dist-pwa
+__pycache__/
+graphify-out/cache/
+graphify-out/.graphify_*
+graphify-out/graph.html
+graphify-out/graph.json

@@ -1,0 +1,36 @@
+{
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-pwa": true,
+    "**/.cache": true,
+    "**/.vite": true,
+    "logs": true,
+    "test-results": true,
+    "package-lock.json": true,
+    "CLAUDE": true,
+    ".claude": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-pwa": true,
+    "logs": true,
+    "test-results": true,
+    "out": true,
+    "package-lock.json": true
+  },
+  "explorer.compactFolders": false,
+  "editor.wordWrap": "on",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.stickyScroll.enabled": true,
+  "editor.minimap.enabled": false,
+  "editor.renderWhitespace": "none",
+  "breadcrumbs.enabled": true,
+  "workbench.browser.showInTitleBar": true,
+  "workbench.browser.openLocalhostLinks": true,
+  "workbench.browser.newTabPlacement": "sideGroup"
+}
+
