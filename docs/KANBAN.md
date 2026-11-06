@@ -60,10 +60,10 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
 | 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e movido para a fila. |
-| ⏳ **2. Na Fila** | `2` | Lotes `UI-L4` e `UI-L5` aguardando execução sequencial. |
-| ⚡ **3. Em Execução** | `0` | Lote `UI-L3` finalizado; aguardando OK para iniciar `UI-L4`. |
+| ⏳ **2. Na Fila** | `1` | Lote `UI-L5` aguardando execução sequencial. |
+| ⚡ **3. Em Execução** | `0` | Lote `UI-L4` finalizado; aguardando OK para iniciar `UI-L5`. |
 | 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
-| ✅ **5. Finalizado** | `26` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
+| ✅ **5. Finalizado** | `27` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
 
 ---
@@ -74,14 +74,6 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
-
-### [UI-L4] Timeline Estilo CapCut: Pílulas (`8px`), Pinch-to-Zoom Touch e Limpeza Visual (`Timeline.tsx` + `styles.css`)
-- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
-- **🗣️ Explicação Popular:** Deixar os bloquinhos das legendas e palavras na linha do tempo com cantos arredondados modernos (`8px`), permitir dar zoom abrindo e fechando dois dedos na tela (pinça) e esconder os botões `+` e `−` no celular para limpar o espaço.
-- **🔧 Engenharia de Software:** Em `src/app/components/Timeline.tsx` e `src/app/styles.css`, aplicar `border-radius: 8px` em `.clip`, `.wclip`, `.vclip`, seleção em `--primary` (`#6366F1`), adicionar gesto touch de pinça (`onTouchStart`/`onTouchMove` de 2 dedos em `.tl-scroll`) chamando a função `zoom(factor)` já existente, e ocultar no mobile (`@media (max-width: 900px)`) os botões `Minus`/`Plus` da `.tl-toolbar` mantendo `Magnet` (Snap) e `ZoomIn` (Ajustar).
-- **🔄 O que altera no App:** Zoom natural com dois dedos na timeline do iPhone e visual de pílulas arredondadas estilo CapCut.
-- **🐛 Qual era o Problema (Antes):** No celular não havia gesto de pinça na timeline (dependia dos botões `+` e `−` na barra).
-- **✅ Critério de Pronto (Depois):** Pinch-to-zoom funcional chamando `zoom()`, pílulas de `8px` e `npm run verify` com 0 erros.
 
 ### [UI-L5] Barra Contextual Inferior (Dock `64px` ↔ Slide-up de Seleção) + Bottom Sheets (`45dvh`) no Mobile (`App.tsx`, `Library.tsx`, `styles.css`)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
@@ -104,6 +96,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ✅ 5. Finalizado (Histórico Completo de Engenharia & Explicação Popular)
+
+### [UI-L4] Timeline Estilo CapCut: Pílulas (`8px`), Pinch-to-Zoom Touch e Limpeza Visual (`Timeline.tsx` + `styles.css`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
+- **🗣️ Explicação Popular:** Deixamos os bloquinhos das legendas, palavras e áudio na linha do tempo com formato de pílulas arredondadas (`8px`), seleção destacada em azul-índigo (`#6366F1`) e adicionamos o gesto de pinça com 2 dedos para aproximar/afastar o zoom na tela do celular, escondendo os botões `+` e `−` no mobile.
+- **🔧 Engenharia de Software:** Em `src/app/components/Timeline.tsx` e `src/app/styles.css`, aplicamos `border-radius: 8px` em `.clip`, `.wclip` e `.vclip`, seleção em `--primary` com halo luminoso, agulha `.playhead` fluida com brilho sutil, gesto `onTouchStart`/`onTouchMove` de 2 dedos em `.tl-scroll` invocando o handler `zoom(factor)` já existente, e ocultamos os botões `Minus`/`Plus` no mobile (`hide-sm`) mantendo `Magnet` (Snap) e `ZoomIn` (Ajustar ao vídeo).
+- **🔄 O que altera no App:** Zoom natural com dois dedos na timeline do iPhone e visual moderno de pílulas arredondadas estilo CapCut (`~32dvh`).
+- **🐛 Qual era o Erro (Antes):** No celular não havia gesto de pinça na timeline (dependia dos botões `+` e `−` na barra) e os blocos tinham cantos retos (`5px`).
+- **✅ Resultado Final (Depois):** Pinch-to-zoom funcional chamando `zoom()`, pílulas de `8px` e `npm run verify` com 0 erros.
+- **📂 Arquivos:** `src/app/components/Timeline.tsx`, `src/app/styles.css`.
 
 ### [UI-L3] Casca do Editor Mobile (`48px` Header + `42%` Monitor + `36px` Faixa de Transporte)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado

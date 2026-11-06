@@ -48,6 +48,7 @@ export const Timeline: React.FC<Props> = (props) => {
   const [snapOn, setSnapOn] = useState(true);
   const drag = useRef<Drag | null>(null);
   const dragActive = useRef(false);
+  const pinchDist = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -96,6 +97,30 @@ export const Timeline: React.FC<Props> = (props) => {
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, [zoom]);
+
+  const touchDist = (t: React.TouchList) =>
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      if (drag.current) onUp();
+      pinchDist.current = Math.max(12, touchDist(e.touches));
+    }
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchDist.current) {
+      const d = Math.max(12, touchDist(e.touches));
+      if (Math.abs(d - pinchDist.current) > 2) {
+        zoom(d / pinchDist.current);
+        pinchDist.current = d;
+      }
+    }
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) pinchDist.current = null;
+  };
 
   const contentX = (clientX: number) => {
     const el = scrollRef.current!;
@@ -206,7 +231,7 @@ export const Timeline: React.FC<Props> = (props) => {
           <Magnet size={16} aria-hidden="true" />
         </button>
         <span className="tl-grow" />
-        <button className="icon" onClick={() => zoom(1 / 1.5)} title="Afastar" aria-label="Afastar zoom">
+        <button className="icon hide-sm" onClick={() => zoom(1 / 1.5)} title="Afastar" aria-label="Afastar zoom">
           <Minus size={16} aria-hidden="true" />
         </button>
         <input
@@ -218,7 +243,7 @@ export const Timeline: React.FC<Props> = (props) => {
           value={Math.round((Math.log(scale / fitPps) / Math.log(600 / fitPps || 2)) * 100) || 0}
           onChange={(e) => setPps(fitPps * Math.pow(600 / fitPps, Number(e.target.value) / 100))}
         />
-        <button className="icon" onClick={() => zoom(1.5)} title="Aproximar (⌘ + roda)" aria-label="Aproximar zoom">
+        <button className="icon hide-sm" onClick={() => zoom(1.5)} title="Aproximar (⌘ + roda)" aria-label="Aproximar zoom">
           <Plus size={16} aria-hidden="true" />
         </button>
         <button className="icon" onClick={() => setPps(null)} title="Ajustar ao vídeo" aria-label="Ajustar zoom">
@@ -233,7 +258,14 @@ export const Timeline: React.FC<Props> = (props) => {
           <div className="tl-head">Palavras</div>
           <div className="tl-head">Áudio</div>
         </div>
-        <div className="tl-scroll" ref={scrollRef}>
+        <div
+          className="tl-scroll"
+          ref={scrollRef}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onTouchCancel={onTouchEnd}
+        >
           <div className="tl-content" style={{ width: totalW }}>
             <div
               className="tl-ruler"
