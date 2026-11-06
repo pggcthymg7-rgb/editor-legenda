@@ -1,5 +1,5 @@
 import type { PlayerRef } from '@remotion/player';
-import { Clapperboard, Download, FilePlus2, Keyboard, Redo2, SlidersHorizontal, Undo2, X } from 'lucide-react';
+import { ChevronLeft, Clapperboard, Download, FilePlus2, Keyboard, Redo2, SlidersHorizontal, Undo2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { duplicatePhrase, setWordTime, sortPhrases, splitPhraseAt } from '../core/edit';
 import { buildPhrase, phraseEnd, phraseStart, shiftPhrase } from '../core/grouping';
@@ -236,6 +236,20 @@ export const App: React.FC = () => {
         <span className="brand" aria-hidden="true">
           <Clapperboard size={18} />
         </span>
+        <button
+          className="back-btn"
+          onClick={async () => {
+            if (project && saveState === 'saving') await platform.saveProject(project).catch(() => undefined);
+            setExportOpen(false);
+            setExportMounted(false);
+            load(null);
+          }}
+          title="Abrir outro vídeo"
+          aria-label="Abrir outro vídeo"
+        >
+          <ChevronLeft size={18} className="only-sm" aria-hidden="true" />
+          <FilePlus2 size={16} className="hide-sm" aria-hidden="true" /> <span className="hide-sm">Novo</span>
+        </button>
         <input
           className="name"
           aria-label="Nome do projeto"
@@ -258,18 +272,7 @@ export const App: React.FC = () => {
           <Keyboard size={18} aria-hidden="true" />
         </button>
         <button
-          onClick={async () => {
-            if (project && saveState === 'saving') await platform.saveProject(project).catch(() => undefined);
-            setExportOpen(false);
-            setExportMounted(false);
-            load(null);
-          }}
-          title="Abrir outro vídeo"
-        >
-          <FilePlus2 size={16} aria-hidden="true" /> <span className="hide-sm">Novo</span>
-        </button>
-        <button
-          className="primary"
+          className="primary export-cta"
           onClick={() => {
             setExportMounted(true);
             setExportOpen(true);

@@ -60,10 +60,10 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
 | 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e movido para a fila. |
-| ⏳ **2. Na Fila** | `3` | Lotes `UI-L3` a `UI-L5` aguardando execução sequencial. |
-| ⚡ **3. Em Execução** | `0` | Lote `UI-L2` finalizado; aguardando OK para iniciar `UI-L3`. |
+| ⏳ **2. Na Fila** | `2` | Lotes `UI-L4` e `UI-L5` aguardando execução sequencial. |
+| ⚡ **3. Em Execução** | `0` | Lote `UI-L3` finalizado; aguardando OK para iniciar `UI-L4`. |
 | 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
-| ✅ **5. Finalizado** | `25` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
+| ✅ **5. Finalizado** | `26` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
 
 ---
@@ -74,14 +74,6 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
-
-### [UI-L3] Casca do Editor Mobile (`48px` Header + `42%` Monitor + `36px` Faixa de Transporte)
-- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
-- **🗣️ Explicação Popular:** Organizar o topo e o meio da tela no celular: uma barra superior fininha (`48px`) com botão de voltar/novo, nome do projeto, desfazer/refazer e o botão verde `"Exportar"`; logo abaixo, o vídeo grande ocupando `42%` da tela e uma faixa compacta (`36px`) com todos os controles de play, avançar quadro, tempo, som e guias.
-- **🔧 Engenharia de Software:** Ajustar estilos e estrutura de apresentação em `src/app/App.tsx`, `src/app/components/Preview.tsx` e `src/app/styles.css`: `.topbar` com `48px`, botão `"Exportar"` com `--accent-export` (`#10B981`), `.viewer` com `~42dvh` no mobile e `.transport` em faixa única de `36px` com ícones de `18px` mantendo todos os 8 botões atuais (`Início`, `Quadro anterior`, `Play/Pause` em destaque, `Próximo quadro`, `Fim`, `Timecode`, `Som`, `Área segura` e `Grade de terços`).
-- **🔄 O que altera no App:** Dá mais espaço vertical para o vídeo no celular e destaca o botão de Exportar e o Play/Pause.
-- **🐛 Qual era o Problema (Antes):** Botão Exportar usava a mesma cor roxa de seleção e controles de transporte podiam criar barra de rolagem horizontal.
-- **✅ Critério de Pronto (Depois):** Header, Monitor e Transporte alinhados no mobile e desktop, `npm run verify` com 0 erros.
 
 ### [UI-L4] Timeline Estilo CapCut: Pílulas (`8px`), Pinch-to-Zoom Touch e Limpeza Visual (`Timeline.tsx` + `styles.css`)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
@@ -112,6 +104,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ✅ 5. Finalizado (Histórico Completo de Engenharia & Explicação Popular)
+
+### [UI-L3] Casca do Editor Mobile (`48px` Header + `42%` Monitor + `36px` Faixa de Transporte)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
+- **🗣️ Explicação Popular:** Organizamos o topo e o meio da tela no celular: uma barra superior compacta (`48px`) com botão de voltar (`ChevronLeft`), nome do projeto truncado, desfazer/refazer, indicador discreto de salvamento e o botão verde `"Exportar"`; logo abaixo, o vídeo grande ocupando `42%` da tela e uma faixa única de `36px` com todos os controles de reprodução (`Play/Pause` em pílula destacada, avançar/voltar quadro, tempo, som, área segura e grade de terços).
+- **🔧 Engenharia de Software:** Em `src/app/App.tsx`, `src/app/components/Preview.tsx` e `src/app/styles.css`, posicionamos o botão `.back-btn` à esquerda do input `.name` com `ChevronLeft` no mobile (`.only-sm`) e `FilePlus2` no desktop (`.hide-sm`), aplicamos `.export-cta` (`--accent-export: #10B981`) no botão `"Exportar"`, `.viewer` com `42dvh` no mobile e `.transport` de `36px` com ícones de `18px` e `.play` destacado em `--primary`.
+- **🔄 O que altera no App:** Dá mais área útil ao vídeo no celular e cria hierarquia imediata para o Play/Pause e para o botão Exportar.
+- **🐛 Qual era o Erro (Antes):** Botão Exportar usava a mesma cor de seleção (`primary`), o botão de voltar ficava no meio da topbar e o Play/Pause não tinha destaque visual na barra de transporte.
+- **✅ Resultado Final (Depois):** Header `48px`, Monitor `42dvh` e Transporte `36px` validados no `npm run verify` com 0 erros.
+- **📂 Arquivos:** `src/app/App.tsx`, `src/app/components/Preview.tsx`, `src/app/styles.css`.
 
 ### [UI-L2] Home Limpa com Revelação Progressiva via Bottom Sheet (`UploadScreen.tsx` + `styles.css`)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado

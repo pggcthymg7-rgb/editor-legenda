@@ -296,7 +296,7 @@ export const Preview: React.FC<Props> = ({
           <StepBack size={18} aria-hidden="true" />
         </button>
         <button className="icon play" onClick={() => p?.toggle()} aria-label={playing ? 'Pausar' : 'Reproduzir'} title="Play/Pause (Espaço)">
-          {playing ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
+          {playing ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
         </button>
         <button className="icon" onClick={() => p?.seekTo(Math.min(durationInFrames - 1, frame + 1))} aria-label="Próximo quadro" title="Próximo quadro (→)">
           <StepForward size={18} aria-hidden="true" />
