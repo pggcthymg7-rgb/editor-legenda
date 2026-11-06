@@ -304,3 +304,13 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - `UI-L4`: Timeline estilo CapCut (`border-radius: 8px` nas pílulas, seleção em `--primary`, gesto touch de pinça com 2 dedos chamando `zoom(factor)` existente e ocultação de `Minus`/`Plus` no mobile).
   - `UI-L5`: Barra Contextual Inferior (`.mobile-dock` de `~64px`: sem seleção exibe `+ Texto`, `Modelos`, `Frases`, `Buscar`, `Pessoa`, `Na agulha`; com seleção faz slide-up exibindo `Editar`, `Modelos`, `Dividir`, `Duplicar`, `Excluir`, `Fechar`) + Bottom Sheets de `~45dvh` para Inspetor e Biblioteca mantendo `PersonPanel` montado no DOM.
   - Todos os 5 lotes validados com `npm run verify` = **0 erros (114/114 testes)**.
+
+---
+
+## Fase 4: Planejamento de Segurança & Cotas Strix (`docs/PLANO_STRIX.md`)
+
+- **[Antigravity, 2026-11-06] Triagem do Relatório Strix & Coordenação de Segurança:**
+  - Plano organizado criado em [`docs/PLANO_STRIX.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/PLANO_STRIX.md) e [`docs/ESCALA_FUTURA.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/ESCALA_FUTURA.md).
+  - Consulta ao Claude Code realizada via terminal para validação de riscos (`cloud/proxy.mjs`, `server/index.ts`, `server/track3d.ts`).
+  - Divisão aprovada em 3 lotes: **Lote 1 (P0)** Blindagem BYOK + teto 90% Groq + feedback visual de 429; **Lote 2 (P1)** Higiene no `/health` sem expor provedor; **Lote 3 (P2)** Magic bytes no upload e descarte de jobs antigos do Track3D.
+  - Aguardando autorização do usuário (`APROVADO <lote>`) para iniciar qualquer alteração de código. Nenhum arquivo de código foi alterado nesta etapa.

@@ -500,6 +500,51 @@
 
     const TASKS = [
       {
+        id: 'STX-L1',
+        status: 'planejamento',
+        title: 'Lote 1: Blindagem de Cotas, BYOK e Feedback Visual 429 (P0)',
+        severity: 'Segurança Crítica',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code & Antigravity',
+        category: 'Segurança & Nuvem',
+        commit: 'Aguardando aprovação',
+        popular: 'Garante que o editor na nuvem gaste apenas a cota gratuita do próprio usuário (BYOK), bloqueia abusos antes de estourar 90% do limite da Groq e avisa na tela exatamente quando o limite for atingido e que horas volta.',
+        engineering: 'cloud/proxy.mjs prioriza chave do usuário (x-groq-key), adiciona rate-limiting por hash SHA-256 com teto de 90% (18 req/min, 1.800 req/dia, 6.480 s/hora, 25.920 s/dia em janela deslizante) e trata 429 com Retry-After. App cliente envia x-audio-seconds e trata HTTP 429 com mensagem amigável em UploadScreen.tsx.',
+        changes: 'cloud/proxy.mjs, src/app/cloud.ts, src/app/components/UploadScreen.tsx, tests/cloud.test.ts',
+        before: 'Se o Render tivesse chave global, a chave do usuário era ignorada e não havia proteção de segundos de áudio por chave, correndo risco de exaustão silenciosa de cota.',
+        after: 'Cota 100% isolada por usuário, bloqueio preventivo aos 90% e interface transparente.'
+      },
+      {
+        id: 'STX-L2',
+        status: 'planejamento',
+        title: 'Lote 2: Higiene de Informações no /health e Documentação de IP (P1)',
+        severity: 'Segurança',
+        sevClass: 'badge-med',
+        agent: 'Claude Code (Rev: Antigravity)',
+        category: 'Segurança & Nuvem',
+        commit: 'Aguardando aprovação',
+        popular: 'Remove do teste de funcionamento do servidor qualquer menção a qual inteligência artificial está sendo usada por trás, sem quebrar o botão de ligar o serviço.',
+        engineering: 'Em cloud/proxy.mjs, remove o campo provider da resposta JSON de GET /health mantendo { ok: true, ready: true }, e documenta a conformidade de segurança do cabeçalho x-forwarded-for no Render.',
+        changes: 'cloud/proxy.mjs, tests/cloud.test.ts',
+        before: '/health respondia explicitamente provider: "groq" ou "openai".',
+        after: 'Resposta enxuta e segura com zero vazamento de metadados.'
+      },
+      {
+        id: 'STX-L3',
+        status: 'planejamento',
+        title: 'Lote 3: Magic Bytes no Upload Local e Descarte Automático de Jobs 3D (P2)',
+        severity: 'Melhoria Local',
+        sevClass: 'badge-low',
+        agent: 'Claude Code (Rev: Antigravity)',
+        category: 'Servidor Mac & Qualidade',
+        commit: 'Aguardando aprovação',
+        popular: 'Faz o editor checar os primeiros pedacinhos do arquivo de vídeo no Mac para ter certeza de que é um vídeo de verdade (MP4/MOV/WebM) e joga fora da memória tarefas antigas de câmera 3D após 30 minutos.',
+        engineering: 'Validação de assinatura binária (magic bytes ftyp e 1A 45 DF A3) no stream de POST /api/upload em server/index.ts, e rotina de pruneJobs() com TTL de 30 minutos em server/track3d.ts.',
+        changes: 'server/index.ts, server/track3d.ts, tests/server.test.ts',
+        before: '/api/upload confiava apenas na extensão enviada no cabeçalho x-file-ext, e server/track3d.ts acumulava jobs indefinidamente na memória.',
+        after: 'Validação estrita de arquivo e memória do servidor local limpa automaticamente.'
+      },
+      {
         id: 'UI-L1',
         status: 'finalizado',
         title: 'Lote 1: Tokens de Tema Slate/Indigo/Emerald e Tipografia (styles.css)',

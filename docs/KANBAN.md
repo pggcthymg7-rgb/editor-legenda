@@ -59,17 +59,43 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e concluído. |
-| ⏳ **2. Na Fila** | `0` | Todos os 5 lotes (`UI-L1` a `UI-L5`) foram concluídos. |
-| ⚡ **3. Em Execução** | `0` | Nenhum lote pendente no momento. |
-| 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
+| 🧠 **1. Em Planejamento** | `3` | Lotes de Segurança Strix (STX-L1, STX-L2, STX-L3) aguardando aprovação. |
+| ⏳ **2. Na Fila** | `0` | Todos os lotes anteriores foram concluídos. |
+| ⚡ **3. Em Execução** | `0` | Nenhum lote em código no momento (fase estrita de planejamento). |
+| 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
 | ✅ **5. Finalizado** | `29` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`) + Teste E2E Real. |
-| 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
+| 🗑️ **6. Descartado** | `3` | Abordagens descartadas (ex.: bloquear Origin no `/health`). |
 
 ---
 
 ## 🧠 1. Em Planejamento
-*(Plano aprovado e 100% executado)*
+
+### 🛡️ Card `STX-L1`: Blindagem de Cotas, BYOK e Feedback Visual 429 (P0)
+- **Status**: ⏳ Aguardando aprovação
+- **🗣️ Linguagem Popular**: Garante que o editor na nuvem gaste apenas a cota gratuita do próprio usuário (BYOK), bloqueia abusos antes de estourar 90% do limite da Groq e avisa na tela exatamente quando o limite for atingido e que horas volta.
+- **🔧 Engenharia de Software**: `cloud/proxy.mjs` prioriza chave do usuário (`x-groq-key`), adiciona rate-limiting por hash SHA-256 com teto de 90% (18 req/min, 1.800 req/dia, 6.480 s/hora, 25.920 s/dia em janela deslizante) e trata 429 com `Retry-After`. App cliente envia `x-audio-seconds` e trata HTTP 429 com mensagem amigável em `UploadScreen.tsx`.
+- **🔄 O que altera no App**: O proxy não permite queimar chaves de servidor e o usuário recebe aviso claro de espera se esgotar sua cota gratuita de áudio na Groq.
+- **🐛 Qual era o Erro (Antes)**: Se o Render tivesse chave global, a chave do usuário era ignorada e não havia proteção de segundos de áudio por chave, correndo risco de exaustão silenciosa de cota.
+- **✅ Resultado Final (Depois)**: Cota 100% isolada por usuário, bloqueio preventivo aos 90% e interface transparente.
+- **Custo Estimado**: Médio | **Dono**: Claude Code (Core/Proxy) & Antigravity (UI)
+
+### 🧼 Card `STX-L2`: Higiene de Informações no `/health` e Documentação de IP (P1)
+- **Status**: ⏳ Aguardando aprovação
+- **🗣️ Linguagem Popular**: Remove do teste de funcionamento do servidor qualquer menção a qual inteligência artificial está sendo usada por trás, sem quebrar o botão de ligar o serviço.
+- **🔧 Engenharia de Software**: Em `cloud/proxy.mjs`, remove o campo `provider` da resposta JSON de `GET /health` mantendo `{ ok: true, ready: true }`, e documenta a conformidade de segurança do cabeçalho `x-forwarded-for` no Render.
+- **🔄 O que altera no App**: O servidor na nuvem responde de forma neutra sem expor detalhes internos da infraestrutura.
+- **🐛 Qual era o Erro (Antes)**: `/health` respondia explicitamente `provider: "groq"` ou `"openai"`.
+- **✅ Resultado Final (Depois)**: Resposta enxuta e segura com zero vazamento de metadados.
+- **Custo Estimado**: Baixo | **Dono**: Claude Code | **Revisor**: Antigravity
+
+### 🗄️ Card `STX-L3`: Magic Bytes no Upload Local e Descarte Automático de Jobs 3D (P2)
+- **Status**: ⏳ Aguardando aprovação
+- **🗣️ Linguagem Popular**: Faz o editor checar os primeiros pedacinhos do arquivo de vídeo no Mac para ter certeza de que é um vídeo de verdade (MP4/MOV/WebM) e joga fora da memória tarefas antigas de câmera 3D após 30 minutos.
+- **🔧 Engenharia de Software**: Validação de assinatura binária (magic bytes `ftyp` e `1A 45 DF A3`) no stream de `POST /api/upload` em `server/index.ts`, e rotina de `pruneJobs()` com TTL de 30 minutos em `server/track3d.ts`.
+- **🔄 O que altera no App**: Bloqueia arquivos falsos antes de processar no FFmpeg e impede consumo desnecessário de RAM no Mac.
+- **🐛 Qual era o Erro (Antes)**: `/api/upload` confiava apenas na extensão enviada no cabeçalho `x-file-ext`, e `server/track3d.ts` acumulava jobs indefinidamente na memória.
+- **✅ Resultado Final (Depois)**: Validação estrita de arquivo e memória do servidor local limpa automaticamente.
+- **Custo Estimado**: Baixo | **Dono**: Claude Code | **Revisor**: Antigravity
 
 ---
 
