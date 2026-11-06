@@ -1,12 +1,30 @@
 import type { PlayerRef } from '@remotion/player';
-import { ChevronLeft, Clapperboard, Download, FilePlus2, Keyboard, Redo2, SlidersHorizontal, Undo2, X } from 'lucide-react';
+import {
+  ChevronLeft,
+  Clapperboard,
+  Copy,
+  Download,
+  FilePlus2,
+  Keyboard,
+  Layers,
+  ListOrdered,
+  Redo2,
+  Replace,
+  Scissors,
+  SlidersHorizontal,
+  Trash2,
+  Type,
+  Undo2,
+  UserRound,
+  X,
+} from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { duplicatePhrase, setWordTime, sortPhrases, splitPhraseAt } from '../core/edit';
 import { buildPhrase, phraseEnd, phraseStart, shiftPhrase } from '../core/grouping';
 import type { Project, Word } from '../core/types';
 import { FPS } from '../remotion/Root';
 import { ExportPanel } from './components/ExportPanel';
-import { Library } from './components/Library';
+import { Library, type LibTab } from './components/Library';
 import { PersonPanel } from './components/PersonPanel';
 import { PhrasePanel } from './components/PhrasePanel';
 import { Preview } from './components/Preview';
@@ -41,6 +59,8 @@ export const App: React.FC = () => {
   const [exportMounted, setExportMounted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('inspetor');
+  const [mobileSheet, setMobileSheet] = useState<MobileTab | null>(null);
+  const [libTab, setLibTab] = useState<LibTab>('frases');
   const playerRef = useRef<PlayerRef | null>(null);
   const [playableSrc, setPlayableSrc] = useState<{ src: string; url: string } | null>(null);
   const [videoError, setVideoError] = useState('');
@@ -225,13 +245,23 @@ export const App: React.FC = () => {
     if (project && selection.phraseId && !project.phrases.some((p) => p.id === selection.phraseId)) setSelection({ phraseId: null, wordId: null });
   }, [project, selection.phraseId]);
 
+  useEffect(() => {
+    if (!selection.phraseId && mobileSheet === 'inspetor') setMobileSheet(null);
+  }, [selection.phraseId, mobileSheet]);
+
   if (!project) return <UploadScreen onReady={(p: Project) => load(p)} />;
 
   const selected = project.phrases.find((p) => p.id === selection.phraseId) ?? null;
   const active = project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p));
 
+  const openLibSheet = (t: LibTab) => {
+    setLibTab(t);
+    setMobileTab('biblioteca');
+    setMobileSheet((cur) => (cur === 'biblioteca' && libTab === t ? null : 'biblioteca'));
+  };
+
   return (
-    <div className="editor" data-mtab={mobileTab}>
+    <div className="editor" data-mtab={mobileTab} data-msheet={mobileSheet ?? 'none'}>
       <header className="topbar">
         <span className="brand" aria-hidden="true">
           <Clapperboard size={18} />
@@ -284,6 +314,15 @@ export const App: React.FC = () => {
 
       <main className="workspace">
         <aside className="panel left" aria-label="Biblioteca">
+          <div className="sheet-bar only-sm">
+            <span className="sheet-grabber" aria-hidden="true" />
+            <div className="sheet-bar-row">
+              <strong>Biblioteca</strong>
+              <button className="icon" onClick={() => setMobileSheet(null)} aria-label="Fechar painel">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
           <Library
             project={project}
             apply={apply}
@@ -291,6 +330,8 @@ export const App: React.FC = () => {
             onSelect={setSelection}
             currentMs={currentMs}
             seekMs={seekMs}
+            activeTab={libTab}
+            onTabChange={setLibTab}
             personPanel={<PersonPanel project={project} playableSrc={playable?.video.src ?? null} apply={apply} hasMasks={!!maskUrls} />}
           />
         </aside>
@@ -322,6 +363,15 @@ export const App: React.FC = () => {
         </section>
 
         <aside className="panel right" aria-label="Inspetor">
+          <div className="sheet-bar only-sm">
+            <span className="sheet-grabber" aria-hidden="true" />
+            <div className="sheet-bar-row">
+              <strong>Inspetor de Legenda</strong>
+              <button className="icon" onClick={() => setMobileSheet(null)} aria-label="Fechar inspetor">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
           {selected ? (
             <PhrasePanel
               key={selected.id}
@@ -343,14 +393,117 @@ export const App: React.FC = () => {
           )}
         </aside>
 
-        <div className="mobile-tabs" role="tablist" aria-label="Painel">
-          <button role="tab" aria-selected={mobileTab === 'inspetor'} className={mobileTab === 'inspetor' ? 'on' : ''} onClick={() => setMobileTab('inspetor')}>
-            Inspetor
-          </button>
-          <button role="tab" aria-selected={mobileTab === 'biblioteca'} className={mobileTab === 'biblioteca' ? 'on' : ''} onClick={() => setMobileTab('biblioteca')}>
-            Frases e modelos
-          </button>
-        </div>
+        <nav className="mobile-dock" role="toolbar" aria-label="Ferramentas do editor">
+          {selected ? (
+            <div className="dock-row contextual" key="selected-dock">
+              <button
+                className={`dock-btn ${mobileSheet === 'inspetor' ? 'on' : ''}`}
+                onClick={() => {
+                  setMobileTab('inspetor');
+                  setMobileSheet((cur) => (cur === 'inspetor' ? null : 'inspetor'));
+                }}
+              >
+                <SlidersHorizontal size={20} aria-hidden="true" />
+                <span>Editar</span>
+              </button>
+              <button
+                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'modelos' ? 'on' : ''}`}
+                onClick={() => openLibSheet('modelos')}
+              >
+                <Layers size={20} aria-hidden="true" />
+                <span>Modelos</span>
+              </button>
+              <button
+                className="dock-btn"
+                onClick={splitAtPlayhead}
+                disabled={selected.words.length < 2}
+              >
+                <Scissors size={20} aria-hidden="true" />
+                <span>Dividir</span>
+              </button>
+              <button className="dock-btn" onClick={duplicate}>
+                <Copy size={20} aria-hidden="true" />
+                <span>Duplicar</span>
+              </button>
+              <button
+                className="dock-btn danger-soft"
+                onClick={() => {
+                  remove();
+                  setMobileSheet(null);
+                }}
+              >
+                <Trash2 size={20} aria-hidden="true" />
+                <span>Excluir</span>
+              </button>
+              <button
+                className="dock-btn"
+                onClick={() => {
+                  setSelection({ phraseId: null, wordId: null });
+                  setMobileSheet(null);
+                }}
+                aria-label="Tirar seleção"
+              >
+                <X size={20} aria-hidden="true" />
+                <span>Fechar</span>
+              </button>
+            </div>
+          ) : (
+            <div className="dock-row" key="default-dock">
+              <button
+                className="dock-btn"
+                onClick={() => {
+                  addAtPlayhead();
+                  setMobileTab('inspetor');
+                  setMobileSheet('inspetor');
+                }}
+              >
+                <Type size={20} aria-hidden="true" />
+                <span>+ Texto</span>
+              </button>
+              <button
+                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'modelos' ? 'on' : ''}`}
+                onClick={() => openLibSheet('modelos')}
+              >
+                <Layers size={20} aria-hidden="true" />
+                <span>Modelos</span>
+              </button>
+              <button
+                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'frases' ? 'on' : ''}`}
+                onClick={() => openLibSheet('frases')}
+              >
+                <ListOrdered size={20} aria-hidden="true" />
+                <span>Frases</span>
+              </button>
+              <button
+                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'texto' ? 'on' : ''}`}
+                onClick={() => openLibSheet('texto')}
+              >
+                <Replace size={20} aria-hidden="true" />
+                <span>Buscar</span>
+              </button>
+              <button
+                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'pessoa' ? 'on' : ''}`}
+                onClick={() => openLibSheet('pessoa')}
+              >
+                <UserRound size={20} aria-hidden="true" />
+                <span>Pessoa</span>
+              </button>
+              {active && (
+                <button
+                  className="dock-btn"
+                  onClick={() => {
+                    setSelection({ phraseId: active.id, wordId: null });
+                    setMobileTab('inspetor');
+                    setMobileSheet('inspetor');
+                  }}
+                >
+                  <SlidersHorizontal size={20} aria-hidden="true" />
+                  <span>Na agulha</span>
+                </button>
+              )}
+            </div>
+          )}
+        </nav>
 
         <Timeline
           project={project}

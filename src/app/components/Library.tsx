@@ -8,6 +8,8 @@ import type { Phrase, Project } from '../../core/types';
 import { PhraseList } from './PhraseList';
 import type { Selection } from './Timeline';
 
+export type LibTab = 'frases' | 'modelos' | 'texto' | 'pessoa';
+
 type Props = {
   project: Project;
   apply: (fn: (p: Project) => Project, merge?: boolean) => void;
@@ -16,9 +18,11 @@ type Props = {
   currentMs: number;
   seekMs: (ms: number) => void;
   personPanel: React.ReactNode;
+  activeTab?: LibTab;
+  onTabChange?: (tab: LibTab) => void;
 };
 
-type Tab = 'frases' | 'modelos' | 'texto' | 'pessoa';
+type Tab = LibTab;
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'frases', label: 'Frases', icon: <ListOrdered size={16} aria-hidden="true" /> },
   { id: 'modelos', label: 'Modelos', icon: <Layers size={16} aria-hidden="true" /> },
@@ -42,8 +46,13 @@ const applyPreset = (p: Phrase, id: string, project: Project): Phrase => {
 };
 
 /** Painel da esquerda: lista de frases, galeria de modelos, buscar/substituir e análise de pessoa. */
-export const Library: React.FC<Props> = ({ project, apply, selection, onSelect, currentMs, seekMs, personPanel }) => {
-  const [tab, setTab] = useState<Tab>('frases');
+export const Library: React.FC<Props> = ({ project, apply, selection, onSelect, currentMs, seekMs, personPanel, activeTab, onTabChange }) => {
+  const [innerTab, setInnerTab] = useState<Tab>('frases');
+  const tab = activeTab ?? innerTab;
+  const setTab = (t: Tab) => {
+    setInnerTab(t);
+    onTabChange?.(t);
+  };
   const [find, setFind] = useState('');
   const [repl, setRepl] = useState('');
   const [cs, setCs] = useState(false);

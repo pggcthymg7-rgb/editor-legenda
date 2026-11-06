@@ -565,18 +565,18 @@
       },
       {
         id: 'UI-L5',
-        status: 'fila',
+        status: 'finalizado',
         title: 'Lote 5: Barra Contextual Inferior (Dock 64px ↔ Slide-up) + Bottom Sheets (45dvh)',
-        severity: 'Na Fila',
+        severity: 'Mobile Dock',
         sevClass: 'badge-feat',
         agent: 'Antigravity',
         category: 'UI/UX & Mobile',
         commit: 'feat/ui-capcut-mobile',
-        popular: 'Substituir os dois botões gigantes (Inspetor | Frases e modelos) e a tela vazia por uma barra inteligente no rodapé (64px): sem seleção mostra + Texto, Modelos, Frases, Buscar e Pessoa; com legenda selecionada mostra Estilo/Inspetor, Palavra, Dividir, Duplicar e Excluir, abrindo gavetas de 45% da altura sem cobrir o vídeo.',
-        engineering: 'Em App.tsx, Library.tsx e styles.css: estado puramente visual de sheet mobile + dock contextual (~64px, ícone + micro-label 11px) acionando handlers existentes (addAtPlayhead, splitAtPlayhead, duplicate, remove) e abrindo PhrasePanel / Library em Bottom Sheet (~45dvh) com PersonPanel mantido montado no DOM.',
+        popular: 'Substituímos os dois botões gigantes (Inspetor | Frases e modelos) e a tela vazia por uma barra inteligente no rodapé (64px): sem seleção mostra + Texto, Modelos, Frases, Buscar e Pessoa; com legenda selecionada mostra Editar, Modelos, Dividir, Duplicar, Excluir e Fechar, abrindo gavetas de 45% da altura sem cobrir o vídeo.',
+        engineering: 'Em App.tsx, Library.tsx e styles.css: estado visual mobileSheet (inspetor | biblioteca | null) + dock contextual (~64px, ícone 20px + micro-label 11px) acionando handlers existentes (addAtPlayhead, splitAtPlayhead, duplicate, remove) e abrindo PhrasePanel / Library em Bottom Sheet (~45dvh) com PersonPanel mantido montado no DOM.',
         changes: 'Elimina área vazia e botões gigantes no celular, mantendo 100% das funções acessíveis com 1 toque.',
         errorBefore: 'Dois botões grandes fixos e painel .empty-inspector ocupavam metade da tela mobile quando nada estava selecionado.',
-        resultAfter: 'Critério de pronto: Dock + Slide-up + Bottom Sheets 45dvh operacionais e npm run verify com 0 erros.',
+        resultAfter: 'Dock + Slide-up + Bottom Sheets 45dvh operacionais e npm run verify com 0 erros.',
         files: 'src/app/App.tsx, src/app/components/Library.tsx, src/app/styles.css'
       },
       {

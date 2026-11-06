@@ -296,3 +296,11 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - Branch criada: `feat/ui-capcut-mobile`.
   - Escopo estritamente visual (`src/app/styles.css`, `src/app/App.tsx`, `src/app/components/UploadScreen.tsx`, `src/app/components/Preview.tsx`, `src/app/components/Timeline.tsx`, `src/app/components/Library.tsx`). Proibido tocar em `src/core/`, `src/remotion/`, `server/`, `cloud/` e testes existentes.
   - Plano de 5 lotes (`UI-L1` a `UI-L5`) registrado em `docs/KANBAN.md` e `public/kanban.html` na coluna **Em Planejamento**, aguardando `"APROVADO"` do usuário para iniciar o Lote 1.
+
+- **[Antigravity, 2026-11-06] Fase 2 Concluída (Lotes `UI-L1` a `UI-L5` na branch `feat/ui-capcut-mobile`):**
+  - `UI-L1`: Tokens Slate/Indigo/Emerald (`--bg-app: #0F172A`, `--bg-surface: #1E293B`, `--bg-elevated` com `blur(16px)`, `--primary: #6366F1`, `--accent-export: #10B981`, `--danger: #EF4444`) + tipografia `Inter Variable` / `Outfit Variable` em `src/app/main.tsx` e `src/app/styles.css`.
+  - `UI-L2`: Home limpa em `UploadScreen.tsx` destacando apenas `"Toque para escolher o vídeo"` e `"Projetos salvos"`, movendo o `<fieldset>` de transcrição e o CTA principal para Bottom Sheet (`cubic-bezier(0.32, 0.72, 0, 1)`).
+  - `UI-L3`: Casca do Editor Mobile (`48px` Header com seta de voltar e botão `"Exportar"` em `--accent-export`, `42dvh` Monitor e `36px` Faixa de Transporte com `.play` destacado e ícones `18px`).
+  - `UI-L4`: Timeline estilo CapCut (`border-radius: 8px` nas pílulas, seleção em `--primary`, gesto touch de pinça com 2 dedos chamando `zoom(factor)` existente e ocultação de `Minus`/`Plus` no mobile).
+  - `UI-L5`: Barra Contextual Inferior (`.mobile-dock` de `~64px`: sem seleção exibe `+ Texto`, `Modelos`, `Frases`, `Buscar`, `Pessoa`, `Na agulha`; com seleção faz slide-up exibindo `Editar`, `Modelos`, `Dividir`, `Duplicar`, `Excluir`, `Fechar`) + Bottom Sheets de `~45dvh` para Inspetor e Biblioteca mantendo `PersonPanel` montado no DOM.
+  - Todos os 5 lotes validados com `npm run verify` = **0 erros (114/114 testes)**.

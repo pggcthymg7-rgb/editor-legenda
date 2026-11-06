@@ -59,34 +59,27 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e movido para a fila. |
-| ⏳ **2. Na Fila** | `1` | Lote `UI-L5` aguardando execução sequencial. |
-| ⚡ **3. Em Execução** | `0` | Lote `UI-L4` finalizado; aguardando OK para iniciar `UI-L5`. |
+| 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e concluído. |
+| ⏳ **2. Na Fila** | `0` | Todos os 5 lotes (`UI-L1` a `UI-L5`) foram concluídos. |
+| ⚡ **3. Em Execução** | `0` | Nenhum lote pendente no momento. |
 | 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
-| ✅ **5. Finalizado** | `27` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
+| ✅ **5. Finalizado** | `28` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
 
 ---
 
 ## 🧠 1. Em Planejamento
-*(Plano aprovado — Lotes movidos para a Fila)*
+*(Plano aprovado e 100% executado)*
 
 ---
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
-
-### [UI-L5] Barra Contextual Inferior (Dock `64px` ↔ Slide-up de Seleção) + Bottom Sheets (`45dvh`) no Mobile (`App.tsx`, `Library.tsx`, `styles.css`)
-- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
-- **🗣️ Explicação Popular:** Eliminar aqueles dois botões grandes fixos (`Inspetor` | `Frases e modelos`) e a tela vazia quando nenhuma legenda está selecionada. No lugar deles, entra uma barra inteligente estilo CapCut no rodapé (`64px`): sem legenda selecionada, ela mostra ícones claros (`+ Texto`, `Modelos`, `Frases`, `Buscar`, `Pessoa`); quando você toca numa legenda, a barra muda sozinha para as ações daquela legenda (`Editar/Estilo`, `Dividir`, `Duplicar`, `Excluir`), abrindo os painéis numa gaveta de `45%` da tela sem tampar o vídeo!
-- **🔧 Engenharia de Software:** Em `src/app/App.tsx`, `src/app/components/Library.tsx` e `src/app/styles.css`, substituir no mobile a `.mobile-tabs` e o `.empty-inspector` sempre aberto por: (1) Dock contextual de `~64px` (ícones `20px` + micro-label `11px`) quando `selection.phraseId === null`, acionando `addAtPlayhead` e abrindo `Library` na aba escolhida (`frases`, `modelos`, `texto`, `pessoa`) em Bottom Sheet de `~45dvh`; (2) Barra contextual slide-up quando `selection.phraseId !== null` com ações existentes (`Inspetor/Estilo`, `Palavra`, `Dividir` via `splitAtPlayhead`, `Duplicar` via `duplicate`, `Excluir` via `remove` em `--danger`); (3) Bottom Sheet de `~45dvh` (`cubic-bezier(0.32, 0.72, 0, 1)`) para o `PhrasePanel` e `Library` no mobile, mantendo `PersonPanel` montado no DOM.
-- **🔄 O que altera no App:** Ergonomia idêntica ao CapCut Mobile: zero área morta, ferramentas autoexplicativas no rodapé e vídeo + timeline sempre visíveis.
-- **🐛 Qual era o Problema (Antes):** Dois botões gigantes ocupavam o meio da tela e, sem seleção, metade da tela do celular ficava ocupada pela mensagem vazia `"Selecione uma legenda..."`.
-- **✅ Critério de Pronto (Depois):** Dock contextual + Bottom Sheets funcionando 100% no mobile, layout NLE de 3 colunas intacto no Desktop e `npm run verify` com 0 erros.
+*(Fila zerada — todos os lotes `UI-L1` a `UI-L5` foram finalizados)*
 
 ---
 
 ## ⚡ 3. Em Execução
-*(Nenhuma tarefa em execução no momento — aguardando OK para `UI-L2`)*
+*(Nenhuma tarefa em execução no momento)*
 
 ---
 
@@ -96,6 +89,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ✅ 5. Finalizado (Histórico Completo de Engenharia & Explicação Popular)
+
+### [UI-L5] Barra Contextual Inferior (Dock `64px` ↔ Slide-up de Seleção) + Bottom Sheets (`45dvh`) no Mobile (`App.tsx`, `Library.tsx`, `styles.css`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
+- **🗣️ Explicação Popular:** Eliminamos aqueles dois botões grandes fixos (`Inspetor` | `Frases e modelos`) e a tela vazia quando nenhuma legenda estava selecionada. No lugar deles, entrou uma barra inteligente estilo CapCut no rodapé (`64px`): sem legenda selecionada, ela mostra ícones claros (`+ Texto`, `Modelos`, `Frases`, `Buscar`, `Pessoa`, `Na agulha`); quando você toca numa legenda, a barra desliza mostrando as ações daquela legenda (`Editar`, `Modelos`, `Dividir`, `Duplicar`, `Excluir`, `Fechar`), abrindo o Inspetor ou a Biblioteca numa gaveta de `45%` da altura sem cobrir o vídeo!
+- **🔧 Engenharia de Software:** Em `src/app/App.tsx`, `src/app/components/Library.tsx` e `src/app/styles.css`, substituímos no mobile a `.mobile-tabs` e o `.empty-inspector` por `.mobile-dock` (`~64px`, ícones `20px` + micro-label `11px`) com animação `dock-slide-up` (`cubic-bezier(0.32, 0.72, 0, 1)`) e Bottom Sheets fixas de `45dvh` (`data-msheet='inspetor' | 'biblioteca' | 'none'`) usando `transform: translateY(115%)` quando fechadas para manter `PersonPanel` 100% montado no DOM.
+- **🔄 O que altera no App:** Ergonomia idêntica ao CapCut Mobile: zero área morta, ferramentas autoexplicativas no rodapé e vídeo sempre visível acima das gavetas.
+- **🐛 Qual era o Erro (Antes):** Dois botões gigantes ocupavam o meio da tela e, sem seleção, metade da tela do celular ficava ocupada pela mensagem vazia `"Selecione uma legenda..."`.
+- **✅ Resultado Final (Depois):** Dock contextual + Slide-up + Bottom Sheets `45dvh` operacionais no mobile, layout NLE de 3 colunas intacto no Desktop e `npm run verify` com 0 erros.
+- **📂 Arquivos:** `src/app/App.tsx`, `src/app/components/Library.tsx`, `src/app/styles.css`.
 
 ### [UI-L4] Timeline Estilo CapCut: Pílulas (`8px`), Pinch-to-Zoom Touch e Limpeza Visual (`Timeline.tsx` + `styles.css`)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
