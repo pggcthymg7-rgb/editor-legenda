@@ -76,3 +76,37 @@ export async function analyzeCamera(
     input.dispose();
   }
 }
+
+/** Motor "Precisão (Mac)": COLMAP no servidor local. Mais lento, mais exato. */
+export async function colmapReady(): Promise<boolean> {
+  try {
+    const r = await fetch('/api/status');
+    return r.ok && !!((await r.json()) as { colmap?: boolean }).colmap;
+  } catch {
+    return false;
+  }
+}
+
+export async function analyzeCameraPrecise(
+  src: string,
+  durationMs: number,
+  onProgress: (p: number, msg: string) => void,
+  signal?: AbortSignal,
+): Promise<{ track: Track3D; stats: AnalyzeStats }> {
+  const t0 = performance.now();
+  onProgress(0, 'Enviando para o motor de precisão…');
+  const r = await fetch('/api/track3d', { method: 'POST', headers: { 'content-type': 'application/json', 'x-editor': '1' }, body: JSON.stringify({ src, durationMs }) });
+  const j = (await r.json()) as { id?: string; error?: string };
+  if (!r.ok || !j.id) throw new Error(j.error ?? 'falha ao iniciar');
+  for (;;) {
+    if (signal?.aborted) throw new Error('cancelado');
+    await new Promise((res) => setTimeout(res, 700));
+    const s = (await (await fetch(`/api/track3d/${j.id}`)).json()) as { status: string; progress: number; stage: string; error?: string; result?: Track3D };
+    if (s.status === 'error') throw new Error(s.error ?? 'falha');
+    if (s.status === 'done' && s.result) {
+      onProgress(1, 'Pronto');
+      return { track: s.result, stats: { frames: s.result.poses.length, ms: performance.now() - t0, solveMs: 0 } };
+    }
+    onProgress(s.progress, s.stage);
+  }
+}

@@ -564,6 +564,22 @@
         files: 'src/app/components/Timeline.tsx, src/app/styles.css'
       },
       {
+        id: 'FEAT-3D-PRO',
+        status: 'finalizado',
+        title: 'Rastreio 3D nível NodeVideo: 2 motores (celular rápido + Precisão Mac COLMAP) e visor de pontos 3D',
+        severity: 'Alto',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code',
+        category: 'Motor de Visão',
+        commit: 'feat/tracking3d',
+        popular: 'Agora você vê os pontos que o app achou na cena (laranja perto, azul longe) e toca onde quer grudar a frase; uma grade verde mostra a superfície. No celular o motor é rápido (5 s); no Mac existe a "Análise de precisão", mais lenta (~1 min) e mais exata. Paredes lisas, sem pontos, agora também funcionam.',
+        engineering: 'Motor celular: plano dominante da cena (RANSAC sequencial) como reserva quando não há pontos perto do toque. Motor desktop: COLMAP 4 (SIFT 6000 + sequential_matcher overlap 20 + mapper com bundle adjustment global, SIMPLE_RADIAL), 720p a 24 fps, maior modelo, interpolação slerp de quadros faltantes, one-euro leve → Track3D. Rotas /api/track3d (job + polling). Visor TrackView: canvas com projectCloud + grade via anchorHomography.',
+        changes: 'Painel Câmera 3D: botões "Analisar câmera (rápido)" e "Análise de precisão (Mac)" (só aparece se o COLMAP estiver instalado), visor tocável.',
+        errorBefore: 'Não dava para ver o rastreio nem escolher o ponto; parede lisa caía para "de frente"; só havia um motor, de baixa resolução (360p).',
+        resultAfter: 'IMG_3839 (10 s, 4K): rápido 5 s, erro 0,71 px, 311 pontos e a parede lisa gruda; Precisão 71 s, erro 0,56 px em 720p, 4000 pontos, 254/254 quadros. Chrome sem erros, verify OK.',
+        files: 'server/track3d.ts, server/index.ts, src/tracking3d/model.ts, src/app/components/TrackView.tsx, src/app/components/Camera3DPanel.tsx, src/app/track3d/analyze.ts, tests/track3d-colmap.test.ts'
+      },
+      {
         id: 'FEAT-3D',
         status: 'finalizado',
         title: 'Rastreio 3D de Câmera (Node Video): frase grudada na cena com perspectiva e parallax',

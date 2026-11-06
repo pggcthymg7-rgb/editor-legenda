@@ -430,3 +430,10 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 - **O que altera:** só o painel Câmera 3D.
 - **Qual era o Erro:** não dava para ver onde o rastreio achou a cena nem escolher o lugar com precisão.
 - **Resultado Final:** testado no Chrome com IMG_3839, sem erros; `npm run verify` 120/120.
+
+### ✅ FEAT-3D-PRO — Dois motores de rastreio (nível NodeVideo)
+- **Linguagem Popular:** celular com motor rápido (~5 s) que agora gruda também em parede lisa; no Mac, botão "Análise de precisão" (~1 min), mais exato, com 4000 pontos.
+- **Engenharia de Software:** motor celular com reserva de plano dominante (RANSAC sequencial) em `makeAnchor`; motor desktop `server/track3d.ts` com COLMAP 4 (SIFT + sequential matcher + bundle adjustment global, SIMPLE_RADIAL, 720p/24fps) → Track3D; rotas `POST/GET /api/track3d`; `/api/status` informa `colmap`.
+- **O que altera:** só o rastreio 3D (painel Câmera 3D e servidor do Mac).
+- **Qual era o Erro:** um único motor de 360p; parede sem textura caía para "de frente".
+- **Resultado Final:** IMG_3839: rápido 0,71 px; precisão 0,56 px (720p), 254/254 quadros, 71 s. Chrome sem erros.

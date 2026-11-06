@@ -1,5 +1,5 @@
 import { Box, Loader2 } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { phraseEnd, phraseStart } from '../../core/grouping';
 import type { Project } from '../../core/types';
 import { type AnchorMode, makeAnchor } from '../../tracking3d/model';
@@ -22,20 +22,25 @@ export const Camera3DPanel: React.FC<Props> = ({ project, playableSrc, apply, ph
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const abort = useRef<AbortController | null>(null);
+  const [precise, setPrecise] = useState(false);
+  useEffect(() => {
+    void import('../track3d/analyze').then((m) => m.colmapReady()).then(setPrecise);
+  }, []);
   const tr = project.video.track3d;
   const target =
     project.phrases.find((p) => p.id === phraseId) ?? project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p));
   const anchored = project.phrases.filter((p) => p.anchor3d).length;
 
-  const run = async () => {
+  const run = async (engine: 'device' | 'precise' = 'device') => {
     if (!playableSrc) return;
     setBusy(true);
     setError('');
     const ctrl = new AbortController();
     abort.current = ctrl;
     try {
-      const { analyzeCamera } = await import('../track3d/analyze');
-      const { track, stats } = await analyzeCamera(playableSrc, project.video.durationMs, (p, m) => (setProgress(p), setMsg(m)), ctrl.signal);
+      const { analyzeCamera, analyzeCameraPrecise } = await import('../track3d/analyze');
+      const fn: typeof analyzeCamera = engine === 'precise' ? (_s, d, p, sig) => analyzeCameraPrecise(project.video.src, d, p, sig) : analyzeCamera;
+      const { track, stats } = await fn(playableSrc, project.video.durationMs, (p, m) => (setProgress(p), setMsg(m)), ctrl.signal);
       // reanálise muda a escala da cena: âncoras antigas deixam de valer
       apply((proj) => ({
         ...proj,
@@ -83,9 +88,14 @@ export const Camera3DPanel: React.FC<Props> = ({ project, playableSrc, apply, ph
         <p className="muted small">Ainda não analisado.</p>
       )}
       <div className="row wrap">
-        <button className="primary" onClick={run} disabled={busy || !playableSrc} data-testid="camera3d-analyze">
-          {busy ? <Loader2 size={16} className="spin" aria-hidden="true" /> : null} {tr ? 'Refazer análise' : 'Analisar câmera'}
+        <button className="primary" onClick={() => run('device')} disabled={busy || !playableSrc} data-testid="camera3d-analyze">
+          {busy ? <Loader2 size={16} className="spin" aria-hidden="true" /> : null} {tr ? 'Refazer (rápido)' : 'Analisar câmera (rápido)'}
         </button>
+        {precise && (
+          <button className="primary" onClick={() => run('precise')} disabled={busy || !project.video.src} data-testid="camera3d-analyze-precise" title="COLMAP no Mac: mais lento, máxima exatidão">
+            Análise de precisão (Mac)
+          </button>
+        )}
         {busy && <button onClick={() => abort.current?.abort()}>Cancelar</button>}
       </div>
       {busy && <progress value={progress} max={1} style={{ width: '100%' }} />}

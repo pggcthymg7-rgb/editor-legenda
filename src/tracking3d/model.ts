@@ -162,9 +162,27 @@ export function makeAnchor(tr: Track3D, tMs: number, px: number, py: number, com
       near.map((o) => o.X),
       zMed * 0.03,
     );
-    if (pl && pl.inliers >= Math.max(6, near.length * 0.5)) {
-      n = dot(pl.n, camZ) > 0 ? scale(pl.n, -1) : pl.n;
-      p0 = pl.p;
+    let found = pl && pl.inliers >= Math.max(6, near.length * 0.5) ? pl : null;
+    if (!found) {
+      // superfície lisa (sem pontos perto): usa os planos dominantes da cena (chão, paredes, teto)
+      let rest = tr.points.slice();
+      let bestLam = Infinity;
+      for (let k = 0; k < 4 && rest.length >= 30; k++) {
+        const g = ransacPlane(rest, zMed * 0.02, 200, 5 + k);
+        if (!g || g.inliers < Math.max(25, rest.length * 0.08)) break;
+        const gn = dot(g.n, camZ) > 0 ? scale(g.n, -1) : g.n;
+        const den = dot(gn, ray);
+        const lam = den !== 0 ? dot(gn, sub(g.p, C)) / den : -1;
+        if (Math.abs(den) > 0.2 && lam > zMed * 0.2 && lam < zMed * 6 && lam < bestLam) {
+          bestLam = lam;
+          found = g;
+        }
+        rest = rest.filter((X) => Math.abs(dot(g.n, sub(X, g.p))) > zMed * 0.02);
+      }
+    }
+    if (found) {
+      n = dot(found.n, camZ) > 0 ? scale(found.n, -1) : found.n;
+      p0 = found.p;
       // classifica pelo eixo "para baixo" da câmera no quadro da âncora
       const down = dot(n, mulV(Rt, [0, 1, 0]));
       kind = down > 0.7 ? 'teto' : down < -0.7 ? 'chao' : 'parede';

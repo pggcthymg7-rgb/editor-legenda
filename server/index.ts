@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 import { newId } from '../src/core/grouping';
 import { validateProject } from '../src/core/validate';
 import { hasOpenAiKey, transcribeOpenAi } from './openai';
+import { colmapAvailable, getTrackJob, startTrackJob } from './track3d';
 import { FORMATS, cancelJob, enqueueRender, getJob, isFormat } from './render';
 import { ALLOWED_VIDEO_EXT, MASK_DIR, MEDIA_DIR, OUT_DIR, PROJECT_DIR, inside, isSafeId, safeMediaName } from './storage';
 
@@ -80,8 +81,24 @@ app.put('/api/masks/:id/:n', express.raw({ type: 'image/jpeg', limit: MAX_MASK }
   res.json({ ok: true });
 });
 
-app.get('/api/status', (_req, res) => {
-  res.json({ openai: hasOpenAiKey(), formats: FORMATS });
+app.get('/api/status', async (_req, res) => {
+  res.json({ openai: hasOpenAiKey(), formats: FORMATS, colmap: await colmapAvailable() });
+});
+
+// Rastreio 3D de precisão (COLMAP no Mac).
+app.post('/api/track3d', express.json({ limit: '10kb' }), (req, res) => {
+  const name = safeMediaName(String(req.body?.src ?? '').replace(/^\/media\//, ''));
+  const dur = Number(req.body?.durationMs);
+  if (!name || !(dur > 0 && dur < 3600_000)) return res.status(400).json({ error: 'vídeo inválido' });
+  const file = inside(MEDIA_DIR, name);
+  if (!existsSync(file)) return res.status(404).json({ error: 'vídeo não encontrado' });
+  res.json({ id: startTrackJob(file, dur).id });
+});
+
+app.get('/api/track3d/:id', (req, res) => {
+  const j = getTrackJob(req.params.id);
+  if (!j) return res.status(404).json({ error: 'não encontrado' });
+  res.json({ status: j.status, progress: j.progress, stage: j.stage, error: j.error, result: j.result, ms: Date.now() - j.startedAt });
 });
 
 const execFileP = promisify(execFile);
