@@ -2,7 +2,9 @@
 
 Editor local de legendas animadas estilo reels (referência: @_k.elsie). Análise dos modelos: `docs/ANALISE.md`.
 
-**Ao retomar: leia primeiro `docs/CEREBRO.md` (estado e arquitetura), depois `docs/PLANO_REVISAO.md` (Fase 2) e `AGENTS.md`. Manual de uso: `docs/MANUAL.md`.**
+**Ao retomar: leia primeiro `docs/CEREBRO.md` (estado e arquitetura), `docs/KANBAN.md` + `public/kanban.html` (quadro Kanban visual), `docs/PLANO_REVISAO.md` (Fase 2) e `AGENTS.md`. Manual de uso: `docs/MANUAL.md`.**
+
+> **Regra Obrigatória do Kanban:** Sempre que criar, iniciar, corrigir, finalizar ou descartar qualquer tarefa, atualize `docs/KANBAN.md` e `public/kanban.html` com explicação em **Linguagem Popular**, **Engenharia de Software**, **O que altera**, **Qual era o Erro** e **Resultado Final**.
 
 ## Comandos
 - Verificação completa: `npm run verify` (tsc + vitest). Nada está pronto sem 0 erros.

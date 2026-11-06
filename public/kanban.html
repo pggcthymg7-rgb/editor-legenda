@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kanban Oficial — Editor de Legendas</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --bg-panel: #121620;
+      --bg-card: #171c28;
+      --bg-card-hover: #1d2433;
+      --border: #262f45;
+      --text: #eef2ff;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-soft: rgba(99, 102, 241, 0.16);
+      --pop-bg: rgba(16, 185, 129, 0.1);
+      --pop-border: rgba(16, 185, 129, 0.35);
+      --pop-text: #6ee7b7;
+      --eng-bg: rgba(59, 130, 246, 0.1);
+      --eng-border: rgba(59, 130, 246, 0.35);
+      --eng-text: #93c5fd;
+      --err-bg: rgba(239, 68, 68, 0.1);
+      --err-border: rgba(239, 68, 68, 0.35);
+      --err-text: #fca5a5;
+      --ok-bg: rgba(34, 197, 94, 0.1);
+      --ok-border: rgba(34, 197, 94, 0.35);
+      --ok-text: #86efac;
+      --chg-bg: rgba(245, 158, 11, 0.1);
+      --chg-border: rgba(245, 158, 11, 0.35);
+      --chg-text: #fcd34d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(11, 13, 18, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+    }
+
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand span.sub {
+      font-size: 13px;
+      color: var(--muted);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-link {
+      text-decoration: none;
+      color: var(--text);
+      background: var(--accent);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .btn-link:hover { opacity: 0.9; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      background: var(--bg-panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      border-color: #3b496a;
+    }
+
+    .tab-btn.active {
+      background: var(--accent-soft);
+      color: #c7d2fe;
+      border-color: var(--accent);
+    }
+
+    .count-pill {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-input, .select-filter {
+      background: var(--bg-panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .search-input {
+      min-width: 260px;
+      flex: 1;
+    }
+
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 10px 24px;
+      background: #0f131c;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    main {
+      padding: 20px 24px 60px;
+    }
+
+    /* Layout em Colunas (Visão Quadro) vs Lista (Aba Única) */
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .single-column-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .board-grid, .single-column-grid {
+        grid-template-columns: 1fr;
+      }
+      header { padding: 12px 14px; }
+      main { padding: 14px; }
+    }
+
+    .column {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .column-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .column-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .empty-state {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: #3b496a;
+    }
+
+    .card-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-id {
+      background: #27304a;
+      color: #e0e7ff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .badge-crit { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-high { background: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .badge-med  { background: rgba(234, 179, 8, 0.18); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .badge-feat { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .badge-arch { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; border: 1px solid rgba(14, 165, 233, 0.4); }
+    .badge-disc { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+
+    .badge-agent {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .card-cat {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .commit-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.12);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .box {
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .box-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .box-pop {
+      background: var(--pop-bg);
+      border: 1px solid var(--pop-border);
+    }
+    .box-pop .box-label { color: var(--pop-text); }
+
+    .box-eng {
+      background: var(--eng-bg);
+      border: 1px solid var(--eng-border);
+    }
+    .box-eng .box-label { color: var(--eng-text); }
+
+    .box-chg {
+      background: var(--chg-bg);
+      border: 1px solid var(--chg-border);
+    }
+    .box-chg .box-label { color: var(--chg-text); }
+
+    .box-err {
+      background: var(--err-bg);
+      border: 1px solid var(--err-border);
+    }
+    .box-err .box-label { color: var(--err-text); }
+
+    .box-ok {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-border);
+    }
+    .box-ok .box-label { color: var(--ok-text); }
+
+    .files-footer {
+      font-size: 11.5px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      word-break: break-word;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <h1>📋 Kanban do Projeto — Editor de Legendas</h1>
+        <span class="sub">Atualizado por Antigravity &amp; Claude Code • Commit <code>92ccf98</code></span>
+      </div>
+      <div class="header-actions">
+        <a class="btn-link" href="/">🎬 Ir para o Editor ao Vivo</a>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs-bar"></div>
+
+    <div class="filters">
+      <input
+        type="search"
+        id="search-input"
+        class="search-input"
+        placeholder="🔍 Buscar por palavra-chave (ex: iPhone, Karaokê, memória, P7, segurança, vídeo teste...)"
+      />
+      <select id="agent-filter" class="select-filter">
+        <option value="all">🤖 Agente: Todos (Antigravity + Claude)</option>
+        <option value="Antigravity">Antigravity</option>
+        <option value="Claude Code">Claude Code</option>
+        <option value="Conjunto">Conjunto (Parceria)</option>
+      </select>
+      <select id="cat-filter" class="select-filter">
+        <option value="all">📂 Camada: Todas</option>
+        <option value="Segurança">Segurança</option>
+        <option value="Motor Remotion">Motor Remotion</option>
+        <option value="Performance & Memória">Performance &amp; Memória</option>
+        <option value="Core / Matemática">Core / Matemática</option>
+        <option value="UI/UX & Mobile">UI/UX &amp; Mobile</option>
+        <option value="Benchmark CapCut / Submagic">Benchmark CapCut / Submagic</option>
+        <option value="Servidor & Nuvem">Servidor &amp; Nuvem</option>
+        <option value="Qualidade & Infra">Qualidade &amp; Infra</option>
+      </select>
+      <select id="lang-mode" class="select-filter">
+        <option value="both">👁️ Visão: Popular + Engenharia (Completa)</option>
+        <option value="popular">🗣️ Foco: Só Linguagem Popular (Iniciante)</option>
+        <option value="eng">🔧 Foco: Só Engenharia de Software (Técnico)</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="legend-bar">
+    <div class="legend-item"><span class="dot" style="background:#6ee7b7"></span> <strong>🗣️ Linguagem Popular:</strong> O que é a tarefa sem jargão técnico</div>
+    <div class="legend-item"><span class="dot" style="background:#93c5fd"></span> <strong>🔧 Engenharia de Software:</strong> Como funciona no código e arquitetura</div>
+    <div class="legend-item"><span class="dot" style="background:#fcd34d"></span> <strong>🔄 O que Altera:</strong> O que muda na prática ao usar o app</div>
+    <div class="legend-item"><span class="dot" style="background:#fca5a5"></span> <strong>🐛 Qual era o Erro:</strong> O problema antes da tarefa</div>
+    <div class="legend-item"><span class="dot" style="background:#86efac"></span> <strong>✅ Resultado Final:</strong> Como ficou e como foi provado</div>
+  </div>
+
+  <main id="board-root"></main>
+
+  <script>
+    const COLUMNS = [
+      {
+        id: 'planejamento',
+        title: '🧠 Em Planejamento',
+        desc: 'Ideias e melhorias sendo desenhadas antes de entrar na fila.'
+      },
+      {
+        id: 'fila',
+        title: '⏳ Na Fila',
+        desc: 'Tarefas aprovadas aguardando início de execução.'
+      },
+      {
+        id: 'execucao',
+        title: '⚡ Em Execução',
+        desc: 'Tarefas sendo programadas neste momento.'
+      },
+      {
+        id: 'correcao',
+        title: '🛠️ Em Correção',
+        desc: 'Tarefas em ajuste após testes ou revisão.'
+      },
+      {
+        id: 'finalizado',
+        title: '✅ Finalizado',
+        desc: 'Tarefas 100% concluídas, validadas no npm run verify e publicadas.'
+      },
+      {
+        id: 'descartado',
+        title: '🗑️ Descartado',
+        desc: 'Ideias ou bibliotecas removidas por incompatibilidade ou redundância.'
+      }
+    ];
+
+    const TASKS = [
+      {
+        id: 'ETAPA-1',
+        status: 'finalizado',
+        title: 'Fundação do Editor de Legendas (Mac + iPhone PWA + Nuvem)',
+        severity: 'Arquitetura',
+        sevClass: 'badge-arch',
+        agent: 'Claude Code',
+        category: 'Qualidade & Infra',
+        commit: '4d63a18',
+        popular: 'Construção inicial do aplicativo completo de legendas animadas estilo Reels, funcionando tanto no computador (Mac) quanto no celular (iPhone) e transcrevendo a voz automaticamente.',
+        engineering: 'Arquitetura modular separando domínio puro (src/core/), composição declarativa Remotion (CaptionComposition.tsx), abstração de plataforma (mac.ts via Express + @remotion/renderer vs device.ts via IndexedDB + @remotion/web-renderer) e proxy serverless para Groq Whisper (cloud/proxy.mjs).',
+        changes: 'Permite enviar vídeos, transcrever áudio com tempos por palavra, aplicar modelos P1–P8, posicionar legenda atrás da pessoa e exportar MP4/MOV/SRT/ASS.',
+        errorBefore: 'O aplicativo ainda não existia.',
+        resultAfter: 'Base funcional entregue com 82 testes unitários e 8 modelos visuais (P1 a P8).',
+        files: 'src/core/*, src/remotion/*, src/app/*, server/*, cloud/proxy.mjs'
+      },
+      {
+        id: 'INFRA-01',
+        status: 'finalizado',
+        title: 'Cérebro Central (BRAIN.md) + Grafo AST (graphify)',
+        severity: 'Infra',
+        sevClass: 'badge-arch',
+        agent: 'Antigravity',
+        category: 'Qualidade & Infra',
+        commit: '33c09f0',
+        popular: 'Criamos um "mapa de GPS" completo do projeto para que qualquer inteligência artificial (Antigravity ou Claude) saiba exatamente onde fica cada botão, regra e arquivo sem precisar procurar às cegas e sem gastar tokens à toa.',
+        engineering: 'Extração de grafo de conhecimento via AST (graphify-out/GRAPH_REPORT.md) mapeando 640 nós, 1.489 arestas, 57 comunidades e 0 ciclos de importação (0 circular dependencies), consolidado na matriz de roteamento rápido do BRAIN.md.',
+        changes: 'Acelera qualquer manutenção futura, reduz o consumo de tokens e documenta as invariantes de segurança.',
+        errorBefore: 'Não havia mapa unificado de dependências nem grafo navegável na raiz do repositório.',
+        resultAfter: 'BRAIN.md e graphify-out/GRAPH_REPORT.md integrados e sincronizados com as skills em .agents/skills/.',
+        files: 'BRAIN.md, graphify-out/GRAPH_REPORT.md, .agents/skills/*'
+      },
+      {
+        id: 'C-01',
+        status: 'finalizado',
+        title: 'Exportação da Camada "Pessoa (frente)" no iPhone com Oclusão Desligada',
+        severity: 'Crítico',
+        sevClass: 'badge-crit',
+        agent: 'Antigravity',
+        category: 'Motor Remotion',
+        commit: '8ab8bf9',
+        popular: 'No iPhone, se você recortasse a pessoa do vídeo, mas desligasse o botão "Ativar efeito" na hora de editar e depois pedisse para exportar só o vídeo da pessoa recortada, o vídeo saía totalmente vazio. Agora ele exporta a pessoa recortada normalmente.',
+        engineering: 'App.tsx filtrava activeMasks por occlusionOn e repassava para ExportPanel. Quando occlusion=false, ExportPanel chamava platform.maskUrls("blob:..."), falhando no regex LOCAL_SRC (/^local:/) de device.ts. Separamos personMasks={maskUrls} (bruto) de activeMasks (filtrado para o preview).',
+        changes: 'O botão de exportar a camada "Pessoa (frente)" funciona sempre que houver análise de pessoa salva, mesmo que o efeito na legenda esteja desativado no preview.',
+        errorBefore: 'platform.maskUrls("blob:...") retornava [] no iPhone quando occlusion=false, gerando vídeo transparente sem pessoa.',
+        resultAfter: 'ExportPanel recebe personMasks={maskUrls} diretamente de App.tsx. Blindado em tests/fase2-lote1.test.ts.',
+        files: 'src/app/App.tsx, src/app/components/ExportPanel.tsx, tests/fase2-lote1.test.ts'
+      },
+      {
+        id: 'C-02',
+        status: 'finalizado',
+        title: 'Forma de Onda em Streaming (waveform.ts) sem Estourar a RAM do iPhone',
+        severity: 'Crítico',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code',
+        category: 'Performance & Memória',
+        commit: 'b88db79',
+        popular: 'Antes, para desenhar aquelas barrinhas de som (forma de onda) na linha do tempo, o aplicativo tentava carregar o vídeo inteiro de uma vez na memória do celular. Em vídeos grandes (4K), isso travava o iPhone. Agora ele lê o som em pedacinhos leves sem pesar na memória.',
+        engineering: 'Substituição de fetch(url).arrayBuffer() + ctx.decodeAudioData(buf) pelo pipeline de streaming por pacotes AudioSampleSink do mediabunny (16 kHz mono), com limite de 64 MB no fallback, fechamento garantido do AudioContext em bloco finally e cache LRU de 8 entradas.',
+        changes: 'Vídeos 4K longos abrem na linha do tempo do iPhone e do Mac sem travar a aba do Safari/Chrome e sem vazar contextos de áudio.',
+        errorBefore: 'Alocação integral do arquivo MOV/MP4 em memória RAM e vazamento de AudioContext em vídeos sem faixa de som.',
+        resultAfter: 'Extração em streaming testada inclusive com vídeo real 4K de 84,8 MB (video teste.mov).',
+        files: 'src/app/waveform.ts, tests/edit.test.ts'
+      },
+      {
+        id: 'C-03',
+        status: 'finalizado',
+        title: 'Ciclo de Vida delayRender / continueRender na Máscara da Pessoa (useMask)',
+        severity: 'Crítico',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code',
+        category: 'Motor Remotion',
+        commit: 'b88db79',
+        popular: 'Na hora de gerar o vídeo final com a legenda atrás da pessoa, o gravador às vezes tirava a "foto" do quadro um milissegundo antes da máscara da pessoa terminar de aparecer na tela, deixando a legenda piscar na frente do rosto. Agora o gravador espera a máscara estar 100% pronta.',
+        engineering: 'Em CaptionComposition.tsx (useMask), continueRender(handle) era disparado no .finally() da Promise antes do React commitar o setState. Refatorado em dois useEffect: busca DataURL com maskIndexAt(tMs) e libera continueRender somente após state?.key === key estar commitado ou no unmount.',
+        changes: 'Elimina piscadas (flicker) da legenda sobre o rosto da pessoa no 1º quadro de cada frase exportada e evita travamento de render.',
+        errorBefore: 'Race condition entre resolução da Promise de imagem e commit de estado do React durante o render quadro a quadro.',
+        resultAfter: 'Sincronismo exato de quadros e índice calculado via função pura maskIndexAt.',
+        files: 'src/remotion/CaptionComposition.tsx, src/core/mask.ts, tests/edit.test.ts'
+      },
+      {
+        id: 'C-04',
+        status: 'finalizado',
+        title: 'Blindagem Profunda de Segurança (validateProject + Fuzzing 500x)',
+        severity: 'Crítico',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code',
+        category: 'Segurança',
+        commit: '1070720',
+        popular: 'Criamos um "detector de metais" rigoroso para qualquer arquivo de projeto aberto ou enviado ao servidor. Mesmo que alguém tente mexer no arquivo para injetar comandos maliciosos disfarçados de cor ou fonte, o sistema bloqueia na hora.',
+        engineering: 'Expansão de validateProject em src/core/validate.ts para inspecionar recursivamente roleStyles, highlight, w.style, customPresets e ph.animation. Regex estrita COLOR (#hex ou rgba(...) sem parênteses extras), endMs >= startMs e bloqueio global de url(, <script, javascript: e expression(.',
+        changes: 'Impede crashes de renderização por JSON corrompido (ex.: scaleX: 0 ou NaN) e protege o servidor contra injeção de CSS/XSS.',
+        errorBefore: 'validateProject checava apenas o topo das frases, deixando passar objetos aninhados malformados em roleStyles ou customPresets.',
+        resultAfter: 'Blindado e validado com teste automatizado de fuzzing (500 mutações aleatórias maliciosas, 0 exceções não tratadas).',
+        files: 'src/core/validate.ts, tests/core.test.ts, tests/server.test.ts'
+      },
+      {
+        id: 'A-01',
+        status: 'finalizado',
+        title: 'Limpeza de Memória de Vídeos Antigos (revokeOther) e Cache de Máscaras',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Conjunto',
+        category: 'Performance & Memória',
+        commit: '8381d38',
+        popular: 'Quando você trocava de projeto no celular ou refazia o recorte da pessoa no Mac, o aplicativo guardava as imagens antigas na memória e continuava mostrando o recorte velho. Agora ele limpa a memória ao trocar de vídeo e atualiza o recorte na hora.',
+        engineering: 'Adicionada função revokeOther(keepSrc) em device.ts para chamar URL.revokeObjectURL em todos os blobs de projetos anteriores no urlCache e maskCache. Adicionada clearMaskCache() exportada de CaptionComposition.tsx e chamada em PersonPanel.tsx após saveMasks.',
+        changes: 'Evita que o Safari iOS feche o app por falta de RAM após editar vários vídeos seguidos e garante atualização imediata ao clicar em "Refazer" na aba Pessoa.',
+        errorBefore: 'urlCache e maskCache cresciam indefinidamente durante a sessão e serviam máscaras antigas em URLs de mesmo índice (/0.jpg).',
+        resultAfter: 'Memória revogada automaticamente na troca de projeto e cache invalidado ao reanalisar pessoa.',
+        files: 'src/app/platform/device.ts, src/remotion/CaptionComposition.tsx, src/app/components/PersonPanel.tsx, tests/ui.test.ts'
+      },
+      {
+        id: 'A-02',
+        status: 'finalizado',
+        title: 'Correção de Timestamps Negativos no MediaPipe (segment.ts) em Vídeos do iPhone',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Antigravity',
+        category: 'Core / Matemática',
+        commit: '8ab8bf9',
+        popular: 'Vídeos gravados no iPhone (formato .mov) costumam ter uma pequena marcação de tempo negativa no primeiro quadro por conta da compressão da Apple. Isso fazia a inteligência artificial que recorta a pessoa travar logo no início. Agora o sistema corrige esse tempo automaticamente.',
+        engineering: 'Em src/app/person/segment.ts, track.getFirstTimestamp() pode retornar valor negativo em vídeos HEVC/H.264 com B-frames, violando a exigência de timestamp estritamente crescente >= 0 de segmenter.segmentForVideo(canvas, tsMs). Aplicado Math.max(0, t0), timestamp monotônico (i + 1) * step e guarda contra 0 quadros.',
+        changes: 'A aba "Pessoa" analisa vídeos .mov nativos do iPhone sem erro no MediaPipe.',
+        errorBefore: 'Crash em segmentForVideo quando t0 < 0 e loop infinito se o vídeo não retornasse quadros decodificados.',
+        resultAfter: 'Recorte de pessoa estável em arquivos .mov e .mp4.',
+        files: 'src/app/person/segment.ts, tests/fase2-lote1.test.ts'
+      },
+      {
+        id: 'A-03',
+        status: 'finalizado',
+        title: 'Contador Numérico do Modelo P6 com Milhar e Centavos (counterText)',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Antigravity',
+        category: 'Core / Matemática',
+        commit: '8ab8bf9',
+        popular: 'No modelo "P6 Número Neon" (que faz os números subirem contando de 0 até o valor falado), se a frase tivesse um valor em reais com centavos como R$ 1.500,00, ele confundia a vírgula dos centavos com ponto de milhar e contava até R$ 150.000 (100 vezes mais!). Agora ele entende valores em reais perfeitamente.',
+        engineering: 'Em src/core/motion.ts (counterText), a limpeza raw.replace(/[.,]/g, "") concatenava as casas decimais ao inteiro quando ambos os separadores estavam presentes. Ajustado o parser para detectar sufixo decimal [.,]\\d{1,2}$, preservar a parte inteira na interpolação e reconstruir o sufixo decimal formatado em PT-BR.',
+        changes: 'Valores monetários (R$ 1.500,00, 1.250,50) contam até o número real correto no preset P6.',
+        errorBefore: '1.500,00 virava 150000 durante a animação de contagem.',
+        resultAfter: 'Contagem precisa preservando milhar e centavos, coberta por testes unitários.',
+        files: 'src/core/motion.ts, tests/fase2-lote1.test.ts'
+      },
+      {
+        id: 'A-04',
+        status: 'finalizado',
+        title: 'Proteção contra Esmagamento de Palavras em 0ms (shiftPhrase e retextPhrase)',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Antigravity',
+        category: 'Core / Matemática',
+        commit: '8ab8bf9',
+        popular: 'Se a primeira legenda começasse logo no segundo zero do vídeo e você clicasse no botão de atrasar −0,5s, todas as palavras da frase eram esmagadas umas em cima das outras no instante zero. Agora a frase trava no início do vídeo sem estragar a duração de cada palavra.',
+        engineering: 'Em src/core/grouping.ts, shiftPhrase subtraía deltaMs individualmente com Math.max(0, w.startMs + deltaMs), colapsando a duração das palavras quando deltaMs < -phraseStart(p). Aplicado const d = Math.max(-phraseStart(p), deltaMs) uniforme e janela mínima de 800ms em retextPhrase vazia.',
+        changes: 'Os botões −0,5s / −0,1s e a edição de texto em frases novas nunca mais zeram a duração das palavras.',
+        errorBefore: 'Palavras iniciais ficavam com 0..40ms (piscando invisíveis) ao puxar frase para antes de 0ms.',
+        resultAfter: 'Deslocamento rígido preservando o espaçamento interno entre palavras.',
+        files: 'src/core/grouping.ts, tests/fase2-lote1.test.ts'
+      },
+      {
+        id: 'A-05',
+        status: 'finalizado',
+        title: 'Travas de Segurança nos Sliders e Tempos de Palavra (PhrasePanel.tsx)',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Antigravity',
+        category: 'UI/UX & Mobile',
+        commit: 'c5eb5b3',
+        popular: 'Antes, se você apagasse o número de tamanho/escala da legenda para digitar outro, o aplicativo tentava salvar "escala zero" no meio da digitação, o que dava erro ou travava a proporção. Agora você pode digitar livremente e o sistema ajusta o valor com segurança ao terminar.',
+        engineering: 'Adicionado estado local draft com clamp [min, max] no onBlur/Enter nos componentes <Slider> e <Num> em PhrasePanel.tsx, guarda contra divisão por zero quando lockRatio está ativo e substituição da mutação manual de startMs/endMs por setWordTime (que garante distância mínima de 40ms).',
+        changes: 'Digitação fluida em todos os campos numéricos do Inspetor sem alertas de erro e sem risco de inverter o início/fim de uma palavra.',
+        errorBefore: 'Digitar 0 disparava erro de validação (scaleX < 0.05) e gerava 0/0 = NaN com o cadeado de proporção ligado.',
+        resultAfter: 'Inputs numéricos validados com clamp automático e setWordTime.',
+        files: 'src/app/components/PhrasePanel.tsx, src/app/components/StyleEditor.tsx'
+      },
+      {
+        id: 'A-06',
+        status: 'finalizado',
+        title: 'Proteção Anti-Spoofing de IP e Fila LRU no Proxy da Nuvem (cloud/proxy.mjs)',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Claude Code',
+        category: 'Segurança',
+        commit: '1070720',
+        popular: 'O servidor na nuvem que faz a transcrição grátis tem um limite para evitar que robôs gastem toda a cota. Antes, um invasor podia fingir que tinha outro endereço de internet (IP) para burlar esse limite. Agora o servidor lê o endereço real verificado pelo Render.',
+        engineering: 'Em cloud/proxy.mjs, clientIp() lia o primeiro elemento de x-forwarded-for.split(",")[0] (controlado pelo cliente) e allow() executava HITS.clear() global ao atingir 5.000 chaves. Corrigido para ler o último IP anexado pelo balanceador do Render (.at(-1)) e aplicar evicção FIFO/LRU individual da chave mais antiga.',
+        changes: 'Protege a chave GROQ_API_KEY no Render contra abuso e garante disponibilidade da transcrição grátis.',
+        errorBefore: 'Possibilidade de bypass de rate-limit via header X-Forwarded-For forjado.',
+        resultAfter: 'Rate-limit seguro e testado em tests/cloud.test.ts.',
+        files: 'cloud/proxy.mjs, cloud/proxy.d.mts, tests/cloud.test.ts'
+      },
+      {
+        id: 'A-07',
+        status: 'finalizado',
+        title: 'Cancelamento Real de Renderização de Vídeo no Servidor Mac (server/render.ts)',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Conjunto',
+        category: 'Servidor & Nuvem',
+        commit: '398af39',
+        popular: 'Antes, quando você clicava em "Cancelar" durante a exportação de um vídeo no Mac, a janela fechava, mas o computador continuava gastando processador escondido no fundo até terminar o vídeo. Agora clicar em "Cancelar" para o motor de gravação imediatamente.',
+        engineering: 'Integrado makeCancelSignal() do @remotion/renderer em server/render.ts, exposta função cancelJob(id) e criada rota DELETE /api/render/:id em server/index.ts, acionada pelo listener signal.addEventListener("abort") em src/app/platform/mac.ts, com checagem isCanceled(job) antes e depois de selectComposition.',
+        changes: 'O botão "Cancelar" interrompe de imediato o processo do Chromium/FFmpeg no Mac e libera a fila para uma nova exportação.',
+        errorBefore: 'O abort no navegador interrompia apenas o loop de polling HTTP, deixando o job órfão rodando na CPU.',
+        resultAfter: 'Cancelamento real ponta a ponta validado em tests/server.test.ts.',
+        files: 'server/render.ts, server/index.ts, src/app/platform/mac.ts, tests/server.test.ts'
+      },
+      {
+        id: 'M-01',
+        status: 'finalizado',
+        title: 'Modelo P7 com Fonte Serifada Itálica + 3D e Exportação ASS com Karaokê Real (\\kf)',
+        severity: 'Média',
+        sevClass: 'badge-med',
+        agent: 'Claude Code',
+        category: 'Core / Matemática',
+        commit: 'd21f2ab',
+        popular: 'O modelo "P7 Editorial" prometia no manual uma letra clássica (serifada) em itálico com inclinação 3D, mas estava usando uma letra comum reta. Além disso, o arquivo de legenda profissional (.ass) não levava o efeito de karaokê. Corrigimos o modelo P7 e turbinamos a exportação .ass.',
+        engineering: 'Atualizado p7-misto em src/core/presets.ts para usar a fonte serifada fraunces em itálico no papel key e inclinação 3D (rotateX: 14, rotateY: -8). Reescrito toAss em src/core/exporters.ts para emitir uma linha Style: por preset/papel, tags de rotação 3D (\\frx, \\fry), alinhamento \\an, deslocamento \\pos e tags \\kf.',
+        changes: 'O preset P7 fica idêntico ao prometido no manual e legendas .ass abrem no Premiere/DaVinci/Aegisub com animação de karaokê e 3D.',
+        errorBefore: 'P7 usava apenas inter/montserrat sem 3D, e toAss gerava um único estilo estático sem \\kf.',
+        resultAfter: 'Paridade total com o manual e validada com o vídeo real video teste.mov.',
+        files: 'src/core/presets.ts, src/core/exporters.ts, src/core/types.ts, tests/core.test.ts'
+      },
+      {
+        id: 'M-02',
+        status: 'finalizado',
+        title: 'Aceleração de 60fps no Preview (measureText Cache + useFontsReady Memo)',
+        severity: 'Média',
+        sevClass: 'badge-med',
+        agent: 'Claude Code',
+        category: 'Performance & Memória',
+        commit: 'b88db79',
+        popular: 'Durante a reprodução do vídeo, o aplicativo media o tamanho de cada palavra do zero 30 a 60 vezes por segundo. Criamos uma memória rápida (cache) para que ele meça cada palavra apenas uma vez, deixando o vídeo muito mais liso.',
+        engineering: 'Adicionado cache LRU de 2.000 entradas em measureText (src/remotion/fonts.ts), memoização useMemo da assinatura de fontes em useFontsReady e eliminação da chamada duplicada de computeLines por frase em CaptionComposition.tsx.',
+        changes: 'Reprodução a 30/60fps mais fluida e menor consumo de bateria no Mac e no iPhone.',
+        errorBefore: 'Medição repetitiva no contexto 2D do <canvas> e recálculo de lista de fontes em todo frame.',
+        resultAfter: 'Zero trabalho redundante por frame durante o playback.',
+        files: 'src/remotion/fonts.ts, src/remotion/CaptionComposition.tsx'
+      },
+      {
+        id: 'UI-01',
+        status: 'finalizado',
+        title: 'Correção do Histórico Desfazer/Refazer (⌘Z), Aba Palavra e Botão "Novo"',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Antigravity',
+        category: 'UI/UX & Mobile',
+        commit: 'c5eb5b3',
+        popular: 'Antes, se você mudasse a fonte e logo em seguida trocasse a cor, o botão "Desfazer" (⌘Z) desfazia as duas coisas juntas de uma vez. Além disso, clicar em "Novo" muito rápido podia perder a última alteração feita, e trocar de aba cancelava o recorte da pessoa. Tudo corrigido.',
+        engineering: 'Ajustado merge = false para ações discretas (botões, selects, checkboxes) mantendo merge = true apenas em drags/sliders contínuos; desbloqueada aba Palavra com seletor de chips; flush imediato do auto-save antes de Novo; e manutenção de PersonPanel e ExportPanel montados no DOM.',
+        changes: '⌘Z preciso passo a passo, preservação de progresso do MediaPipe/Export ao navegar pelas abas e preservação de canal alfa na cor da sombra.',
+        errorBefore: 'Fusão indevida de passos no histórico de Undo, desmontagem de painéis em execução e perda de opacidade ao usar <input type="color">.',
+        resultAfter: 'Todos os controles do Inspetor e Biblioteca testados e consistentes.',
+        files: 'src/app/App.tsx, src/app/components/PhrasePanel.tsx, src/app/components/StyleEditor.tsx, src/app/components/PhraseList.tsx, src/app/components/Library.tsx'
+      },
+      {
+        id: 'MOB-01',
+        status: 'finalizado',
+        title: 'Layout Mobile Estilo CapCut (100dvh) e Ergonomia de Toque na Timeline e Monitor',
+        severity: 'Alta',
+        sevClass: 'badge-high',
+        agent: 'Antigravity',
+        category: 'UI/UX & Mobile',
+        commit: '8381d38',
+        popular: 'Antes, quando você abria o editor no iPhone e rolava a tela para mudar a cor da legenda, o vídeo sumia lá em cima e você editava "às cegas". Além disso, tentar rolar a linha do tempo com o dedo acabava tirando as legendas do lugar sem querer. Agora o vídeo fica fixo no topo (igual ao CapCut).',
+        engineering: 'Reestruturado CSS mobile (@media (max-width: 900px)) em styles.css para height: 100dvh; overflow: hidden, mantendo .preview-area e .timeline fixos no topo. Adicionado drag-threshold de 4px em Preview.tsx e Timeline.tsx, touch-action: pan-x, .grip apenas no item selecionado e matriz de rotação inversa 2D.',
+        changes: 'Experiência nativa de aplicativo mobile no iPhone: vídeo sempre visível enquanto você edita e rolagem suave na linha do tempo sem bagunçar os tempos.',
+        errorBefore: 'Página inteira rolava escondendo o monitor; qualquer toque na timeline movia frases acidentalmente; teclado do iOS abria sozinho cobrindo a lista de fontes.',
+        resultAfter: 'Ergonomia mobile padrão CapCut/Submagic.',
+        files: 'src/app/styles.css, src/app/components/Preview.tsx, src/app/components/Timeline.tsx, src/app/components/FontPicker.tsx'
+      },
+      {
+        id: 'FEAT-01',
+        status: 'finalizado',
+        title: 'Guias Magnéticas de Centro (50%) + Alças Visuais de Escala e Rotação no Monitor',
+        severity: 'Feature Elite',
+        sevClass: 'badge-feat',
+        agent: 'Antigravity',
+        category: 'Benchmark CapCut / Submagic',
+        commit: 'faef1ee',
+        popular: 'Agora, quando você arrasta a legenda pelo vídeo, aparecem linhas-guia que "puxam" a legenda suavemente para o meio exato da tela (como um ímã). E na caixa que envolve a legenda, adicionamos duas bolinhas: uma no canto para aumentar/diminuir o tamanho, e outra no topo para girar!',
+        engineering: 'Implementado snap magnético em X = 50% e Y = 50% (tolerância de 1.5%) com guias visuais .snap-guide.x e .snap-guide.y em Preview.tsx. Adicionadas alças interativas .handle.scale (canto inferior direito) e .handle.rotate (topo, calculando Math.atan2 com snap de 15° ao segurar Shift).',
+        changes: 'Permite centralizar, redimensionar e inclinar legendas diretamente no vídeo sem precisar abrir a aba Frase e procurar barras numéricas.',
+        errorBefore: 'A caixa de seleção no monitor só permitia mover a posição X/Y; escalar ou girar exigia ir até o painel lateral.',
+        resultAfter: 'Manipulação direta completa no Monitor validada em tests/lote-a4.test.ts.',
+        files: 'src/app/components/Preview.tsx, src/app/styles.css'
+      },
+      {
+        id: 'FEAT-02',
+        status: 'finalizado',
+        title: 'Karaokê 2.0 com Pop Dinâmico de Escala (highlight.scale)',
+        severity: 'Feature Elite',
+        sevClass: 'badge-feat',
+        agent: 'Antigravity',
+        category: 'Benchmark CapCut / Submagic',
+        commit: 'faef1ee',
+        popular: 'Sabe aquele efeito famoso dos Reels onde a palavra que está sendo falada dá um "pulinho" (cresce um pouquinho enquanto é pronunciada e depois volta ao normal)? Adicionamos o controle "Pop de escala na palavra ativa" na aba Karaokê!',
+        engineering: 'Adicionado campo opcional scale?: number (0.5 a 2.5) em PhraseHighlight (src/core/types.ts), validado em src/core/validate.ts, calculado via função pura highlightPop(active, progress, targetScale) em src/core/motion.ts com curva suave Math.sin(progress * Math.PI) e aplicado em CaptionComposition.tsx.',
+        changes: 'Nova barra "Pop de escala na palavra ativa" (ex.: 115%) na aba Karaokê do Inspetor.',
+        errorBefore: 'O Karaokê mudava apenas cor/caixa ou alterava o tamanho fixo da fonte inteira.',
+        resultAfter: 'Efeito Submagic/Captions nativo e testado em tests/lote-a4.test.ts.',
+        files: 'src/core/types.ts, src/core/motion.ts, src/core/validate.ts, src/remotion/CaptionComposition.tsx, src/app/components/PhrasePanel.tsx, tests/lote-a4.test.ts'
+      },
+      {
+        id: 'FEAT-03',
+        status: 'finalizado',
+        title: 'Sugestão de Emojis Contextuais + Prévia Animada de Modelos + Divisão na Palavra',
+        severity: 'Feature Elite',
+        sevClass: 'badge-feat',
+        agent: 'Antigravity',
+        category: 'Benchmark CapCut / Submagic',
+        commit: 'faef1ee',
+        popular: 'O editor agora lê o que foi falado na frase (ex.: "dinheiro", "casa", "fogo", "foguete") e sugere emojis prontos para inserir com 1 clique. Também colocamos um botão "✂ Dividir nesta palavra" para quebrar uma legenda exatamente na palavra escolhida, e os cartões de Modelos se mexem ao passar o mouse!',
+        engineering: 'Criado dicionário semântico offline PT/EN em src/core/emojis.ts (suggestEmojis, suggestForText, withEmoji idempotente), integrado nas abas Frase e Palavra. Adicionado botão splitPhrase(p, wordIdx) na aba Palavra, atalhos S e Alt + ←/→ e animação CSS em hover nos cards de Library.tsx.',
+        changes: 'Edição muito mais rápida e criativa com emojis sugeridos automaticamente, corte cirúrgico por palavra e visualização viva dos modelos.',
+        errorBefore: 'Não havia sugestão de emojis, dividir exigia posicionar a agulha manualmente e os cards de modelos eram estáticos.',
+        resultAfter: 'Testado e blindado em tests/lote-a4.test.ts.',
+        files: 'src/core/emojis.ts, src/app/components/PhrasePanel.tsx, src/app/components/Library.tsx, src/app/App.tsx, tests/lote-a4.test.ts'
+      },
+      {
+        id: 'QUAL-01',
+        status: 'finalizado',
+        title: 'Linter Estrito (eslint), Limpeza de Pacotes e Invariantes de Segurança (114/114 Testes)',
+        severity: 'Infra',
+        sevClass: 'badge-arch',
+        agent: 'Conjunto',
+        category: 'Qualidade & Infra',
+        commit: '92ccf98',
+        popular: 'Instalamos um "revisor automático de código" (eslint) e testes de segurança que rodam toda vez que salvamos uma versão, garantindo que nenhuma chave secreta vaze e que nenhum erro passe despercebido.',
+        engineering: 'Configurado eslint.config.mjs integrado ao npm run verify, removidos tipos any em transcribe.ts e device.ts, adicionados 6 testes de UI/plataforma em tests/ui.test.ts e 4 testes de invariantes de segurança (zero GROQ_API_KEY hardcoded, public/models intacto, CSP e bloqueio de url() em tests/server.test.ts.',
+        changes: 'Código mais enxuto, seguro e com verificação automática de 114 testes em 10 suítes.',
+        errorBefore: 'Não havia linter configurado no npm run verify e as checagens de invariantes dependiam de revisão manual.',
+        resultAfter: 'npm run verify passa com 0 erros de tipos, 0 erros de lint, 114/114 testes e builds limpos.',
+        files: 'eslint.config.mjs, package.json, tests/ui.test.ts, tests/server.test.ts, docs/ci-workflow.yml'
+      },
+      {
+        id: 'TEST-REAL',
+        status: 'finalizado',
+        title: 'Teste de Fogo Ponta a Ponta com Vídeo Real 4K 60fps (video teste.mov)',
+        severity: 'Validação',
+        sevClass: 'badge-arch',
+        agent: 'Antigravity',
+        category: 'Motor Remotion',
+        commit: '398af39',
+        popular: 'Pegamos o seu vídeo real dos Downloads (video teste.mov, em 4K 60 quadros por segundo) e passamos por todas as etapas do editor: envio, ondas de som, transcrição automática na nuvem (que reconheceu as 9 frases e 30 palavras em português), aplicação dos modelos, recorte de pessoa e exportação real em MP4 e ProRes.',
+        engineering: 'Teste integrado com arquivo QuickTime HEVC Main 10 (2160×3840, 60fps, 11.05s, 80.90 MB). Validados upload multipart, extração mediabunny, transcrição via proxy Groq (whisper-large-v3-turbo), geração de máscaras MediaPipe, exportadores SRT/ASS (\\kf + \\frx/\\fry), render H.264 (2.26 MB) e ProRes 4444 (5.86 MB).',
+        changes: 'Deixa o projeto real "video teste" já salvo e pronto para abrir em http://127.0.0.1:5173.',
+        errorBefore: 'Durante a compilação estrita tsc --noEmit, detectamos que selectComposition do @remotion/renderer v4.0.449 não aceitava cancelSignal na assinatura TypeScript (apenas renderMedia aceita).',
+        resultAfter: 'Ajustado if (isCanceled(job)) return; antes e depois de selectComposition e mantido cancelSignal em renderMedia. 0 erros.',
+        files: 'server/render.ts, data/projects/proj_mw3uvhi30czmj.json, data/media/m_videoteste.mov'
+      },
+      {
+        id: 'CLOUD-01',
+        status: 'finalizado',
+        title: 'Sincronização e Deploy em Produção no Render (iPhone PWA + Proxy API)',
+        severity: 'Produção',
+        sevClass: 'badge-arch',
+        agent: 'Conjunto',
+        category: 'Servidor & Nuvem',
+        commit: '92ccf98',
+        popular: 'Atualizamos o servidor na internet (Render) onde fica o link do aplicativo para o seu iPhone e o servidor de transcrição automática, garantindo que o celular tenha exatamente a mesma versão nova que está no seu Mac.',
+        engineering: 'Sincronizada a branch origin/claude/editor-legendas-v1 com main (92ccf98) e disparados os builds no Render via MCP (dep-dbmhq115efls73dv9tug para srv-dbluvl88v5cc73d1d3j0 e dep-dbmhq1ei0phs739jjhd0 para srv-dbm632rm8hqs73erfa10). Verificados endpoints em produção com HTTP 200 OK.',
+        changes: 'O link https://editor-legenda.onrender.com no iPhone agora conta com o layout CapCut fixo, Karaokê 2.0, alças de escala/rotação, emojis e todas as correções de memória.',
+        errorBefore: 'O Render ainda estava rodando o commit antigo da Etapa 1 antes das melhorias da Fase 2.',
+        resultAfter: 'Ambos os serviços live e verificados.',
+        files: 'docs/CEREBRO.md, BRAIN.md'
+      },
+      {
+        id: 'DESC-01',
+        status: 'descartado',
+        title: 'Pacotes @remotion/whisper-webgpu e @remotion/captions',
+        severity: 'Descartado',
+        sevClass: 'badge-disc',
+        agent: 'Claude Code',
+        category: 'Qualidade & Infra',
+        commit: 'ee07160',
+        popular: 'Eram duas peças de biblioteca que estavam instaladas na pasta do projeto desde o início, mas não estavam sendo usadas porque criamos um motor próprio mais leve e compatível com o português. Removemos para deixar o projeto mais leve.',
+        engineering: 'Pacotes listados no package.json sem nenhum import ativo no código-fonte (a transcrição local usa @huggingface/transformers e o agrupamento PT-BR usa src/core/grouping.ts). Removidos com redução de 16 pacotes na árvore do node_modules.',
+        changes: 'Reduz tamanho do node_modules e acelera instalação.',
+        errorBefore: 'Dependências órfãs sem uso no package.json.',
+        resultAfter: 'Removidas com segurança no Lote 5.',
+        files: 'package.json, package-lock.json'
+      },
+      {
+        id: 'DESC-02',
+        status: 'descartado',
+        title: 'Forçar WebGPU na Transcrição Local dentro do Safari iOS (iPhone)',
+        severity: 'Descartado',
+        sevClass: 'badge-disc',
+        agent: 'Conjunto',
+        category: 'Performance & Memória',
+        commit: '4d63a18',
+        popular: 'Tentar usar a placa de vídeo (WebGPU) dentro do navegador Safari do iPhone para transcrever áudio faz o Safari fechar sozinho por um defeito do próprio iOS. Por isso descartamos o WebGPU no Safari e usamos o processador normal (CPU/WASM) com modelo compactado, que funciona sem fechar o app.',
+        engineering: 'Mantida a trava isSafariLike() em src/app/transcribe.ts que força device: "wasm" com quantização híbrida (encoder_model: "q8", decoder_model_merged: "q4") no iOS/Safari, reservando webgpu (fp32) apenas para navegadores Chromium no Desktop.',
+        changes: 'Garante que a transcrição offline no iPhone não derrube a aba do Safari.',
+        errorBefore: 'WebGPU no Safari iOS estoura memória do processo WebKit em modelos ONNX.',
+        resultAfter: 'Descartado uso de WebGPU no iOS em favor de WASM q8/q4 estável.',
+        files: 'src/app/transcribe.ts'
+      },
+      {
+        id: 'DESC-03',
+        status: 'descartado',
+        title: 'Workflow em .github/workflows/ci.yml via Token OAuth sem Escopo workflow',
+        severity: 'Descartado',
+        sevClass: 'badge-disc',
+        agent: 'Antigravity',
+        category: 'Qualidade & Infra',
+        commit: '52bed91',
+        popular: 'O GitHub bloqueia o envio de arquivos na pasta .github/workflows quando a credencial salva no Mac não tem uma permissão especial chamada workflow. Em vez de travar seus envios para o GitHub, movemos as verificações de segurança para dentro do próprio teste do projeto (npm run verify).',
+        engineering: 'A chave OAuth atual do Keychain possui escopos repo, read:org, gist. Para não bloquear git push, as invariantes de CI foram incorporadas diretamente em tests/server.test.ts (executadas em todo npm test e npm run verify) e o template YAML ficou documentado em docs/ci-workflow.yml.',
+        changes: 'Permite git push sem erro de permissão enquanto executa 100% das checagens de segurança localmente.',
+        errorBefore: 'Push rejeitado pelo GitHub com erro refusing to allow an OAuth App to create or update workflow without workflow scope.',
+        resultAfter: 'Invariantes rodando em tests/server.test.ts e modelo salvo em docs/ci-workflow.yml.',
+        files: 'tests/server.test.ts, docs/ci-workflow.yml'
+      }
+    ];
+
+    let activeTab = 'all';
+    let searchQuery = '';
+    let agentFilter = 'all';
+    let catFilter = 'all';
+    let langMode = 'both';
+
+    function filterTasks() {
+      return TASKS.filter((t) => {
+        if (agentFilter !== 'all' && t.agent !== agentFilter) return false;
+        if (catFilter !== 'all' && t.category !== catFilter) return false;
+        if (searchQuery.trim() !== '') {
+          const q = searchQuery.toLowerCase();
+          const hay = [
+            t.id, t.title, t.popular, t.engineering, t.changes, t.errorBefore, t.resultAfter, t.files, t.category
+          ].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderTabs(filtered) {
+      const bar = document.getElementById('tabs-bar');
+      const counts = { all: filtered.length };
+      COLUMNS.forEach((c) => {
+        counts[c.id] = filtered.filter((t) => t.status === c.id).length;
+      });
+
+      const allTabs = [
+        { id: 'all', title: '📋 Quadro Completo (Todas as Abas)' },
+        ...COLUMNS
+      ];
+
+      bar.innerHTML = allTabs
+        .map(
+          (tab) => `
+          <button class="tab-btn ${activeTab === tab.id ? 'active' : ''}" data-tab="${tab.id}">
+            <span>${tab.title}</span>
+            <span class="count-pill">${counts[tab.id] ?? 0}</span>
+          </button>
+        `
+        )
+        .join('');
+
+      bar.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeTab = btn.getAttribute('data-tab');
+          render();
+        });
+      });
+    }
+
+    function renderCard(t) {
+      const showPop = langMode === 'both' || langMode === 'popular';
+      const showEng = langMode === 'both' || langMode === 'eng';
+
+      return `
+        <article class="card">
+          <div class="card-top">
+            <div class="badges">
+              <span class="badge badge-id">${t.id}</span>
+              <span class="badge ${t.sevClass}">${t.severity}</span>
+            </div>
+            <span class="badge-agent">🤖 ${t.agent}</span>
+          </div>
+
+          <div class="card-title">${t.title}</div>
+
+          <div class="card-cat">
+            <span>📂 ${t.category}</span>
+            <span class="commit-tag">commit ${t.commit}</span>
+          </div>
+
+          ${
+            showPop
+              ? `
+            <div class="box box-pop">
+              <div class="box-label">🗣️ Em Linguagem Popular (O que é isso?)</div>
+              <div>${t.popular}</div>
+            </div>
+          `
+              : ''
+          }
+
+          ${
+            showEng
+              ? `
+            <div class="box box-eng">
+              <div class="box-label">🔧 Engenharia de Software (Como foi feito no código)</div>
+              <div>${t.engineering}</div>
+            </div>
+          `
+              : ''
+          }
+
+          <div class="box box-chg">
+            <div class="box-label">🔄 O que isso altera no Editor</div>
+            <div>${t.changes}</div>
+          </div>
+
+          <div class="box box-err">
+            <div class="box-label">🐛 Qual era o Erro / Problema (Antes)</div>
+            <div>${t.errorBefore}</div>
+          </div>
+
+          <div class="box box-ok">
+            <div class="box-label">✅ Resultado Final &amp; Validação (Depois)</div>
+            <div>${t.resultAfter}</div>
+          </div>
+
+          <div class="files-footer">
+            <strong>Arquivos:</strong> ${t.files}
+          </div>
+        </article>
+      `;
+    }
+
+    function render() {
+      const filtered = filterTasks();
+      renderTabs(filtered);
+      const root = document.getElementById('board-root');
+
+      if (activeTab === 'all') {
+        root.innerHTML = `
+          <div class="board-grid">
+            ${COLUMNS.map((col) => {
+              const items = filtered.filter((t) => t.status === col.id);
+              return `
+                <section class="column">
+                  <div class="column-header">
+                    <div class="column-title">${col.title}</div>
+                    <span class="count-pill">${items.length}</span>
+                  </div>
+                  <div class="column-desc">${col.desc}</div>
+                  ${
+                    items.length === 0
+                      ? `<div class="empty-state">Nenhuma tarefa nesta aba no momento.</div>`
+                      : items.map(renderCard).join('')
+                  }
+                </section>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        const col = COLUMNS.find((c) => c.id === activeTab);
+        const items = filtered.filter((t) => t.status === activeTab);
+        root.innerHTML = `
+          <section class="column">
+            <div class="column-header">
+              <div class="column-title">${col.title}</div>
+              <span class="count-pill">${items.length}</span>
+            </div>
+            <div class="column-desc">${col.desc}</div>
+            ${
+              items.length === 0
+                ? `<div class="empty-state">Nenhuma tarefa nesta aba no momento.</div>`
+                : `<div class="single-column-grid">${items.map(renderCard).join('')}</div>`
+            }
+          </section>
+        `;
+      }
+    }
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      render();
+    });
+    document.getElementById('agent-filter').addEventListener('change', (e) => {
+      agentFilter = e.target.value;
+      render();
+    });
+    document.getElementById('cat-filter').addEventListener('change', (e) => {
+      catFilter = e.target.value;
+      render();
+    });
+    document.getElementById('lang-mode').addEventListener('change', (e) => {
+      langMode = e.target.value;
+      render();
+    });
+
+    // Abrir direto na aba Finalizado se clicar ou iniciar no Quadro Completo
+    render();
+  </script>
+</body>
+</html>

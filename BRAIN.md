@@ -1,6 +1,6 @@
 # 🧠 Cérebro do Projeto (Project Brain Map + Graphify) — `editor-legenda`
 
-> Memória de sessão e deploy: [`docs/CEREBRO.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/CEREBRO.md) | Canal Claude ↔ Antigravity: [`docs/COLAB.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/COLAB.md) | Plano Fase 2: [`docs/PLANO_REVISAO.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/PLANO_REVISAO.md) | Manual: [`docs/MANUAL.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/MANUAL.md) | Relatório Graphify: [`graphify-out/GRAPH_REPORT.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/graphify-out/GRAPH_REPORT.md)
+> Memória de sessão e deploy: [`docs/CEREBRO.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/CEREBRO.md) | **Kanban Oficial:** [`docs/KANBAN.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/KANBAN.md) & [`public/kanban.html`](file:///Users/joaogabrielzava/Projetos/editor-legenda/public/kanban.html) (`http://127.0.0.1:5173/kanban.html`) | Canal Claude ↔ Antigravity: [`docs/COLAB.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/COLAB.md) | Plano Fase 2: [`docs/PLANO_REVISAO.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/PLANO_REVISAO.md) | Manual: [`docs/MANUAL.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/MANUAL.md) | Relatório Graphify: [`graphify-out/GRAPH_REPORT.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/graphify-out/GRAPH_REPORT.md)
 
 ---
 
@@ -12,6 +12,7 @@
   - Validação estrita contra XSS/CSS injection (`url(`, `expression(`, `<script`) e path traversal (`inside()`).
   - Paridade de composição entre Preview, Render Servidor (Mac) e Render Browser (PWA).
   - Trabalho em Dupla (**Claude Code ↔ Antigravity**): 1 lote atômico por vez em [`docs/COLAB.md`](file:///Users/joaogabrielzava/Projetos/editor-legenda/docs/COLAB.md), revisão cruzada (`APROVADO` / `MUDAR`) e `npm run verify` com 0 erros antes de cada commit.
+  - **Kanban Vivo Obrigatório (`docs/KANBAN.md` + `public/kanban.html`)**: Antigravity e Claude Code devem atualizar o Kanban a cada tarefa planejada, enfileirada, executada, corrigida, finalizada ou descartada, sempre com **Linguagem Popular** + **Engenharia de Software** + **O que altera** + **Qual era o Erro** + **Resultado Final**.
 
 ---
 
