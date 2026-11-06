@@ -423,3 +423,10 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 - **🗣️ Explicação Popular:** O GitHub bloqueia o envio de arquivos na pasta `.github/workflows` quando a credencial salva no Mac não tem uma permissão especial chamada `workflow`. Em vez de travar seus envios para o GitHub, movemos as verificações de segurança para dentro do próprio teste do projeto (`npm run verify`) e guardamos o modelo em `docs/ci-workflow.yml`.
 - **🔧 Engenharia de Software:** A chave OAuth atual do Keychain possui escopos `repo, read:org, gist`. Para não bloquear `git push`, as invariantes de CI foram incorporadas diretamente em `tests/server.test.ts` (executadas em todo `npm test` e `npm run verify`) e o template YAML ficou documentado em `docs/ci-workflow.yml`.
 
+
+### ✅ FEAT-3D-VIEW — Visor de pontos 3D (estilo NodeVideo)
+- **Linguagem Popular:** no painel Câmera 3D aparece o vídeo com os pontos rastreados coloridos (laranja = perto, azul = longe). Toque num ponto e a frase gruda ali; uma grade verde mostra a superfície.
+- **Engenharia de Software:** `projectCloud()` em `tracking3d/model.ts` + componente `TrackView.tsx` (canvas + vídeo oculto sincronizado em `currentMs`); toque → `makeAnchor` no ponto tocado; grade via `anchorHomography`.
+- **O que altera:** só o painel Câmera 3D.
+- **Qual era o Erro:** não dava para ver onde o rastreio achou a cena nem escolher o lugar com precisão.
+- **Resultado Final:** testado no Chrome com IMG_3839, sem erros; `npm run verify` 120/120.

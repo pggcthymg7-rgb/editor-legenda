@@ -214,3 +214,22 @@ export function homographyCss(H: M3): string {
 }
 
 export const _test = { OneEuro, slerp };
+
+/** Projeta a nuvem 3D no instante `tMs` (px de análise) com profundidade normalizada 0..1 (perto→longe). */
+export function projectCloud(tr: Track3D, tMs: number): { u: number; v: number; d: number }[] {
+  const P = poseAt(tr, tMs);
+  if (!P) return [];
+  const { f, cx, cy } = tr.cam;
+  const out: { u: number; v: number; z: number }[] = [];
+  for (const X of tr.points) {
+    const c = add(mulV(P.R, X), P.t);
+    if (c[2] <= 1e-3) continue;
+    const u = f * (c[0] / c[2]) + cx;
+    const v = f * (c[1] / c[2]) + cy;
+    if (u >= 0 && v >= 0 && u < tr.width && v < tr.height) out.push({ u, v, z: c[2] });
+  }
+  const zs = out.map((o) => o.z).sort((a, b) => a - b);
+  const lo = zs[Math.floor(zs.length * 0.05)] ?? 0;
+  const hi = zs[Math.floor(zs.length * 0.95)] ?? 1;
+  return out.map((o) => ({ u: o.u, v: o.v, d: Math.max(0, Math.min(1, (o.z - lo) / (hi - lo || 1))) }));
+}

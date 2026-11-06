@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { phraseEnd, phraseStart } from '../../core/grouping';
 import type { Project } from '../../core/types';
 import { type AnchorMode, makeAnchor } from '../../tracking3d/model';
+import { TrackView } from './TrackView';
 
 const KIND = { parede: 'na parede', chao: 'no chão', teto: 'no teto', frente: 'de frente para a câmera' } as const;
 
@@ -50,13 +51,15 @@ export const Camera3DPanel: React.FC<Props> = ({ project, playableSrc, apply, ph
     }
   };
 
-  const stick = (mode: AnchorMode) => {
+  const stick = (mode: AnchorMode, at?: { x: number; y: number }) => {
     if (!tr || !target) return;
     const { width, height } = project.video;
-    const a = makeAnchor(tr, currentMs, target.x * width, target.y * height, width, height, mode);
-    if (!a) return setError('Não achei pontos da cena nesse lugar. Mova a frase para cima de uma superfície com textura.');
+    const x = at?.x ?? target.x;
+    const y = at?.y ?? target.y;
+    const a = makeAnchor(tr, currentMs, x * width, y * height, width, height, mode);
+    if (!a) return setError('Não achei pontos da cena nesse lugar. Toque sobre uma superfície com textura.');
     setError('');
-    apply((proj) => ({ ...proj, phrases: proj.phrases.map((p) => (p.id === target.id ? { ...p, anchor3d: a } : p)) }));
+    apply((proj) => ({ ...proj, phrases: proj.phrases.map((p) => (p.id === target.id ? { ...p, x, y, anchor3d: a } : p)) }));
   };
   const release = () =>
     target && apply((proj) => ({ ...proj, phrases: proj.phrases.map((p) => (p.id === target.id ? { ...p, anchor3d: undefined } : p)) }));
@@ -93,6 +96,17 @@ export const Camera3DPanel: React.FC<Props> = ({ project, playableSrc, apply, ph
           <p className="muted small">
             Posicione a frase sobre a parede/chão no quadro atual e grude. “De frente” mantém a frase virada para a câmera (só com parallax). {anchored ? `${anchored} frase(s) grudada(s).` : ''}
           </p>
+          {playableSrc && (
+            <TrackView
+              src={playableSrc}
+              track={tr}
+              tMs={currentMs}
+              compW={project.video.width}
+              compH={project.video.height}
+              anchor={target?.anchor3d}
+              onPick={(x, y) => (target ? stick('auto', { x, y }) : setError('Selecione uma frase antes de tocar na cena.'))}
+            />
+          )}
           <div className="row wrap">
             <button onClick={() => stick('auto')} disabled={!target} data-testid="camera3d-stick">
               Grudar na superfície
