@@ -89,11 +89,11 @@ export const Camera3DPanel: React.FC<Props> = ({ project, playableSrc, apply, ph
       )}
       <div className="row wrap">
         <button className="primary" onClick={() => run('device')} disabled={busy || !playableSrc} data-testid="camera3d-analyze">
-          {busy ? <Loader2 size={16} className="spin" aria-hidden="true" /> : null} {tr ? 'Refazer (rápido)' : 'Analisar câmera (rápido)'}
+          {busy ? <Loader2 size={16} className="spin" aria-hidden="true" /> : null} {tr ? 'Refazer análise' : 'Analisar câmera'}
         </button>
         {precise && (
           <button className="primary" onClick={() => run('precise')} disabled={busy || !project.video.src} data-testid="camera3d-analyze-precise" title="COLMAP no Mac: mais lento, máxima exatidão">
-            Análise de precisão (Mac)
+            Precisão máxima (Mac + COLMAP)
           </button>
         )}
         {busy && <button onClick={() => abort.current?.abort()}>Cancelar</button>}

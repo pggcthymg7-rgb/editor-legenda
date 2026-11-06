@@ -564,6 +564,22 @@
         files: 'src/app/components/Timeline.tsx, src/app/styles.css'
       },
       {
+        id: 'FEAT-3D-MAX',
+        status: 'finalizado',
+        title: 'Motor do celular em precisão máxima (720p, lente grande-angular correta)',
+        severity: 'Alto',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code',
+        category: 'Motor de Visão',
+        commit: 'feat/tracking3d',
+        popular: 'O celular não tem mais análise "rápida": analisa com o dobro de resolução, mais pontos e regras mais rígidas. Também corrigimos a lente: o app achava que o vídeo era de lente normal quando era grande-angular, o que entortava a perspectiva.',
+        engineering: 'TRACK_SHORT 360→720, KLT 1200 pontos, 5 níveis, FB 0,5 px; focais candidatas a partir de 0,38×lado maior; busca fina ±10% em 5 passos; ajuste global 6 iterações; limiar 3 px. Focal validada contra o COLMAP (576 contra 545).',
+        changes: 'Botão "Analisar câmera" (sem perfil rápido); o botão do Mac virou "Precisão máxima (Mac + COLMAP)".',
+        errorBefore: 'Focal estimada em 1088 (2× errada) em vídeo grande-angular, porque não havia candidata abaixo de 0,6; resolução de 360p.',
+        resultAfter: 'IMG_3839: 17 s no Chrome do Mac, erro 0,82 px em 720p (antes 0,71 px em 360p, equivalente a 1,4 px em 720p), focal correta e a parede lisa gruda com a perspectiva certa.',
+        files: 'src/tracking3d/pipeline.ts, src/tracking3d/sfm.ts, src/app/components/Camera3DPanel.tsx'
+      },
+      {
         id: 'FEAT-3D-PRO',
         status: 'finalizado',
         title: 'Rastreio 3D nível NodeVideo: 2 motores (celular rápido + Precisão Mac COLMAP) e visor de pontos 3D',

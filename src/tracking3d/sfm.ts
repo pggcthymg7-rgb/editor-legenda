@@ -9,7 +9,7 @@ export type Track = { start: number; xs: number[]; ys: number[] };
 export type Camera = { f: number; cx: number; cy: number };
 export type SfmResult = { poses: Pose[]; points: V3[]; err: number; tracked: number; pointTracks: number[] };
 
-type Opts = { thrPx?: number; minParallaxDeg?: number; onProgress?: (p: number) => void };
+type Opts = { globalIters?: number; thrPx?: number; minParallaxDeg?: number; onProgress?: (p: number) => void };
 
 const end = (t: Track) => t.start + t.xs.length;
 
@@ -166,7 +166,7 @@ export function reconstruct(tracks: Track[], nFrames: number, cam: Camera, opts:
 
   // ---------- ajuste global ----------
   const all = pts.map((_, ti) => ti);
-  for (let it = 0; it < 3; it++) {
+  for (let it = 0; it < (opts.globalIters ?? 3); it++) {
     refinePoints(all);
     for (let f = 0; f < nFrames; f++) if (poses[f]) poses[f] = poseFrom(f, poses[f]!);
   }

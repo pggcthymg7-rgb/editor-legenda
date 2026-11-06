@@ -5,22 +5,22 @@ import { type Track3D, packPose, smoothPoses } from './model';
 import { type SfmResult, type Track, reconstruct } from './sfm';
 
 /** Resolução de análise: lado menor em px (custo ∝ área). */
-export const TRACK_SHORT = 360;
+export const TRACK_SHORT = 720;
 export const TRACK_FPS = 24;
 
 export type PipelineOpts = { fps: number; width: number; height: number; startMs?: number; maxPoints?: number };
 
 /** Focais candidatas (× lado maior). Celulares: 0,75–0,85 (grande-angular); zoom 2×–3×: 1,6–2,4. */
-const FOCALS = [0.6, 0.72, 0.85, 1.05, 1.4, 2];
+const FOCALS = [0.38, 0.45, 0.53, 0.62, 0.72, 0.85, 1.05, 1.4, 2];
 
 export function solveTracks(tracks: Track[], n: number, o: PipelineOpts, onProgress?: (p: number) => void): Track3D | null {
   const long = Math.max(o.width, o.height);
   let best: { r: SfmResult; f: number } | null = null;
   const score = (r: SfmResult) => r.err + (n - r.tracked) * 0.5;
   // 1ª passada grossa (amostra das trilhas), depois refina a melhor focal com todas
-  const sample = tracks.length > 600 ? tracks.filter((_, i) => i % 2 === 0) : tracks;
+  const sample = tracks.length > 900 ? tracks.filter((_, i) => i % 3 === 0) : tracks;
   FOCALS.forEach((m, i) => {
-    const r = reconstruct(sample, n, { f: m * long, cx: o.width / 2, cy: o.height / 2 });
+    const r = reconstruct(sample, n, { f: m * long, cx: o.width / 2, cy: o.height / 2 }, { thrPx: 3 });
     if (r && (!best || score(r) < score(best.r))) best = { r, f: m * long };
     onProgress?.((i + 1) / (FOCALS.length + 2));
   });
@@ -28,9 +28,9 @@ export function solveTracks(tracks: Track[], n: number, o: PipelineOpts, onProgr
   let f = (best as { f: number }).f;
   // busca fina (seção áurea simplificada: ±15 %)
   let full: { r: SfmResult; f: number } | null = null;
-  for (const m of [0.88, 1, 1.14]) {
+  for (const m of [0.9, 0.95, 1, 1.05, 1.1]) {
     const cam = { f: f * m, cx: o.width / 2, cy: o.height / 2 };
-    const r = reconstruct(tracks, n, cam);
+    const r = reconstruct(tracks, n, cam, { globalIters: 6, thrPx: 3 });
     if (r && (!full || score(r) < score(full.r))) full = { r, f: cam.f };
   }
   onProgress?.(1);
@@ -56,7 +56,7 @@ export function solveTracks(tracks: Track[], n: number, o: PipelineOpts, onProgr
 export class CameraTracker {
   private readonly ft: FeatureTracker;
   constructor(private readonly o: PipelineOpts) {
-    this.ft = new FeatureTracker(o.width, o.height, { maxPoints: o.maxPoints ?? 500 });
+    this.ft = new FeatureTracker(o.width, o.height, { maxPoints: o.maxPoints ?? 1200, levels: 5, fbThr: 0.5 });
   }
   push(gray: Uint8Array) {
     this.ft.push(gray);

@@ -437,3 +437,10 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 - **O que altera:** só o rastreio 3D (painel Câmera 3D e servidor do Mac).
 - **Qual era o Erro:** um único motor de 360p; parede sem textura caía para "de frente".
 - **Resultado Final:** IMG_3839: rápido 0,71 px; precisão 0,56 px (720p), 254/254 quadros, 71 s. Chrome sem erros.
+
+### ✅ FEAT-3D-MAX — Motor do celular em precisão máxima
+- **Linguagem Popular:** sem modo rápido; o celular analisa em 720p, com mais pontos, e agora acerta a lente grande-angular.
+- **Engenharia de Software:** TRACK_SHORT 720, KLT 1200 pontos, 5 níveis, FB 0,5; focais a partir de 0,38; busca fina ±10% (5 passos); ajuste global 6 iterações; limiar 3 px.
+- **O que altera:** só o motor de rastreio e os rótulos do painel Câmera 3D.
+- **Qual era o Erro:** focal estimada 2× errada (1088 contra 545 do COLMAP) por falta de candidatas grande-angulares; 360p.
+- **Resultado Final:** focal 576 (COLMAP 545), erro 0,82 px em 720p, 17 s no Chrome do Mac, parede gruda com a perspectiva certa.
