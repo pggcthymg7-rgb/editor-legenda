@@ -947,6 +947,7 @@
 
       const allTabs = [
         { id: 'all', title: '📋 Quadro Completo (Todas as Abas)' },
+        { id: 'funcoes', title: '👥 Quadro de Funções & Guia Claude' },
         ...COLUMNS
       ];
 
@@ -955,7 +956,7 @@
           (tab) => `
           <button class="tab-btn ${activeTab === tab.id ? 'active' : ''}" data-tab="${tab.id}">
             <span>${tab.title}</span>
-            <span class="count-pill">${counts[tab.id] ?? 0}</span>
+            ${tab.id === 'funcoes' ? '<span class="count-pill">Guia</span>' : `<span class="count-pill">${counts[tab.id] ?? 0}</span>`}
           </button>
         `
         )
@@ -1034,13 +1035,138 @@
       `;
     }
 
+    function renderFuncoesGuide() {
+      return `
+        <section class="column" style="margin-bottom: 22px; border-color: #3b496a;">
+          <div class="column-header">
+            <div class="column-title">👥 Quem Cuida do Quê (Design vs. Engenharia) &amp; 📣 Mini-Guia para Acionar o Claude Code</div>
+            <span class="count-pill" style="background: rgba(99,102,241,0.25); color:#c7d2fe;">Acesso Rápido</span>
+          </div>
+
+          <div class="single-column-grid" style="margin-top: 4px;">
+            <article class="card" style="border-color: rgba(168,85,247,0.45);">
+              <div class="card-top">
+                <span class="badge badge-feat">🎨 LÍDER DE DESIGN &amp; UI/UX</span>
+                <span class="badge-agent">🤖 Antigravity</span>
+              </div>
+              <div class="card-title">Quem cuida do Design do Projeto: Antigravity</div>
+              <div class="box box-pop">
+                <div class="box-label">🗣️ Em Linguagem Popular</div>
+                <div>O <strong>Antigravity</strong> é o responsável por toda a parte visual, beleza, cores, fontes, layout estilo CapCut no iPhone, alças de girar/aumentar no vídeo, modelos animados (P1–P8), Karaokê 2.0, emojis e facilidade de uso dos botões.</div>
+              </div>
+              <div class="box box-eng">
+                <div class="box-label">🔧 Engenharia de Software</div>
+                <div>Atua em <code>src/app/styles.css</code>, <code>Preview.tsx</code>, <code>Timeline.tsx</code>, <code>PhrasePanel.tsx</code>, <code>StyleEditor.tsx</code>, <code>FontPicker.tsx</code>, <code>Library.tsx</code> e <code>src/core/presets.ts</code> usando as skills <code>ui-ux-pro-max</code> e <code>web-design-guidelines</code>.</div>
+              </div>
+            </article>
+
+            <article class="card" style="border-color: rgba(59,130,246,0.45);">
+              <div class="card-top">
+                <span class="badge badge-arch">⚙️ LÍDER DE CORE, MEMÓRIA &amp; SEGURANÇA</span>
+                <span class="badge-agent">🤖 Claude Code</span>
+              </div>
+              <div class="card-title">Quem cuida do Motor Pesado &amp; Nuvem: Claude Code</div>
+              <div class="box box-pop">
+                <div class="box-label">🗣️ Em Linguagem Popular</div>
+                <div>O <strong>Claude Code</strong> cuida do motor invisível: garante que vídeos 4K não travem a memória do iPhone, sincroniza a máscara da pessoa quadro a quadro, bloqueia invasões no servidor e dispara atualizações na nuvem (Render).</div>
+              </div>
+              <div class="box box-eng">
+                <div class="box-label">🔧 Engenharia de Software</div>
+                <div>Atua em <code>waveform.ts</code> (streaming <code>mediabunny</code>), <code>CaptionComposition.tsx</code> (<code>useMask</code>), <code>validate.ts</code> (fuzzing), <code>cloud/proxy.mjs</code>, <code>server/render.ts</code> e MCP Render (<code>tea-dbh7qoff3r2c73btlmq0</code>).</div>
+              </div>
+            </article>
+          </div>
+
+          <div class="column-header" style="margin-top: 10px;">
+            <div class="column-title">📣 Mini-Guia: Como Avisar o Claude Code que é Sobre Este Projeto (Clique para Copiar)</div>
+          </div>
+          <div class="single-column-grid">
+            <article class="card">
+              <div class="card-top">
+                <span class="badge badge-id">OPÇÃO 1 (MAIS RÁPIDA)</span>
+                <button class="tab-btn" onclick="navigator.clipboard.writeText('voltar legenda'); this.textContent='✅ Copiado!'; setTimeout(()=>this.textContent='📋 Copiar Atalho', 1800)">📋 Copiar Atalho</button>
+              </div>
+              <div class="card-title">Atalho Curto Global: <code>voltar legenda</code></div>
+              <div class="box box-pop">
+                <div class="box-label">🗣️ Como funciona</div>
+                <div>Já gravamos este atalho na memória global do Claude no seu Mac (<code>~/.claude/CLAUDE.md</code>). Basta digitar <strong><code>voltar legenda</code></strong> que ele já abre a pasta certa e lê o Cérebro e o Kanban!</div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-top">
+                <span class="badge badge-id">OPÇÃO 2 (MENSAGEM COMPLETA)</span>
+                <button class="tab-btn" onclick="navigator.clipboard.writeText('voltar legenda — Estamos no projeto Editor de Legendas (/Users/joaogabrielzava/Projetos/editor-legenda). Leia primeiro CLAUDE.md, BRAIN.md e docs/KANBAN.md. Ao concluir qualquer alteração, rode npm run verify (0 erros) e atualize obrigatoriamente docs/KANBAN.md e public/kanban.html com Linguagem Popular, Engenharia de Software, O que altera, Qual era o erro e Resultado final. Minha solicitação é: '); this.textContent='✅ Copiado!'; setTimeout(()=>this.textContent='📋 Copiar Mensagem', 1800)">📋 Copiar Mensagem</button>
+              </div>
+              <div class="card-title">Mensagem Pronta para Pedir Tarefa ao Claude</div>
+              <div class="box box-eng">
+                <div class="box-label">📋 Texto que será copiado</div>
+                <div><code>voltar legenda — Estamos no projeto Editor de Legendas (/Users/joaogabrielzava/Projetos/editor-legenda). Leia primeiro CLAUDE.md, BRAIN.md e docs/KANBAN.md. Ao concluir, rode npm run verify e atualize o Kanban. Minha solicitação é: </code></div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-top">
+                <span class="badge badge-id">OPÇÃO 3 (PELO TERMINAL)</span>
+                <button class="tab-btn" onclick="navigator.clipboard.writeText('cd /Users/joaogabrielzava/Projetos/editor-legenda && claude'); this.textContent='✅ Copiado!'; setTimeout(()=>this.textContent='📋 Copiar Comando', 1800)">📋 Copiar Comando</button>
+              </div>
+              <div class="card-title">Abrir Claude no Terminal já na Pasta Certa</div>
+              <div class="box box-ok">
+                <div class="box-label">💻 Comando do Terminal</div>
+                <div><code>cd /Users/joaogabrielzava/Projetos/editor-legenda &amp;&amp; claude</code></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="column-header" style="margin-top: 10px;">
+            <div class="column-title">🕹️ Quadro de Funções do Aplicativo ("O que faz cada parte da tela")</div>
+          </div>
+          <div class="single-column-grid">
+            <article class="card">
+              <div class="card-title">1. Tela de Entrada &amp; Transcrição Automática</div>
+              <div class="box box-pop"><div class="box-label">🗣️ Popular</div>Recebe seu vídeo (.mov/.mp4) e transforma a fala em legendas sincronizadas palavra por palavra (grátis na nuvem Groq ou offline no aparelho).</div>
+              <div class="files-footer"><strong>Arquivos:</strong> UploadScreen.tsx, cloud.ts, transcribe.ts, audio.ts</div>
+            </article>
+            <article class="card">
+              <div class="card-title">2. Monitor de Vídeo Interativo (Centro)</div>
+              <div class="box box-pop"><div class="box-label">🗣️ Popular</div>Mostra o vídeo com a legenda ao vivo. Permite arrastar com <strong>ímã de centro (50%)</strong>, <strong>aumentar/diminuir pelo canto</strong> e <strong>girar pelo topo</strong>.</div>
+              <div class="files-footer"><strong>Arquivos:</strong> Preview.tsx, CaptionComposition.tsx</div>
+            </article>
+            <article class="card">
+              <div class="card-title">3. Linha do Tempo &amp; Ondas de Som (Embaixo)</div>
+              <div class="box box-pop"><div class="box-label">🗣️ Popular</div>Mostra o desenho da voz e os blocos de cada frase/palavra para ajustar o tempo com o mouse/dedo ou dividir com a tecla <code>S</code>.</div>
+              <div class="files-footer"><strong>Arquivos:</strong> Timeline.tsx, waveform.ts, edit.ts</div>
+            </article>
+            <article class="card">
+              <div class="card-title">4. Biblioteca Lateral (Frases, Modelos, Texto, Pessoa)</div>
+              <div class="box box-pop"><div class="box-label">🗣️ Popular</div>Lista todas as frases, os 8 modelos prontos (P1–P8 com prévia animada), busca/substitui palavras e ativa a IA que coloca a legenda <strong>atrás da pessoa</strong>.</div>
+              <div class="files-footer"><strong>Arquivos:</strong> Library.tsx, PhraseList.tsx, PersonPanel.tsx, segment.ts</div>
+            </article>
+            <article class="card">
+              <div class="card-title">5. Inspetor de 5 Abas (Frase, Estilo, Animação, Karaokê, Palavra)</div>
+              <div class="box box-pop"><div class="box-label">🗣️ Popular</div>Painel completo para trocar entre 58 fontes, cores, degradê, sombra, inclinação 3D, pulo do Karaokê 2.0, emojis sugeridos e corte por palavra.</div>
+              <div class="files-footer"><strong>Arquivos:</strong> PhrasePanel.tsx, StyleEditor.tsx, FontPicker.tsx, emojis.ts</div>
+            </article>
+            <article class="card">
+              <div class="card-title">6. Exportação Profissional (Mac &amp; iPhone)</div>
+              <div class="box box-pop"><div class="box-label">🗣️ Popular</div>Salva o vídeo pronto (MP4), só a legenda com fundo transparente (ProRes 4444 / WebM), só a pessoa recortada ou arquivos .SRT e .ASS.</div>
+              <div class="files-footer"><strong>Arquivos:</strong> ExportPanel.tsx, server/render.ts, exporters.ts</div>
+            </article>
+          </div>
+        </section>
+      `;
+    }
+
     function render() {
       const filtered = filterTasks();
       renderTabs(filtered);
       const root = document.getElementById('board-root');
 
-      if (activeTab === 'all') {
+      if (activeTab === 'funcoes') {
+        root.innerHTML = renderFuncoesGuide();
+      } else if (activeTab === 'all') {
         root.innerHTML = `
+          ${renderFuncoesGuide()}
           <div class="board-grid">
             ${COLUMNS.map((col) => {
               const items = filtered.filter((t) => t.status === col.id);
@@ -1103,3 +1229,4 @@
   </script>
 </body>
 </html>
+

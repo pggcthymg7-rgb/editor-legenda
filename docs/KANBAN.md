@@ -6,6 +6,56 @@
 
 ---
 
+## 👥 0. Quadro de Funções de Fácil Acesso (Quem Faz o Quê + Mapa do Editor)
+
+### 🎨 Divisão de Papéis: Antigravity vs. Claude Code
+| Área / Especialidade | Quem Cuida | O que faz na prática (Popular) | Onde atua no código (Engenharia) |
+|---|---|---|---|
+| **🎨 Design UI/UX, Layout & Mobile (CapCut)** | **Antigravity** *(Líder de Design)* | Cuida de toda a beleza visual, cores, tipografia, botões, layout fixo no iPhone, alças de girar/aumentar no vídeo e experiência fácil de usar. | `src/app/styles.css`, `Preview.tsx`, `Timeline.tsx`, `PhrasePanel.tsx`, `StyleEditor.tsx`, `FontPicker.tsx` + skills `ui-ux-pro-max` e `web-design-guidelines`. |
+| **✨ Modelos Visuais (P1–P8), Karaokê 2.0 & Emojis** | **Antigravity** *(com apoio do Claude no export ASS)* | Cria e ajusta o visual das legendas animadas, o efeito de "pulinho" na palavra falada e a sugestão inteligente de emojis. | `src/core/presets.ts`, `src/core/emojis.ts`, `src/core/motion.ts`, `Library.tsx`. |
+| **⚙️ Motor Pesado, Memória & Segurança** | **Claude Code** *(Líder de Core/Infra)* | Cuida para o app não travar a memória do iPhone em vídeos 4K, sincroniza a máscara da pessoa quadro a quadro e bloqueia invasões. | `src/app/waveform.ts`, `CaptionComposition.tsx` (`useMask`), `src/core/validate.ts`, `cloud/proxy.mjs`. |
+| **☁️ Servidor Mac, FFmpeg & Deploy Render** | **Claude Code & Antigravity** | Cuida da gravação do vídeo final em MP4/ProRes no Mac e publica as atualizações na nuvem (Render) para o iPhone. | `server/render.ts`, `server/index.ts`, MCP Render (`srv-dbluvl88v5cc73d1d3j0` e `srv-dbm632rm8hqs73erfa10`). |
+| **🧪 Qualidade Total & Kanban Vivo** | **Conjunto (Ambos)** | Um revisa o código do outro (`docs/COLAB.md`), rodam os **114 testes** (`npm run verify`) e mantêm este Kanban atualizado. | `tests/*.test.ts`, `docs/KANBAN.md`, `public/kanban.html`. |
+
+---
+
+### 🕹️ Mapa Rápido de Funções do Aplicativo ("Para que serve cada parte da tela")
+| Função / Tela do Editor | 🗣️ O que faz (Linguagem Popular) | 🔧 Arquivo Responsável (Engenharia) |
+|---|---|---|
+| **1. Tela de Entrada & Transcrição** | Recebe seu vídeo (`.mov`/`.mp4`), extrai o som sem travar o aparelho e transforma a voz em texto com tempo exato de cada palavra (Nuvem Groq grátis ou Offline no aparelho). | [`UploadScreen.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/UploadScreen.tsx), [`cloud.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/cloud.ts), [`transcribe.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/transcribe.ts) |
+| **2. Monitor de Vídeo Interativo** | Mostra o vídeo ao vivo com a legenda. Permite arrastar a frase, alinhar no centro com **ímã automático (50%)**, **aumentar/diminuir pelo canto** e **girar pelo topo**. | [`Preview.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/Preview.tsx), [`CaptionComposition.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/remotion/CaptionComposition.tsx) |
+| **3. Linha do Tempo (Timeline)** | Mostra as ondas de som do vídeo e os bloquinhos de cada frase/palavra para você puxar o início, o fim ou dividir com a tecla `S`. | [`Timeline.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/Timeline.tsx), [`waveform.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/waveform.ts), [`edit.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/edit.ts) |
+| **4. Biblioteca Lateral (Esquerda)** | Tem 4 abas: **Frases** (lista de falas), **Modelos** (P1 a P8 com prévia animada + seus modelos salvos), **Texto** (buscar e substituir palavras) e **Pessoa** (IA que recorta você para pôr a legenda atrás). | [`Library.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/Library.tsx), [`PhraseList.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/PhraseList.tsx), [`PersonPanel.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/PersonPanel.tsx) |
+| **5. Inspetor (Direita — 5 Abas)** | Onde você personaliza tudo: **Frase** (texto, posição, escala, 3D, emojis), **Estilo** (58 fontes, cores, degradê, borda, sombra, caixa), **Animação** (pop, slide, máquina de escrever), **Karaokê** (cor e pulo da palavra falada) e **Palavra** (ajuste individual e corte `✂`). | [`PhrasePanel.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/PhrasePanel.tsx), [`StyleEditor.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/StyleEditor.tsx), [`FontPicker.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/FontPicker.tsx) |
+| **6. Exportação Profissional** | Baixa o vídeo pronto (MP4), só a legenda com fundo transparente (ProRes 4444 / WebM), só a pessoa recortada ou arquivos `.srt` e `.ass`. | [`ExportPanel.tsx`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/app/components/ExportPanel.tsx), [`server/render.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/server/render.ts), [`exporters.ts`](file:///Users/joaogabrielzava/Projetos/editor-legenda/src/core/exporters.ts) |
+
+---
+
+## 📣 Mini-Guia: Como Avisar o Claude Code que é Sobre Este Projeto
+
+Já deixamos configurado um **atalho global automático** no seu Mac (`/Users/joaogabrielzava/.claude/CLAUDE.md`). Você tem **3 jeitos super fáceis** de acionar o Claude Code:
+
+### Opção 1: O Atalho Curto (De qualquer lugar do Mac)
+Basta abrir o Claude e digitar:
+```text
+voltar legenda
+```
+*(Ao ler essas duas palavras, o Claude já carrega automaticamente a pasta `/Users/joaogabrielzava/Projetos/editor-legenda`, lê o `CLAUDE.md`, o `BRAIN.md` e este `docs/KANBAN.md`!)*
+
+### Opção 2: Mensagem Completa Pronta para Copiar e Colar (Quando quiser pedir uma tarefa direta)
+Se quiser já passar uma instrução completa para ele, copie e cole este bloco:
+```text
+voltar legenda — Estamos no projeto Editor de Legendas (/Users/joaogabrielzava/Projetos/editor-legenda). Leia primeiro CLAUDE.md, BRAIN.md e docs/KANBAN.md. Ao concluir qualquer alteração, rode npm run verify (0 erros) e atualize obrigatoriamente docs/KANBAN.md e public/kanban.html com Linguagem Popular, Engenharia de Software, O que altera, Qual era o erro e Resultado final. Minha solicitação é:
+```
+
+### Opção 3: Pelo Terminal direto na pasta do projeto
+Se quiser abrir o Claude Code pelo Terminal já dentro da pasta certa:
+```bash
+cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
+```
+
+---
+
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
@@ -309,3 +359,4 @@
 - **Responsável:** Antigravity | **Categoria:** Infraestrutura GitHub | **Commit:** `52bed91`
 - **🗣️ Explicação Popular:** O GitHub bloqueia o envio de arquivos na pasta `.github/workflows` quando a credencial salva no Mac não tem uma permissão especial chamada `workflow`. Em vez de travar seus envios para o GitHub, movemos as verificações de segurança para dentro do próprio teste do projeto (`npm run verify`) e guardamos o modelo em `docs/ci-workflow.yml`.
 - **🔧 Engenharia de Software:** A chave OAuth atual do Keychain possui escopos `repo, read:org, gist`. Para não bloquear `git push`, as invariantes de CI foram incorporadas diretamente em `tests/server.test.ts` (executadas em todo `npm test` e `npm run verify`) e o template YAML ficou documentado em `docs/ci-workflow.yml`.
+
