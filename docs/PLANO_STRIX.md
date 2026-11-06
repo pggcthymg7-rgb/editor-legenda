@@ -21,23 +21,20 @@ Plano organizado e priorizado para a fase de **teste fechado (~10 usuários com 
 
 ## 2. Ordem de Execução em Lotes
 
-### 🚀 Lote 1 — Blindagem de Cotas & BYOK (P0)
+### 🚀 Lote 1 — Blindagem de Cotas & BYOK (P0) — [x] CONCLUÍDO & EM PRODUÇÃO (Commit `2b18677`)
 - **Foco**: Garantir isolamento financeiro total e proteção contra travamento de cotas dos testadores.
 - **Arquivos**: `cloud/proxy.mjs`, `src/app/cloud.ts`, `src/app/components/UploadScreen.tsx`, `tests/cloud.test.ts`.
-- **Entregáveis**:
-  1. `cloud/proxy.mjs`: `provider()` prioriza chave do usuário (`userKey`) e rejeita ausência de chave se o Render estiver desprovido de segredo global.
-  2. `cloud/proxy.mjs`: Janela deslizante de contagem em memória por hash SHA-256 da chave (`x-groq-key`), limitando em 90% (18 req/min, 1.800 req/dia, 6.480 s de áudio/hora e 25.920 s de áudio/dia), com parâmetros configuráveis via `process.env`.
-  3. `src/app/cloud.ts`: Envio do cabeçalho `x-audio-seconds`.
-  4. `src/app/components/UploadScreen.tsx`: Captura do status 429 e exibição visual didática com contador/horário de liberação.
+- **Status**: Concluído e verificado com 13 testes unitários dedicados em `tests/cloud.test.ts`.
 
-### 🛡️ Lote 2 — Higiene de Proxy e Informações (P1)
+### 🛡️ Lote 2 — Higiene de Proxy e Informações (P1) — [x] CONCLUÍDO & EM PRODUÇÃO (Commit `14b643c`)
 - **Foco**: Reduzir pegada de reconhecimento externo do proxy.
 - **Arquivos**: `cloud/proxy.mjs`, `tests/cloud.test.ts`.
-- **Entregáveis**:
-  1. `cloud/proxy.mjs`: `/health` responde apenas `{ ok: true, ready: true }` sem o campo `provider: "groq"`.
-  2. `cloud/proxy.mjs`: Comentário arquitetural e teste de conformidade de IP do Render (`last IP` no `x-forwarded-for`).
+- **Status**: Concluído e verificado em `tests/cloud.test.ts` e ao vivo no `/health`.
 
-### 📦 Lote 3 — Robustez do Servidor Local e Qualidade (P2)
+### 📦 Lote 3 — Robustez do Servidor Local e Qualidade (P2) — [x] CONCLUÍDO & EM PRODUÇÃO (Commit `0e458a7`)
+- **Foco**: Integridade de mídia local e descarte de recursos.
+- **Arquivos**: `server/index.ts`, `server/track3d.ts`, `tests/server.test.ts`.
+- **Status**: Concluído e verificado com 20 testes em `tests/server.test.ts`.
 - **Foco**: Integridade de mídia local e descarte de recursos.
 - **Arquivos**: `server/index.ts`, `server/track3d.ts`, `tests/server.test.ts`.
 - **Entregáveis**:
