@@ -7,6 +7,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { newId } from '../src/core/grouping';
 import { type Track3D, packPose, smoothPoses } from '../src/tracking3d/model';
 import { type V3, T3, matFromQuat, mulV, quatFromMat, scale } from '../src/tracking3d/math';
 import type { Pose } from '../src/tracking3d/geometry';
@@ -17,7 +18,23 @@ const SHORT = 720;
 
 export type T3Job = { id: string; status: 'running' | 'done' | 'error'; progress: number; stage: string; result?: Track3D; error?: string; startedAt: number };
 const jobs = new Map<string, T3Job>();
+const MAX_JOBS = 50;
+const JOB_TTL_MS = 30 * 60 * 1000;
+
 export const getTrackJob = (id: string) => jobs.get(id);
+
+/** Limpa jobs terminados com mais de 30 minutos ou descarta mais antigos se exceder o limite. */
+export function pruneTrackJobs(now = Date.now()): void {
+  for (const [id, j] of jobs) {
+    if (j.status !== 'running' && now - j.startedAt > JOB_TTL_MS) {
+      jobs.delete(id);
+    }
+  }
+  while (jobs.size > MAX_JOBS) {
+    const oldestKey = jobs.keys().next().value;
+    if (oldestKey) jobs.delete(oldestKey);
+  }
+}
 
 let colmapBin: string | null | undefined;
 export async function colmapAvailable(): Promise<boolean> {
@@ -101,7 +118,8 @@ function fillPoses(n: number, have: Map<number, Pose>): Pose[] {
 }
 
 export function startTrackJob(videoPath: string, durationMs: number): T3Job {
-  const id = `t3_${Date.now().toString(36)}`;
+  pruneTrackJobs();
+  const id = newId('t3');
   const job: T3Job = { id, status: 'running', progress: 0, stage: 'Extraindo quadros…', startedAt: Date.now() };
   jobs.set(id, job);
   void (async () => {
@@ -175,4 +193,4 @@ export function toTrack3D(m: ReturnType<typeof parseModel>, n: number): Track3D 
   };
 }
 
-export const _test = { parseModel, fillPoses, execFileP };
+export const _test = { parseModel, fillPoses, execFileP, pruneTrackJobs, jobs };

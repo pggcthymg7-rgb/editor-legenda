@@ -103,6 +103,22 @@ app.get('/api/track3d/:id', (req, res) => {
 
 const execFileP = promisify(execFile);
 
+/** Valida a assinatura binária inicial do arquivo de vídeo (magic bytes). */
+export function isValidVideoSignature(header: Buffer, ext: string): boolean {
+  if (header.length < 4) return false;
+  // WebM / Matroska: inicia com bytes 1A 45 DF A3
+  if (ext === '.webm') {
+    return header[0] === 0x1a && header[1] === 0x45 && header[2] === 0xdf && header[3] === 0xa3;
+  }
+  // MP4, MOV, M4V: caixa ISO/QuickTime (offset 4 geralmente é 'ftyp' ou 'moov' / 'wide' / 'mdat')
+  if (ext === '.mp4' || ext === '.mov' || ext === '.m4v') {
+    if (header.length < 8) return false;
+    const tag = header.toString('ascii', 4, 8);
+    return tag === 'ftyp' || tag === 'moov' || tag === 'wide' || tag === 'mdat';
+  }
+  return false;
+}
+
 /** Normaliza vídeos HEVC 10-bit (.mov do iPhone) para H.264 yuv420p compatível com qualquer navegador no Mac. */
 async function normalizeVideoIfNeeded(dest: string): Promise<void> {
   if (process.env.NODE_ENV === 'test') return;
@@ -147,16 +163,36 @@ app.post('/api/upload', async (req, res) => {
   const name = `${newId('m')}${ext}`;
   const dest = inside(MEDIA_DIR, name);
   let received = 0;
+  let headerBuf = Buffer.alloc(0);
+  let sigChecked = false;
+  let sigError = false;
+
   req.on('data', (c: Buffer) => {
     received += c.length;
     if (received > MAX_UPLOAD) req.destroy(new Error('arquivo grande demais'));
+    if (!sigChecked) {
+      headerBuf = Buffer.concat([headerBuf, c]);
+      if (headerBuf.length >= 12) {
+        sigChecked = true;
+        if (!isValidVideoSignature(headerBuf, ext)) {
+          sigError = true;
+        }
+      }
+    }
   });
   try {
     await pipeline(req, createWriteStream(dest));
+    if (sigError || !isValidVideoSignature(headerBuf, ext)) {
+      sigError = true;
+      throw new Error('arquivo não é um vídeo válido');
+    }
     await normalizeVideoIfNeeded(dest);
     res.json({ name, url: `/media/${name}` });
   } catch {
     await rm(dest, { force: true });
+    if (sigError) {
+      return res.status(415).json({ error: 'arquivo não é um vídeo válido' });
+    }
     res.status(400).json({ error: 'falha no upload' });
   }
 });

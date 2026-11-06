@@ -326,3 +326,9 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - Documentação arquitetural detalhada adicionada à função `clientIp()` explicando o comportamento seguro de `pop()` no `x-forwarded-for` garantido pelo balanceador do Render.
   - Testes: `tests/cloud.test.ts` atualizado para assegurar que `provider` não existe no JSON de `/health`.
   - Verificação: `npm run verify` com **0 erros** (124 testes passando, builds OK). Pronto para commit!
+
+- **[Antigravity & Claude Code, 2026-11-06] Execução do Lote 3 Concluída (`STX-L3` — P2):**
+  - `server/index.ts`: Implementada checagem binária de cabeçalho (`isValidVideoSignature`) no stream do `/api/upload` validando caixas ISO (`ftyp`, `moov`, `mdat`) para MP4/MOV/M4V e assinatura EBML (`1A 45 DF A3`) para WebM, respondendo com HTTP 415 para uploads de arquivos arbitrários ou forjados.
+  - `server/track3d.ts`: Implementado `pruneTrackJobs()` limpando automaticamente jobs terminados com mais de 30 minutos (TTL) e limitando o mapa em memória a 50 entradas; IDs de tarefas gerados via `newId('t3')`.
+  - Testes: `tests/server.test.ts` ampliado para 20 testes cobrindo recusa de magic bytes inválidos, aceitação de MP4/WebM válidos, teste de borda em `safeMediaName` e rotina de prune de jobs.
+  - Verificação: `npm run verify` com **0 erros** (12 arquivos / 128 testes passando, build Mac e PWA OK). Todos os 3 lotes Strix 100% concluídos!

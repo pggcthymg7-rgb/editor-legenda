@@ -59,27 +59,45 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `1` | Lote STX-L3 aguardando aprovação. |
+| 🧠 **1. Em Planejamento** | `0` | Todos os lotes do plano Strix foram executados. |
 | ⏳ **2. Na Fila** | `0` | Nenhum lote na fila. |
 | ⚡ **3. Em Execução** | `0` | Nenhum lote em execução. |
 | 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
-| ✅ **5. Finalizado** | `31` | Lotes STX-L1 e STX-L2 concluídos com sucesso e validados no `npm run verify` (`124/124 testes`). |
+| ✅ **5. Finalizado** | `32` | Todos os 3 lotes de segurança Strix concluídos e validados no `npm run verify` (`128/128 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens descartadas. |
 
 ---
 
 ## 🧠 1. Em Planejamento
-
-### 🗄️ Card `STX-L3`: Magic Bytes no Upload Local e Descarte Automático de Jobs 3D (P2)
-- **Status**: ⏳ Aguardando aprovação
-- **🗣️ Linguagem Popular**: Faz o editor checar os primeiros pedacinhos do arquivo de vídeo no Mac para ter certeza de que é um vídeo de verdade (MP4/MOV/WebM) e joga fora da memória tarefas antigas de câmera 3D após 30 minutos.
-- **🔧 Engenharia de Software**: Validação de assinatura binária (magic bytes `ftyp` e `1A 45 DF A3`) no stream de `POST /api/upload` em `server/index.ts`, e rotina de `pruneJobs()` com TTL de 30 minutos em `server/track3d.ts`.
-- **🔄 O que altera no App**: Bloqueia arquivos falsos antes de processar no FFmpeg e impede consumo desnecessário de RAM no Mac.
-- **🐛 Qual era o Erro (Antes)**: `/api/upload` confiava apenas na extensão enviada no cabeçalho `x-file-ext`, e `server/track3d.ts` acumulava jobs indefinidamente na memória.
-- **✅ Resultado Final (Depois)**: Validação estrita de arquivo e memória do servidor local limpa automaticamente.
-- **Custo Estimado**: Baixo | **Dono**: Claude Code | **Revisor**: Antigravity
+*(Plano Strix 100% executado)*
 
 ---
+
+## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
+*(Nenhum lote na fila no momento)*
+
+---
+
+## ⚡ 3. Em Execução
+*(Nenhum lote em execução no momento)*
+
+---
+
+## 🛠️ 4. Em Correção
+*(Nenhuma tarefa em correção no momento)*
+
+---
+
+## ✅ 5. Finalizado (Testado, Revisado e com 0 Erros)
+
+### 🗄️ Card `STX-L3`: Magic Bytes no Upload Local e Descarte Automático de Jobs 3D (P2)
+- **Status**: ✅ Finalizado
+- **🗣️ Linguagem Popular**: Faz o editor checar os primeiros pedacinhos do arquivo de vídeo no Mac para ter certeza de que é um vídeo de verdade (MP4/MOV/WebM) e joga fora da memória tarefas antigas de câmera 3D após 30 minutos.
+- **🔧 Engenharia de Software**: Validação de assinatura binária (magic bytes `ftyp` e `1A 45 DF A3`) no stream de `POST /api/upload` em `server/index.ts` com resposta 415 para payloads inválidos, rotina de `pruneTrackJobs()` com TTL de 30 minutos em `server/track3d.ts` e testes unitários em `tests/server.test.ts`.
+- **🔄 O que altera no App**: Bloqueia arquivos falsos antes de processar no FFmpeg e impede consumo desnecessário de RAM no Mac.
+- **🐛 Qual era o Erro (Antes)**: `/api/upload` confiava apenas na extensão enviada no cabeçalho `x-file-ext`, e `server/track3d.ts` acumulava jobs indefinidamente na memória.
+- **✅ Resultado Final (Depois)**: Validação estrita de arquivo e memória do servidor local limpa automaticamente. 20 testes em `tests/server.test.ts` e 128 testes globais passando.
+- **Commit**: `feat(security): lote 3 - magic bytes no upload e prune de jobs track3d` | **Dono**: Claude Code & Antigravity
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
 *(Nenhum lote na fila no momento)*

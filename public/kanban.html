@@ -531,18 +531,18 @@
       },
       {
         id: 'STX-L3',
-        status: 'planejamento',
+        status: 'finalizado',
         title: 'Lote 3: Magic Bytes no Upload Local e Descarte Automático de Jobs 3D (P2)',
         severity: 'Melhoria Local',
         sevClass: 'badge-low',
-        agent: 'Claude Code (Rev: Antigravity)',
+        agent: 'Claude Code & Antigravity',
         category: 'Servidor Mac & Qualidade',
-        commit: 'Aguardando aprovação',
+        commit: 'feat(security): lote 3 - magic bytes no upload e prune de jobs track3d',
         popular: 'Faz o editor checar os primeiros pedacinhos do arquivo de vídeo no Mac para ter certeza de que é um vídeo de verdade (MP4/MOV/WebM) e joga fora da memória tarefas antigas de câmera 3D após 30 minutos.',
-        engineering: 'Validação de assinatura binária (magic bytes ftyp e 1A 45 DF A3) no stream de POST /api/upload em server/index.ts, e rotina de pruneJobs() com TTL de 30 minutos em server/track3d.ts.',
+        engineering: 'Validação de assinatura binária (magic bytes ftyp e 1A 45 DF A3) no stream de POST /api/upload em server/index.ts com resposta 415 para payloads inválidos, rotina de pruneTrackJobs() com TTL de 30 minutos em server/track3d.ts e testes unitários em tests/server.test.ts.',
         changes: 'server/index.ts, server/track3d.ts, tests/server.test.ts',
         before: '/api/upload confiava apenas na extensão enviada no cabeçalho x-file-ext, e server/track3d.ts acumulava jobs indefinidamente na memória.',
-        after: 'Validação estrita de arquivo e memória do servidor local limpa automaticamente.'
+        after: 'Validação estrita de arquivo e memória do servidor local limpa automaticamente. 20 testes em tests/server.test.ts e 128 testes globais passando com 0 erros.'
       },
       {
         id: 'UI-L1',

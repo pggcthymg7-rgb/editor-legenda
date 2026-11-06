@@ -58,11 +58,28 @@ describe('servidor (segurança)', () => {
     const r = await fetch(`${base}/api/upload`, { method: 'POST', body: 'x', headers: { ...W, 'x-file-ext': '.sh' } });
     expect(r.status).toBe(400);
   });
-  it('upload aceita mp4 e serve em /media', async () => {
-    const r = await fetch(`${base}/api/upload`, { method: 'POST', body: 'conteudo', headers: { ...W, 'x-file-ext': '.mp4' } });
+  it('upload recusa arquivo com assinatura binária inválida (magic bytes)', async () => {
+    // Tenta enviar GIF como se fosse MP4
+    const gif = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00]);
+    const r = await fetch(`${base}/api/upload`, { method: 'POST', body: gif, headers: { ...W, 'x-file-ext': '.mp4' } });
+    expect(r.status).toBe(415);
+  });
+  it('upload aceita mp4 com magic bytes válidos e serve em /media', async () => {
+    // Cabeçalho ISO box mínimo com 'ftyp' no offset 4
+    const mp4 = new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32]);
+    const r = await fetch(`${base}/api/upload`, { method: 'POST', body: mp4, headers: { ...W, 'x-file-ext': '.mp4' } });
+    expect(r.status).toBe(200);
     const body = await r.json();
     expect(body.url).toMatch(/^\/media\/m_[a-z0-9]+\.mp4$/);
-    expect(await (await fetch(base + body.url)).text()).toBe('conteudo');
+    const downloaded = new Uint8Array(await (await fetch(base + body.url)).arrayBuffer());
+    expect(downloaded.slice(0, 12)).toEqual(mp4);
+  });
+  it('upload aceita webm com magic bytes válidos (1A 45 DF A3)', async () => {
+    const webm = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01, 0x42, 0xf7, 0x81]);
+    const r = await fetch(`${base}/api/upload`, { method: 'POST', body: webm, headers: { ...W, 'x-file-ext': '.webm' } });
+    expect(r.status).toBe(200);
+    const body = await r.json();
+    expect(body.url).toMatch(/^\/media\/m_[a-z0-9]+\.webm$/);
   });
   it('/media não sai da pasta', async () => {
     const r = await fetch(`${base}/media/..%2F..%2Fpackage.json`);
@@ -142,5 +159,45 @@ describe('servidor (segurança)', () => {
     expect(viteCfg).toContain('Content-Security-Policy');
     expect(viteCfg).toContain('mediapipe-wasm');
     expect(existsSync('public/models/selfie_multiclass_256x256.tflite')).toBe(true);
+  });
+});
+
+describe('safeMediaName e bordas de storage', () => {
+  it('rejeita caracteres especiais e caminhos relativos em safeMediaName', async () => {
+    const { safeMediaName } = await import('../server/storage');
+    expect(safeMediaName('m_123.mp4')).toBe('m_123.mp4');
+    expect(safeMediaName('m_123.mov')).toBe('m_123.mov');
+    expect(safeMediaName('m_123.webm')).toBe('m_123.webm');
+    expect(safeMediaName('../m_123.mp4')).toBeNull();
+    expect(safeMediaName('m_123.sh')).toBeNull();
+    expect(safeMediaName('m_123;rm -rf /')).toBeNull();
+    expect(safeMediaName('m_123\0.mp4')).toBeNull();
+    expect(safeMediaName(null)).toBeNull();
+    expect(safeMediaName({})).toBeNull();
+  });
+});
+
+describe('track3d job cleanup e prune', () => {
+  it('limpa jobs antigos com mais de 30 minutos', async () => {
+    const { _test } = await import('../server/track3d');
+    const now = Date.now();
+    _test.jobs.set('t3_antigo', {
+      id: 't3_antigo',
+      status: 'done',
+      progress: 1,
+      stage: 'done',
+      startedAt: now - 35 * 60 * 1000,
+    });
+    _test.jobs.set('t3_recente', {
+      id: 't3_recente',
+      status: 'done',
+      progress: 1,
+      stage: 'done',
+      startedAt: now - 5 * 60 * 1000,
+    });
+    _test.pruneTrackJobs(now);
+    expect(_test.jobs.has('t3_antigo')).toBe(false);
+    expect(_test.jobs.has('t3_recente')).toBe(true);
+    _test.jobs.clear();
   });
 });
