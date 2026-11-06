@@ -1,3 +1,4 @@
+import { Clapperboard, Film, FolderOpen, Settings2, Trash2, Upload, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createProject } from '../../core/grouping';
 import type { Project, TranscribedWord } from '../../core/types';
@@ -149,6 +150,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
   const [progress, setProgress] = useState<number | undefined>();
   const [error, setError] = useState('');
   const [saved, setSaved] = useState<ProjectSummary[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const refreshSaved = () => platform.listProjects().then(setSaved).catch(() => undefined);
 
@@ -214,107 +216,190 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
     refreshSaved();
   };
 
+  const isSheetVisible = sheetOpen || busy;
+
   return (
     <div className="upload">
-      <h1>Editor de Legendas</h1>
-      <p className="muted">Vídeo → transcrição → legendas animadas editáveis → export para Premiere/CapCut.</p>
+      <div className="upload-head">
+        <div className="upload-brand">
+          <span className="upload-logo" aria-hidden="true">
+            <Clapperboard size={22} />
+          </span>
+          <div>
+            <h1>Editor de Legendas</h1>
+            <p className="muted small">Legendas animadas estilo Reels • Mac &amp; iPhone</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="icon"
+          onClick={() => setSheetOpen(true)}
+          title="Opções de transcrição"
+          aria-label="Opções de transcrição"
+        >
+          <Settings2 size={18} aria-hidden="true" />
+        </button>
+      </div>
 
-      <label className="drop">
-        <input type="file" accept="video/mp4,video/quicktime,video/webm,.m4v,.mov" onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={busy} />
-        {file ? <strong>{file.name}</strong> : <span>Toque para escolher o vídeo (mp4, mov, webm)</span>}
+      <label className={`drop ${file ? 'has-file' : ''}`}>
+        <input
+          type="file"
+          accept="video/mp4,video/quicktime,video/webm,.m4v,.mov"
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            setFile(f);
+            if (f) setSheetOpen(true);
+          }}
+          disabled={busy}
+        />
+        <span className="drop-icon" aria-hidden="true">
+          {file ? <Film size={28} /> : <Upload size={28} />}
+        </span>
+        {file ? (
+          <>
+            <strong>{file.name}</strong>
+            <span className="muted small">Toque para trocar o vídeo</span>
+          </>
+        ) : (
+          <>
+            <strong>Toque para escolher o vídeo (mp4, mov, webm)</strong>
+            <span className="muted small">Vertical (Reels/TikTok) ou Horizontal</span>
+          </>
+        )}
       </label>
 
-      <fieldset disabled={busy}>
-        <legend>Transcrição</legend>
-        <label className="lang-row">
-          Idioma falado
-          <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Idioma falado no vídeo">
-            <option value="pt">Português</option>
-            <option value="en">Inglês</option>
-            <option value="es">Espanhol</option>
-            <option value="auto">Detectar sozinho</option>
-          </select>
-        </label>
-        <label>
-          <input type="radio" checked={engine === 'cloud'} onChange={() => setEngine('cloud')} disabled={cloud === 'offline'} /> Nuvem
-          rápida e grátis <span className="badge">recomendado</span>
-          <span className="muted small engine-hint">
-            {cloud === 'checking'
-              ? ' Conectando… (a 1ª vez do dia leva até 1 min)'
-              : cloud === 'ready'
-                ? ' Pronta. Whisper large-v3-turbo: 1 min de vídeo em segundos.'
-                : cloud === 'nokey'
-                  ? ' Falta ativar: cole abaixo sua chave grátis do Groq (uma vez só).'
-                  : ' Sem conexão com a nuvem agora.'}
-          </span>
-        </label>
-        {(cloud === 'nokey' || getGroqKey()) && (
-          <GroqKeyBox
-            onChange={(has) => {
-              setCloud(has ? 'ready' : 'nokey');
-              setEngine(has ? 'cloud' : 'local');
-            }}
-          />
-        )}
-        <label>
-          <input type="radio" checked={engine === 'local'} onChange={() => setEngine('local')} /> No aparelho, offline
-          <span className="muted small engine-hint"> IA roda no próprio {ios ? 'iPhone' : 'computador'}; baixa o modelo uma vez.</span>
-        </label>
-        {engine === 'local' && (
-          <select value={model} onChange={(e) => setModel(e.target.value as LocalModel)} aria-label="Modelo local">
-            <option value="base">base: rápido e leve (~200 MB)</option>
-            <option value="small">small: mais preciso (~500 MB)</option>
-            {!ios && <option value="medium">medium: ainda mais preciso</option>}
-            {!ios && <option value="large-v3-turbo">large-v3-turbo: o melhor, pesado</option>}
-          </select>
-        )}
-        <details className="adv">
-          <summary>Usar minha própria chave da OpenAI</summary>
-          <label title={openai ? '' : device ? 'Salve sua chave abaixo' : 'Coloque OPENAI_API_KEY no arquivo .env e reinicie'}>
-            <input type="radio" checked={engine === 'openai'} onChange={() => setEngine('openai')} disabled={!openai} /> API OpenAI
-            {!openai && <span className="muted">{device ? ' (salve sua chave abaixo)' : ' (sem chave no .env)'}</span>}
-          </label>
-          {device && (
-            <KeySettings
-              onChange={(has) => {
-                setOpenai(has);
-                if (has) setEngine('openai');
-              }}
-            />
-          )}
-        </details>
-        <label>
-          <input type="radio" checked={engine === 'none'} onChange={() => setEngine('none')} /> Sem transcrição (eu digito)
-        </label>
-      </fieldset>
-
-      <button className="primary" onClick={start} disabled={!file || busy || (engine === 'openai' && !openai)}>
-        {busy ? 'Processando…' : 'Criar legendas'}
-      </button>
-
-      {busy && (
-        <div className="status">
-          {msg}
-          {progress !== undefined ? <progress value={progress} max={1} /> : <progress />}
-        </div>
+      {file && !isSheetVisible && (
+        <button type="button" className="primary home-reopen" onClick={() => setSheetOpen(true)}>
+          Configurar e criar legendas
+        </button>
       )}
-      {error && <div className="error">{error}</div>}
+
+      {!isSheetVisible && error && <div className="error">{error}</div>}
 
       {saved.length > 0 && (
         <div className="saved">
           <h3>Projetos salvos</h3>
-          {saved.map((s) => (
-            <div key={s.id} className="row">
-              <button onClick={() => platform.loadProject(s.id).then(onReady).catch((e) => setError(e.message))}>{s.name}</button>
-              {platform.deleteProject && (
-                <button className="danger" title="Apagar do aparelho" onClick={() => remove(s.id, s.name)}>
-                  ✕
+          <div className="saved-list">
+            {saved.map((s) => (
+              <div key={s.id} className="saved-item row">
+                <button
+                  className="saved-open"
+                  onClick={() => platform.loadProject(s.id).then(onReady).catch((e) => setError(e.message))}
+                >
+                  <FolderOpen size={16} aria-hidden="true" />
+                  <span>{s.name}</span>
                 </button>
-              )}
-            </div>
-          ))}
+                {platform.deleteProject && (
+                  <button className="danger icon" title="Apagar do aparelho" aria-label={`Apagar ${s.name}`} onClick={() => remove(s.id, s.name)}>
+                    <Trash2 size={15} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      <div
+        className={`home-sheet-back ${isSheetVisible ? 'open' : ''}`}
+        aria-hidden={!isSheetVisible}
+        onPointerDown={(e) => e.target === e.currentTarget && !busy && setSheetOpen(false)}
+      >
+        <div className="home-sheet" role="dialog" aria-modal="true" aria-label="Opções de transcrição">
+          <div className="sheet-grabber" aria-hidden="true" />
+          <div className="sheet-head">
+            <div className="sheet-title">
+              <strong>{file ? file.name : 'Opções de transcrição'}</strong>
+              <span className="muted small">{file ? 'Escolha como transcrever o áudio' : 'Escolha um vídeo na tela inicial para começar'}</span>
+            </div>
+            <button
+              type="button"
+              className="icon"
+              disabled={busy}
+              onClick={() => setSheetOpen(false)}
+              aria-label="Fechar opções"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
+
+          <fieldset disabled={busy}>
+            <legend>Transcrição</legend>
+            <label className="lang-row">
+              Idioma falado
+              <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Idioma falado no vídeo">
+                <option value="pt">Português</option>
+                <option value="en">Inglês</option>
+                <option value="es">Espanhol</option>
+                <option value="auto">Detectar sozinho</option>
+              </select>
+            </label>
+            <label>
+              <input type="radio" checked={engine === 'cloud'} onChange={() => setEngine('cloud')} disabled={cloud === 'offline'} /> Nuvem
+              rápida e grátis <span className="badge">recomendado</span>
+              <span className="muted small engine-hint">
+                {cloud === 'checking'
+                  ? ' Conectando… (a 1ª vez do dia leva até 1 min)'
+                  : cloud === 'ready'
+                    ? ' Pronta. Whisper large-v3-turbo: 1 min de vídeo em segundos.'
+                    : cloud === 'nokey'
+                      ? ' Falta ativar: cole abaixo sua chave grátis do Groq (uma vez só).'
+                      : ' Sem conexão com a nuvem agora.'}
+              </span>
+            </label>
+            {(cloud === 'nokey' || getGroqKey()) && (
+              <GroqKeyBox
+                onChange={(has) => {
+                  setCloud(has ? 'ready' : 'nokey');
+                  setEngine(has ? 'cloud' : 'local');
+                }}
+              />
+            )}
+            <label>
+              <input type="radio" checked={engine === 'local'} onChange={() => setEngine('local')} /> No aparelho, offline
+              <span className="muted small engine-hint"> IA roda no próprio {ios ? 'iPhone' : 'computador'}; baixa o modelo uma vez.</span>
+            </label>
+            {engine === 'local' && (
+              <select value={model} onChange={(e) => setModel(e.target.value as LocalModel)} aria-label="Modelo local">
+                <option value="base">base: rápido e leve (~200 MB)</option>
+                <option value="small">small: mais preciso (~500 MB)</option>
+                {!ios && <option value="medium">medium: ainda mais preciso</option>}
+                {!ios && <option value="large-v3-turbo">large-v3-turbo: o melhor, pesado</option>}
+              </select>
+            )}
+            <details className="adv">
+              <summary>Usar minha própria chave da OpenAI</summary>
+              <label title={openai ? '' : device ? 'Salve sua chave abaixo' : 'Coloque OPENAI_API_KEY no arquivo .env e reinicie'}>
+                <input type="radio" checked={engine === 'openai'} onChange={() => setEngine('openai')} disabled={!openai} /> API OpenAI
+                {!openai && <span className="muted">{device ? ' (salve sua chave abaixo)' : ' (sem chave no .env)'}</span>}
+              </label>
+              {device && (
+                <KeySettings
+                  onChange={(has) => {
+                    setOpenai(has);
+                    if (has) setEngine('openai');
+                  }}
+                />
+              )}
+            </details>
+            <label>
+              <input type="radio" checked={engine === 'none'} onChange={() => setEngine('none')} /> Sem transcrição (eu digito)
+            </label>
+          </fieldset>
+
+          <button className="primary home-cta" onClick={start} disabled={!file || busy || (engine === 'openai' && !openai)}>
+            {busy ? 'Processando…' : 'Criar legendas'}
+          </button>
+
+          {busy && (
+            <div className="status">
+              {msg}
+              {progress !== undefined ? <progress value={progress} max={1} /> : <progress />}
+            </div>
+          )}
+          {error && <div className="error">{error}</div>}
+        </div>
+      </div>
     </div>
   );
 };

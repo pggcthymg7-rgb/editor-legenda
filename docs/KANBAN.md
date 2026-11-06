@@ -60,10 +60,10 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
 | 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e movido para a fila. |
-| ⏳ **2. Na Fila** | `4` | Lotes `UI-L2` a `UI-L5` aguardando execução sequencial. |
-| ⚡ **3. Em Execução** | `0` | Lote `UI-L1` finalizado; aguardando OK para iniciar `UI-L2`. |
+| ⏳ **2. Na Fila** | `3` | Lotes `UI-L3` a `UI-L5` aguardando execução sequencial. |
+| ⚡ **3. Em Execução** | `0` | Lote `UI-L2` finalizado; aguardando OK para iniciar `UI-L3`. |
 | 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
-| ✅ **5. Finalizado** | `24` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
+| ✅ **5. Finalizado** | `25` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
 
 ---
@@ -74,14 +74,6 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
-
-### [UI-L2] Home Limpa com Revelação Progressiva via Bottom Sheet (`UploadScreen.tsx` + `styles.css`)
-- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
-- **🗣️ Explicação Popular:** Ao abrir o aplicativo, a tela inicial mostra apenas o grande cartão `"Toque para escolher o vídeo"` e a lista de `"Projetos salvos"`. Assim que você escolhe um vídeo (ou clica em configurar), sobe uma gaveta suave (Bottom Sheet) com as opções de idioma, nuvem/offline e o botão `"Criar legendas"`.
-- **🔧 Engenharia de Software:** Em `src/app/components/UploadScreen.tsx`, manter 100% dos estados (`file`, `engine`, `model`, `cloud`, `lang`, `openai`, `busy`, `msg`, `progress`, `error`, `saved`) e handlers (`start`, `remove`, `GroqKeyBox`, `KeySettings`), encapsulando o `<fieldset>` de transcrição e o CTA `.primary` num Bottom Sheet deslizante (`cubic-bezier(0.32, 0.72, 0, 1)`) que abre automaticamente ao selecionar um `file` (ou via botão de opções).
-- **🔄 O que altera no App:** Elimina o formulário técnico longo na primeira vista da Home, guiando o usuário passo a passo.
-- **🐛 Qual era o Problema (Antes):** Todas as opções de motores, rádios e chaves apareciam empilhadas antes mesmo do usuário escolher um vídeo.
-- **✅ Critério de Pronto (Depois):** Fluxo de upload intacto com Bottom Sheet progressivo e `npm run verify` com 0 erros.
 
 ### [UI-L3] Casca do Editor Mobile (`48px` Header + `42%` Monitor + `36px` Faixa de Transporte)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
@@ -120,6 +112,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ✅ 5. Finalizado (Histórico Completo de Engenharia & Explicação Popular)
+
+### [UI-L2] Home Limpa com Revelação Progressiva via Bottom Sheet (`UploadScreen.tsx` + `styles.css`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
+- **🗣️ Explicação Popular:** Ao abrir o aplicativo, a tela inicial agora destaca apenas a grande área `"Toque para escolher o vídeo"` e a lista de `"Projetos salvos"`. Assim que você escolhe um vídeo (ou toca no ícone de opções), sobe uma gaveta suave (Bottom Sheet) com as configurações de idioma, nuvem/offline e o botão `"Criar legendas"`.
+- **🔧 Engenharia de Software:** Em `src/app/components/UploadScreen.tsx` e `src/app/styles.css`, preservados 100% dos estados (`file`, `engine`, `model`, `cloud`, `lang`, `openai`, `busy`, `msg`, `progress`, `error`, `saved`) e handlers (`start`, `remove`, `GroqKeyBox`, `KeySettings`), movendo o `<fieldset>` de transcrição e o CTA `.primary` para `.home-sheet` com transição `cubic-bezier(0.32, 0.72, 0, 1)`.
+- **🔄 O que altera no App:** Primeira impressão limpa e intuitiva, sem formulário técnico exposto antes de escolher o vídeo.
+- **🐛 Qual era o Erro (Antes):** Todas as opções de motores, rádios e chaves apareciam abertas na tela inicial antes mesmo do usuário escolher um vídeo.
+- **✅ Resultado Final (Depois):** Home limpa + Bottom Sheet funcional validado no `npm run verify` com 0 erros.
+- **📂 Arquivos:** `src/app/components/UploadScreen.tsx`, `src/app/styles.css`.
 
 ### [UI-L1] Tokens de Tema Slate/Indigo/Emerald e Tipografia (`src/app/styles.css` + `src/app/main.tsx`)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
