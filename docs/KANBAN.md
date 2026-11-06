@@ -63,7 +63,7 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 | ⏳ **2. Na Fila** | `0` | Nenhum lote na fila. |
 | ⚡ **3. Em Execução** | `0` | Nenhum lote em execução. |
 | 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
-| ✅ **5. Finalizado** | `32` | Todos os 3 lotes de segurança Strix concluídos e validados no `npm run verify` (`128/128 testes`). |
+| ✅ **5. Finalizado** | `33` | Lotes de segurança Strix (L1, L2, L3) e Motor 3D concluídos e em produção no Render (`128/128 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens descartadas. |
 
 ---
@@ -481,6 +481,17 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 - **🐛 Qual era o Erro (Antes):** O Render ainda estava rodando o commit antigo da Etapa 1 antes das melhorias da Fase 2.
 - **✅ Resultado Final (Depois):** Ambos os serviços `live` e verificados.
 - **📂 Arquivos:** `docs/CEREBRO.md`, `BRAIN.md`.
+
+---
+
+### [CLOUD-02] Deploy em Produção no Render: Blindagem Strix (Lotes 1, 2 e 3) e Motor 3D
+- **Responsável:** Antigravity & Claude Code | **Categoria:** Segurança, Servidor & Nuvem | **Commit:** `0e458a7`
+- **🗣️ Explicação Popular:** Colocamos no ar para todos os testadores as novas proteções de segurança: controle rigoroso das cotas da inteligência artificial por pessoa, proteção contra travamentos, teste de saúde do servidor limpo e validação reforçada dos vídeos enviados.
+- **🔧 Engenharia de Software:** Branch `origin/claude/editor-legendas-v1` atualizada com o commit `0e458a7` e deploys disparados via MCP Render pelo Claude Code: Web PWA (`dep-dbn3vpp5efls739ctku0` em `srv-dbm632rm8hqs73erfa10`) e Proxy API (`dep-dbn3vq6i0phs73bg8ao0` em `srv-dbluvl88v5cc73d1d3j0`). Testados `GET /health` (`{"ok":true,"ready":true}` sem vazamento de provedor) e `GET /` com HTTP 200 OK.
+- **🔄 O que altera no App:** Acesso público protegido com isolamento total de cota BYOK na Groq e feedback de 429 com contagem regressiva amigável.
+- **🐛 Qual era o Erro (Antes):** O ambiente Render de produção não possuía a proteção de cota de áudio em janela deslizante e expunha o provedor no healthcheck.
+- **✅ Resultado Final (Depois):** Ambos os serviços `live` no Render, 100% alinhados com a branch local e validados com 0 erros.
+- **📂 Arquivos:** `cloud/proxy.mjs`, `server/index.ts`, `server/track3d.ts`, `docs/PLANO_STRIX.md`.
 
 ---
 

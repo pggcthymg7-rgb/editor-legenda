@@ -332,3 +332,10 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - `server/track3d.ts`: Implementado `pruneTrackJobs()` limpando automaticamente jobs terminados com mais de 30 minutos (TTL) e limitando o mapa em memória a 50 entradas; IDs de tarefas gerados via `newId('t3')`.
   - Testes: `tests/server.test.ts` ampliado para 20 testes cobrindo recusa de magic bytes inválidos, aceitação de MP4/WebM válidos, teste de borda em `safeMediaName` e rotina de prune de jobs.
   - Verificação: `npm run verify` com **0 erros** (12 arquivos / 128 testes passando, build Mac e PWA OK). Todos os 3 lotes Strix 100% concluídos!
+
+- **[Antigravity & Claude Code, 2026-11-06] Deploy em Produção no Render (`CLOUD-02`):**
+  - Branch de deploy `claude/editor-legendas-v1` sincronizada com `0e458a7` e empurrada para o repositório remoto.
+  - Disparado trigger de deploy via MCP Render pelo Claude Code:
+    - Web PWA (`srv-dbm632rm8hqs73erfa10`): deploy `dep-dbn3vpp5efls739ctku0` (**live**).
+    - API Proxy (`srv-dbluvl88v5cc73d1d3j0`): deploy `dep-dbn3vq6i0phs73bg8ao0` (**live**).
+  - Verificação ao vivo: `https://editor-legenda-api.onrender.com/health` respondeu `{"ok":true,"ready":true}` sem vazamento de provedor, e `https://editor-legenda.onrender.com/` respondeu `200 OK`. Deploy em produção 100% concluído!

@@ -545,6 +545,21 @@
         after: 'Validação estrita de arquivo e memória do servidor local limpa automaticamente. 20 testes em tests/server.test.ts e 128 testes globais passando com 0 erros.'
       },
       {
+        id: 'CLOUD-02',
+        status: 'finalizado',
+        title: 'Deploy em Produção no Render: Blindagem Strix (Lotes 1, 2 e 3) e Motor 3D',
+        severity: 'Produção',
+        sevClass: 'badge-high',
+        agent: 'Claude Code & Antigravity',
+        category: 'Segurança, Servidor & Nuvem',
+        commit: '0e458a7',
+        popular: 'Colocamos no ar para todos os testadores as novas proteções de segurança: controle rigoroso das cotas da inteligência artificial por pessoa, proteção contra travamentos, teste de saúde do servidor limpo e validação reforçada dos vídeos enviados.',
+        engineering: 'Branch origin/claude/editor-legendas-v1 atualizada com o commit 0e458a7 e deploys disparados via MCP Render pelo Claude Code: Web PWA (dep-dbn3vpp5efls739ctku0 em srv-dbm632rm8hqs73erfa10) e Proxy API (dep-dbn3vq6i0phs73bg8ao0 em srv-dbluvl88v5cc73d1d3j0). Testados GET /health ({"ok":true,"ready":true} sem vazamento de provedor) e GET / com HTTP 200 OK.',
+        changes: 'cloud/proxy.mjs, server/index.ts, server/track3d.ts, docs/PLANO_STRIX.md',
+        before: 'O ambiente Render de produção não possuía a proteção de cota de áudio em janela deslizante e expunha o provedor no healthcheck.',
+        after: 'Ambos os serviços live no Render, 100% alinhados com a branch local e validados com 0 erros.'
+      },
+      {
         id: 'UI-L1',
         status: 'finalizado',
         title: 'Lote 1: Tokens de Tema Slate/Indigo/Emerald e Tipografia (styles.css)',
