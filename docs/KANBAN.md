@@ -59,27 +59,58 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `0` | Ideias e próximas evoluções sendo desenhadas (Fase 3 aberta para novos pedidos). |
-| ⏳ **2. Na Fila** | `0` | Tarefas aprovadas aguardando início de execução. |
-| ⚡ **3. Em Execução** | `0` | Tarefas sendo codificadas neste exato momento. |
+| 🧠 **1. Em Planejamento** | `0` | Plano da Fase 3 aprovado e movido para a fila. |
+| ⏳ **2. Na Fila** | `4` | Lotes `UI-L2` a `UI-L5` aguardando execução sequencial. |
+| ⚡ **3. Em Execução** | `0` | Lote `UI-L1` finalizado; aguardando OK para iniciar `UI-L2`. |
 | 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
-| ✅ **5. Finalizado** | `23` | Tarefas 100% concluídas, testadas (`114/114 testes`) e publicadas no GitHub + Render. |
+| ✅ **5. Finalizado** | `24` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
 
 ---
 
 ## 🧠 1. Em Planejamento
-*(Nenhuma tarefa pendente — aguardando novos pedidos de evolução ou ajustes da Fase 3)*
+*(Plano aprovado — Lotes movidos para a Fila)*
 
 ---
 
-## ⏳ 2. Na Fila
-*(Fila limpa — todas as peças das Fases 1 e 2 foram concluídas)*
+## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
+
+### [UI-L2] Home Limpa com Revelação Progressiva via Bottom Sheet (`UploadScreen.tsx` + `styles.css`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
+- **🗣️ Explicação Popular:** Ao abrir o aplicativo, a tela inicial mostra apenas o grande cartão `"Toque para escolher o vídeo"` e a lista de `"Projetos salvos"`. Assim que você escolhe um vídeo (ou clica em configurar), sobe uma gaveta suave (Bottom Sheet) com as opções de idioma, nuvem/offline e o botão `"Criar legendas"`.
+- **🔧 Engenharia de Software:** Em `src/app/components/UploadScreen.tsx`, manter 100% dos estados (`file`, `engine`, `model`, `cloud`, `lang`, `openai`, `busy`, `msg`, `progress`, `error`, `saved`) e handlers (`start`, `remove`, `GroqKeyBox`, `KeySettings`), encapsulando o `<fieldset>` de transcrição e o CTA `.primary` num Bottom Sheet deslizante (`cubic-bezier(0.32, 0.72, 0, 1)`) que abre automaticamente ao selecionar um `file` (ou via botão de opções).
+- **🔄 O que altera no App:** Elimina o formulário técnico longo na primeira vista da Home, guiando o usuário passo a passo.
+- **🐛 Qual era o Problema (Antes):** Todas as opções de motores, rádios e chaves apareciam empilhadas antes mesmo do usuário escolher um vídeo.
+- **✅ Critério de Pronto (Depois):** Fluxo de upload intacto com Bottom Sheet progressivo e `npm run verify` com 0 erros.
+
+### [UI-L3] Casca do Editor Mobile (`48px` Header + `42%` Monitor + `36px` Faixa de Transporte)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
+- **🗣️ Explicação Popular:** Organizar o topo e o meio da tela no celular: uma barra superior fininha (`48px`) com botão de voltar/novo, nome do projeto, desfazer/refazer e o botão verde `"Exportar"`; logo abaixo, o vídeo grande ocupando `42%` da tela e uma faixa compacta (`36px`) com todos os controles de play, avançar quadro, tempo, som e guias.
+- **🔧 Engenharia de Software:** Ajustar estilos e estrutura de apresentação em `src/app/App.tsx`, `src/app/components/Preview.tsx` e `src/app/styles.css`: `.topbar` com `48px`, botão `"Exportar"` com `--accent-export` (`#10B981`), `.viewer` com `~42dvh` no mobile e `.transport` em faixa única de `36px` com ícones de `18px` mantendo todos os 8 botões atuais (`Início`, `Quadro anterior`, `Play/Pause` em destaque, `Próximo quadro`, `Fim`, `Timecode`, `Som`, `Área segura` e `Grade de terços`).
+- **🔄 O que altera no App:** Dá mais espaço vertical para o vídeo no celular e destaca o botão de Exportar e o Play/Pause.
+- **🐛 Qual era o Problema (Antes):** Botão Exportar usava a mesma cor roxa de seleção e controles de transporte podiam criar barra de rolagem horizontal.
+- **✅ Critério de Pronto (Depois):** Header, Monitor e Transporte alinhados no mobile e desktop, `npm run verify` com 0 erros.
+
+### [UI-L4] Timeline Estilo CapCut: Pílulas (`8px`), Pinch-to-Zoom Touch e Limpeza Visual (`Timeline.tsx` + `styles.css`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
+- **🗣️ Explicação Popular:** Deixar os bloquinhos das legendas e palavras na linha do tempo com cantos arredondados modernos (`8px`), permitir dar zoom abrindo e fechando dois dedos na tela (pinça) e esconder os botões `+` e `−` no celular para limpar o espaço.
+- **🔧 Engenharia de Software:** Em `src/app/components/Timeline.tsx` e `src/app/styles.css`, aplicar `border-radius: 8px` em `.clip`, `.wclip`, `.vclip`, seleção em `--primary` (`#6366F1`), adicionar gesto touch de pinça (`onTouchStart`/`onTouchMove` de 2 dedos em `.tl-scroll`) chamando a função `zoom(factor)` já existente, e ocultar no mobile (`@media (max-width: 900px)`) os botões `Minus`/`Plus` da `.tl-toolbar` mantendo `Magnet` (Snap) e `ZoomIn` (Ajustar).
+- **🔄 O que altera no App:** Zoom natural com dois dedos na timeline do iPhone e visual de pílulas arredondadas estilo CapCut.
+- **🐛 Qual era o Problema (Antes):** No celular não havia gesto de pinça na timeline (dependia dos botões `+` e `−` na barra).
+- **✅ Critério de Pronto (Depois):** Pinch-to-zoom funcional chamando `zoom()`, pílulas de `8px` e `npm run verify` com 0 erros.
+
+### [UI-L5] Barra Contextual Inferior (Dock `64px` ↔ Slide-up de Seleção) + Bottom Sheets (`45dvh`) no Mobile (`App.tsx`, `Library.tsx`, `styles.css`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Na Fila
+- **🗣️ Explicação Popular:** Eliminar aqueles dois botões grandes fixos (`Inspetor` | `Frases e modelos`) e a tela vazia quando nenhuma legenda está selecionada. No lugar deles, entra uma barra inteligente estilo CapCut no rodapé (`64px`): sem legenda selecionada, ela mostra ícones claros (`+ Texto`, `Modelos`, `Frases`, `Buscar`, `Pessoa`); quando você toca numa legenda, a barra muda sozinha para as ações daquela legenda (`Editar/Estilo`, `Dividir`, `Duplicar`, `Excluir`), abrindo os painéis numa gaveta de `45%` da tela sem tampar o vídeo!
+- **🔧 Engenharia de Software:** Em `src/app/App.tsx`, `src/app/components/Library.tsx` e `src/app/styles.css`, substituir no mobile a `.mobile-tabs` e o `.empty-inspector` sempre aberto por: (1) Dock contextual de `~64px` (ícones `20px` + micro-label `11px`) quando `selection.phraseId === null`, acionando `addAtPlayhead` e abrindo `Library` na aba escolhida (`frases`, `modelos`, `texto`, `pessoa`) em Bottom Sheet de `~45dvh`; (2) Barra contextual slide-up quando `selection.phraseId !== null` com ações existentes (`Inspetor/Estilo`, `Palavra`, `Dividir` via `splitAtPlayhead`, `Duplicar` via `duplicate`, `Excluir` via `remove` em `--danger`); (3) Bottom Sheet de `~45dvh` (`cubic-bezier(0.32, 0.72, 0, 1)`) para o `PhrasePanel` e `Library` no mobile, mantendo `PersonPanel` montado no DOM.
+- **🔄 O que altera no App:** Ergonomia idêntica ao CapCut Mobile: zero área morta, ferramentas autoexplicativas no rodapé e vídeo + timeline sempre visíveis.
+- **🐛 Qual era o Problema (Antes):** Dois botões gigantes ocupavam o meio da tela e, sem seleção, metade da tela do celular ficava ocupada pela mensagem vazia `"Selecione uma legenda..."`.
+- **✅ Critério de Pronto (Depois):** Dock contextual + Bottom Sheets funcionando 100% no mobile, layout NLE de 3 colunas intacto no Desktop e `npm run verify` com 0 erros.
 
 ---
 
 ## ⚡ 3. Em Execução
-*(Nenhuma tarefa em execução no momento)*
+*(Nenhuma tarefa em execução no momento — aguardando OK para `UI-L2`)*
 
 ---
 
@@ -89,6 +120,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ✅ 5. Finalizado (Histórico Completo de Engenharia & Explicação Popular)
+
+### [UI-L1] Tokens de Tema Slate/Indigo/Emerald e Tipografia (`src/app/styles.css` + `src/app/main.tsx`)
+- **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado
+- **🗣️ Explicação Popular:** Trocamos as cores escuras antigas por uma paleta moderna de editor profissional (azul-ardósia profundo `#0F172A`, destaque índigo `#6366F1` e verde-esmeralda `#10B981`), carregando as fontes variáveis Inter e Outfit e aplicando efeito de vidro fosco (`blur`) nos modais e seletores.
+- **🔧 Engenharia de Software:** Definidos tokens globais `--bg-app: #0F172A`, `--bg-surface: #1E293B`, `--bg-elevated: rgba(30, 41, 59, 0.88)` com `backdrop-filter: blur(16px)`, `--primary: #6366F1`, `--accent-export: #10B981`, `--danger: #EF4444`, `--text-primary: #F8FAFC`, `--text-muted: #94A3B8`, curva `--ease-sheet: cubic-bezier(0.32, 0.72, 0, 1)` e imports de `@fontsource-variable/inter` e `@fontsource-variable/outfit` em `main.tsx`.
+- **🔄 O que altera no App:** Nova identidade visual limpa, moderna e com contraste de estúdio no Mac e no iPhone, sem alterar nenhuma regra de negócio.
+- **🐛 Qual era o Erro (Antes):** Tema antigo sem hierarquia cromática separada entre seleção (`--primary`) e CTA de exportação (`--accent-export`) e cores hardcoded (`#0b0b0e`, `#211d2e`).
+- **✅ Resultado Final (Depois):** Tokens aplicados em `src/app/styles.css` e `src/app/main.tsx`, `npm run verify` com 0 erros.
+- **📂 Arquivos:** `src/app/styles.css`, `src/app/main.tsx`.
 
 ### [ETAPA-1] Fundação do Editor de Legendas (Mac + iPhone PWA + Nuvem)
 - **Responsável:** Claude Code | **Categoria:** Arquitetura Base | **Commit:** `4d63a18`

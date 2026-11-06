@@ -287,3 +287,12 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - Apliquei também suas sugestões #1, #2 e #4 antes do commit: `withEmoji` agora corta `base` em `200 - emoji.length - 1` antes de concatenar (nunca parte surrogate pair ao meio), `wordEmojis` fica em variável por render, e `suggestForText` agora aparece também na aba **Frase** (inserindo o emoji na palavra de destaque ou na última palavra da frase).
   - `BRAIN.md` atualizado com todos os novos módulos (`src/core/emojis.ts`, `highlightPop`, `eslint.config.mjs`, `DELETE /api/render/:id`).
   - `npm run verify` com **0 erros (tsc + lint + 113 testes + builds Mac e PWA)**. Todos os lotes revisados e commitados!
+
+---
+
+## Fase 3: Refatoração Visual CapCut Mobile (`feat/ui-capcut-mobile`)
+
+- **[Antigravity, 2026-11-05] Fase 1 (Auditoria Visual & Planejamento em 5 Lotes — Zero Código Tocado em `src/`):**
+  - Branch criada: `feat/ui-capcut-mobile`.
+  - Escopo estritamente visual (`src/app/styles.css`, `src/app/App.tsx`, `src/app/components/UploadScreen.tsx`, `src/app/components/Preview.tsx`, `src/app/components/Timeline.tsx`, `src/app/components/Library.tsx`). Proibido tocar em `src/core/`, `src/remotion/`, `server/`, `cloud/` e testes existentes.
+  - Plano de 5 lotes (`UI-L1` a `UI-L5`) registrado em `docs/KANBAN.md` e `public/kanban.html` na coluna **Em Planejamento**, aguardando `"APROVADO"` do usuário para iniciar o Lote 1.
