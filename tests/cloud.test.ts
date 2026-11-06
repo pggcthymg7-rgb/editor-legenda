@@ -28,9 +28,11 @@ const post = (h: Record<string, string> = {}, body: BodyInit = audio, q = '') =>
   realFetch(`${base}/transcribe${q}`, { method: 'POST', headers: { origin: APP, 'x-app': 'legendas', 'content-type': 'audio/mp4', ...h }, body });
 
 describe('proxy da nuvem', () => {
-  it('health diz se tem chave', async () => {
+  it('health diz se tem chave sem expor nome do provedor', async () => {
     const r = await realFetch(`${base}/health`, { headers: { origin: APP } });
-    expect(await r.json()).toMatchObject({ ok: true, ready: false });
+    const json = await r.json();
+    expect(json).toEqual({ ok: true, ready: false });
+    expect(json).not.toHaveProperty('provider');
     expect(r.headers.get('access-control-allow-origin')).toBe(APP);
   });
   it('sem chave responde 503 claro', async () => {

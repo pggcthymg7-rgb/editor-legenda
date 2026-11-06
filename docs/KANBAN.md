@@ -59,25 +59,16 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `2` | Lotes STX-L2 e STX-L3 aguardando aprovação. |
+| 🧠 **1. Em Planejamento** | `1` | Lote STX-L3 aguardando aprovação. |
 | ⏳ **2. Na Fila** | `0` | Nenhum lote na fila. |
 | ⚡ **3. Em Execução** | `0` | Nenhum lote em execução. |
 | 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
-| ✅ **5. Finalizado** | `30` | Lote STX-L1 concluído com sucesso e validado no `npm run verify` (`124/124 testes`). |
+| ✅ **5. Finalizado** | `31` | Lotes STX-L1 e STX-L2 concluídos com sucesso e validados no `npm run verify` (`124/124 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens descartadas. |
 
 ---
 
 ## 🧠 1. Em Planejamento
-
-### 🧼 Card `STX-L2`: Higiene de Informações no `/health` e Documentação de IP (P1)
-- **Status**: ⏳ Aguardando aprovação
-- **🗣️ Linguagem Popular**: Remove do teste de funcionamento do servidor qualquer menção a qual inteligência artificial está sendo usada por trás, sem quebrar o botão de ligar o serviço.
-- **🔧 Engenharia de Software**: Em `cloud/proxy.mjs`, remove o campo `provider` da resposta JSON de `GET /health` mantendo `{ ok: true, ready: true }`, e documenta a conformidade de segurança do cabeçalho `x-forwarded-for` no Render.
-- **🔄 O que altera no App**: O servidor na nuvem responde de forma neutra sem expor detalhes internos da infraestrutura.
-- **🐛 Qual era o Erro (Antes)**: `/health` respondia explicitamente `provider: "groq"` ou `"openai"`.
-- **✅ Resultado Final (Depois)**: Resposta enxuta e segura com zero vazamento de metadados.
-- **Custo Estimado**: Baixo | **Dono**: Claude Code | **Revisor**: Antigravity
 
 ### 🗄️ Card `STX-L3`: Magic Bytes no Upload Local e Descarte Automático de Jobs 3D (P2)
 - **Status**: ⏳ Aguardando aprovação
@@ -89,6 +80,32 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 - **Custo Estimado**: Baixo | **Dono**: Claude Code | **Revisor**: Antigravity
 
 ---
+
+## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
+*(Nenhum lote na fila no momento)*
+
+---
+
+## ⚡ 3. Em Execução
+*(Nenhum lote em execução no momento)*
+
+---
+
+## 🛠️ 4. Em Correção
+*(Nenhuma tarefa em correção no momento)*
+
+---
+
+## ✅ 5. Finalizado (Testado, Revisado e com 0 Erros)
+
+### 🧼 Card `STX-L2`: Higiene de Informações no `/health` e Documentação de IP (P1)
+- **Status**: ✅ Finalizado
+- **🗣️ Linguagem Popular**: Remove do teste de funcionamento do servidor qualquer menção a qual inteligência artificial está sendo usada por trás, sem quebrar o botão de ligar o serviço.
+- **🔧 Engenharia de Software**: Em `cloud/proxy.mjs`, remove o campo `provider` da resposta JSON de `GET /health` mantendo `{ ok: true, ready: true }`, documenta o modelo de confiança de IP com `pop()` no `x-forwarded-for` no Render e atualiza teste em `tests/cloud.test.ts`.
+- **🔄 O que altera no App**: O servidor na nuvem responde de forma neutra sem expor detalhes internos da infraestrutura.
+- **🐛 Qual era o Erro (Antes)**: `/health` respondia explicitamente `provider: "groq"` ou `"openai"`.
+- **✅ Resultado Final (Depois)**: Resposta enxuta e segura com zero vazamento de metadados validada em testes.
+- **Commit**: `feat(security): lote 2 - higiene no healthcheck e documentacao arquitetural de ip` | **Dono**: Claude Code & Antigravity
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
 *(Nenhum lote na fila no momento)*

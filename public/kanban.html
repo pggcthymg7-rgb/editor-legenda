@@ -516,18 +516,18 @@
       },
       {
         id: 'STX-L2',
-        status: 'planejamento',
+        status: 'finalizado',
         title: 'Lote 2: Higiene de Informações no /health e Documentação de IP (P1)',
         severity: 'Segurança',
         sevClass: 'badge-med',
-        agent: 'Claude Code (Rev: Antigravity)',
+        agent: 'Claude Code & Antigravity',
         category: 'Segurança & Nuvem',
-        commit: 'Aguardando aprovação',
+        commit: 'feat(security): lote 2 - higiene no healthcheck e documentacao arquitetural de ip',
         popular: 'Remove do teste de funcionamento do servidor qualquer menção a qual inteligência artificial está sendo usada por trás, sem quebrar o botão de ligar o serviço.',
-        engineering: 'Em cloud/proxy.mjs, remove o campo provider da resposta JSON de GET /health mantendo { ok: true, ready: true }, e documenta a conformidade de segurança do cabeçalho x-forwarded-for no Render.',
+        engineering: 'Em cloud/proxy.mjs, remove o campo provider da resposta JSON de GET /health mantendo { ok: true, ready: true }, documenta o modelo de confiança de IP com pop() no x-forwarded-for no Render e atualiza teste em tests/cloud.test.ts.',
         changes: 'cloud/proxy.mjs, tests/cloud.test.ts',
         before: '/health respondia explicitamente provider: "groq" ou "openai".',
-        after: 'Resposta enxuta e segura com zero vazamento de metadados.'
+        after: 'Resposta enxuta e segura com zero vazamento de metadados validada em testes.'
       },
       {
         id: 'STX-L3',

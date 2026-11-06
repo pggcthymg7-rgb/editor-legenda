@@ -96,7 +96,13 @@ const HITS = new Map();
 const LIMIT_PER_HOUR = Number(process.env.LIMIT_PER_HOUR ?? 60);
 const MAX_IPS = 5000;
 
-/** IP do cliente. O Render ACRESCENTA o IP real no fim do x-forwarded-for; o início é do cliente (falsificável). */
+/**
+ * IP do cliente no Render.
+ * Arquitetura de proxy reverso do Render: o load balancer do Render ACRESCENTA obrigatoriamente
+ * o IP real de quem conectou no FINAL da cadeia do cabeçalho x-forwarded-for. O início do cabeçalho
+ * é enviado pelo cliente e pode ser arbitrariamente forjado; portanto, pop() (o último elemento)
+ * é a única fonte segura e confiável de IP sob a infraestrutura do Render.
+ */
 export function clientIp(xff, remote) {
   const last = String(xff ?? '').split(',').map((s) => s.trim()).filter(Boolean).pop();
   return (last ?? String(remote ?? '')).slice(0, 64);

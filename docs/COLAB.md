@@ -320,3 +320,9 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - `src/app/cloud.ts` + `src/app/platform/types.ts` + `src/app/platform/mac.ts` + `src/app/platform/device.ts` + `src/app/components/UploadScreen.tsx`: envio do cabeçalho `x-audio-seconds` e tratamento claro e didático do erro 429 no app.
   - Testes: `tests/cloud.test.ts` ampliado para 13 testes cobrindo chave de usuário, hash sem vazamento e bloqueios a 90%.
   - Verificação: `npm run verify` com **0 erros** (12 arquivos / 124 testes passando, build Mac e PWA OK). Kanban atualizado. Lote 1 pronto para commit!
+
+- **[Antigravity & Claude Code, 2026-11-06] Execução do Lote 2 Concluída (`STX-L2` — P1):**
+  - `cloud/proxy.mjs`: `GET /health` responde exclusivamente `{ ok: true, ready: boolean }`, eliminando qualquer vazamento do nome de provedores externos (`provider: "groq"` / `"openai"`).
+  - Documentação arquitetural detalhada adicionada à função `clientIp()` explicando o comportamento seguro de `pop()` no `x-forwarded-for` garantido pelo balanceador do Render.
+  - Testes: `tests/cloud.test.ts` atualizado para assegurar que `provider` não existe no JSON de `/health`.
+  - Verificação: `npm run verify` com **0 erros** (124 testes passando, builds OK). Pronto para commit!
