@@ -73,12 +73,13 @@ export const macPlatform: Platform = {
     });
     return (await json<{ words: TranscribedWord[] }>(r)).words;
   },
-  async transcribeCloud(ref, onStatus, lang = 'pt') {
+  async transcribeCloud(ref, onStatus, lang = 'pt', durationMs?: number) {
     const [{ extractAudio }, { cloudTranscribe }] = await Promise.all([import('./audio'), import('../cloud')]);
     onStatus('Separando o áudio…', 0);
     const audio = await extractAudio(`/media/${encodeURIComponent(ref)}`, (p) => onStatus('Separando o áudio…', p));
     onStatus('Transcrevendo na nuvem…');
-    return cloudTranscribe(audio, lang);
+    const audioSeconds = durationMs ? Math.round(durationMs / 1000) : undefined;
+    return cloudTranscribe(audio, lang, undefined, audioSeconds);
   },
   listProjects: () => fetch('/api/projects').then((r) => json<{ id: string; name: string }[]>(r)),
   loadProject: (id) => fetch(`/api/projects/${encodeURIComponent(id)}`).then((r) => json<Project>(r)),

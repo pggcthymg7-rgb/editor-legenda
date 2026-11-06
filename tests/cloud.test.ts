@@ -99,11 +99,49 @@ describe('proxy da nuvem', () => {
   });
 });
 
-describe('chave do usuário', () => {
-  it('usa a chave Groq do usuário só se o servidor não tiver e se o formato for válido', () => {
+describe('chave do usuário e cotas', () => {
+  it('usa a chave Groq do usuário com precedência sobre a chave do servidor', () => {
     expect(mod.provider({}, 'gsk_' + 'a'.repeat(30))?.key).toBe('gsk_' + 'a'.repeat(30));
     expect(mod.provider({}, 'sk-abc')).toBeNull();
     expect(mod.provider({}, 'gsk_x\nInjected')).toBeNull();
-    expect(mod.provider({ GROQ_API_KEY: 'gsk_server' }, 'gsk_' + 'b'.repeat(30))?.key).toBe('gsk_server');
+    // BYOK: chave do usuário tem prioridade sobre a do servidor
+    expect(mod.provider({ GROQ_API_KEY: 'gsk_server' }, 'gsk_' + 'b'.repeat(30))?.key).toBe('gsk_' + 'b'.repeat(30));
+    // Sem chave de usuário, cai na do servidor
+    expect(mod.provider({ GROQ_API_KEY: 'gsk_server' })?.key).toBe('gsk_server');
+  });
+
+  it('calcula hash da chave sem expor valor', () => {
+    const h1 = mod.keyHash('gsk_12345678901234567890');
+    const h2 = mod.keyHash('gsk_12345678901234567890');
+    const h3 = mod.keyHash('gsk_outra_chave_distinta');
+    expect(h1).toBe(h2);
+    expect(h1).not.toBe(h3);
+    expect(h1).not.toContain('gsk_');
+  });
+
+  it('bloqueia requisição quando atinge 90% do limite por minuto (18 req/min)', () => {
+    const hash = 'hash_test_min';
+    const now = 100000;
+    for (let i = 0; i < 18; i++) {
+      expect(mod.checkKeyQuota(hash, 10, now).ok).toBe(true);
+    }
+    const blocked = mod.checkKeyQuota(hash, 10, now);
+    expect(blocked.ok).toBe(false);
+    expect(blocked.error).toContain('Limite por minuto');
+    expect(blocked.retryAfter).toBe(60);
+  });
+
+  it('bloqueia quando atinge 90% do limite de segundos de áudio por hora (6.480 s/h)', () => {
+    const hash = 'hash_test_sec_hour';
+    const now = 200000;
+    // 10 chamadas de 600s = 6000s
+    for (let i = 0; i < 10; i++) {
+      expect(mod.checkKeyQuota(hash, 600, now).ok).toBe(true);
+    }
+    // mais 500s passaria de 6480s (6000 + 500 = 6500)
+    const blocked = mod.checkKeyQuota(hash, 500, now);
+    expect(blocked.ok).toBe(false);
+    expect(blocked.error).toContain('Limite de áudio por hora');
+    expect(blocked.retryAfter).toBeGreaterThan(0);
   });
 });

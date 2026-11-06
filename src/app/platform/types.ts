@@ -39,7 +39,7 @@ export interface Platform {
   videoUrl(src: string): Promise<string>;
   transcribeOpenAi(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string): Promise<TranscribedWord[]>;
   /** Nuvem grátis (proxy → Groq): extrai o áudio aqui e manda só o áudio. */
-  transcribeCloud(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string): Promise<TranscribedWord[]>;
+  transcribeCloud(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string, durationMs?: number): Promise<TranscribedWord[]>;
   listProjects(): Promise<ProjectSummary[]>;
   loadProject(id: string): Promise<Project>;
   saveProject(p: Project): Promise<void>;

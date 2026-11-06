@@ -78,14 +78,15 @@ export const devicePlatform: Platform = {
     return transcribeWithKey(key, audio, 'audio.m4a', fetch, lang);
   },
 
-  async transcribeCloud(ref, onStatus, lang = 'pt') {
+  async transcribeCloud(ref, onStatus, lang = 'pt', durationMs?: number) {
     const v = await idbGet<StoredVideo>('videos', ref);
     if (!v) throw new Error('Vídeo não encontrado neste aparelho');
     const [{ extractAudio }, { cloudTranscribe }] = await Promise.all([import('./audio'), import('../cloud')]);
     onStatus('Separando o áudio…', 0);
     const audio = await extractAudio(v.blob, (p) => onStatus('Separando o áudio…', p));
     onStatus('Transcrevendo na nuvem…');
-    return cloudTranscribe(audio, lang);
+    const audioSeconds = durationMs ? Math.round(durationMs / 1000) : undefined;
+    return cloudTranscribe(audio, lang, undefined, audioSeconds);
   },
 
   async listProjects() {

@@ -2,6 +2,7 @@
 // O app (PWA) manda o áudio já extraído (m4a mono, ~0,25 MB/min); aqui repassamos ao Groq
 // (whisper-large-v3-turbo, grátis e muito rápido) com a chave guardada SÓ no servidor.
 // Variáveis: GROQ_API_KEY (recomendado) ou OPENAI_API_KEY; ALLOWED_ORIGINS (vírgulas); PORT.
+import crypto from 'node:crypto';
 import http from 'node:http';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -23,14 +24,71 @@ const PROMPTS = {
 
 const GROQ_KEY = /^gsk_[A-Za-z0-9]{20,200}$/;
 
-/** Provedor ativo: chave do servidor (Groq > OpenAI) ou, sem ela, a chave Groq do próprio usuário. */
+/** Provedor ativo: chave do usuário (BYOK) tem precedência sobre chaves do servidor. */
 export function provider(env = process.env, userKey) {
-  if (!env.GROQ_API_KEY && !env.OPENAI_API_KEY && typeof userKey === 'string' && GROQ_KEY.test(userKey)) {
+  if (typeof userKey === 'string' && GROQ_KEY.test(userKey)) {
     return { name: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo', key: userKey };
   }
   if (env.GROQ_API_KEY) return { name: 'groq', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo', key: env.GROQ_API_KEY };
   if (env.OPENAI_API_KEY) return { name: 'openai', url: 'https://api.openai.com/v1/audio/transcriptions', model: 'whisper-1', key: env.OPENAI_API_KEY };
   return null;
+}
+
+// Limites Groq (plano gratuito Whisper) com margem preventiva de 90%:
+// 18 req/min (teto oficial 20), 1.800 req/dia (2.000), 6.480 s/h (7.200s), 25.920 s/dia (28.800s).
+// Configuráveis via env. A chave NUNCA é guardada/logada: usamos apenas seu hash SHA-256.
+const LIMIT_REQ_MIN = Number(process.env.LIMIT_REQ_MIN ?? 18);
+const LIMIT_REQ_DAY = Number(process.env.LIMIT_REQ_DAY ?? 1800);
+const LIMIT_SEC_HOUR = Number(process.env.LIMIT_SEC_HOUR ?? 6480);
+const LIMIT_SEC_DAY = Number(process.env.LIMIT_SEC_DAY ?? 25920);
+
+export function keyHash(key) {
+  if (typeof key !== 'string' || !key) return 'anonymous';
+  return crypto.createHash('sha256').update(key).digest('hex').slice(0, 32);
+}
+
+// Histórico em memória por hash de chave: array de { t: number, s: number }
+const KEY_USAGE = new Map();
+const MAX_TRACKED_KEYS = 2000;
+
+export function checkKeyQuota(hash, audioSec = 60, now = Date.now()) {
+  const usage = (KEY_USAGE.get(hash) ?? []).filter((item) => now - item.t < 86400_000);
+  KEY_USAGE.delete(hash); // atualiza para o fim do Map
+
+  let reqMin = 0;
+  let secHour = 0;
+  let secDay = 0;
+  const reqDay = usage.length;
+
+  for (const item of usage) {
+    if (now - item.t < 60_000) reqMin++;
+    if (now - item.t < 3600_000) secHour += item.s;
+    secDay += item.s;
+  }
+
+  if (reqMin >= LIMIT_REQ_MIN) {
+    KEY_USAGE.set(hash, usage);
+    return { ok: false, error: 'Limite por minuto atingido (máx 18 req/min). Aguarde 1 minuto.', retryAfter: 60 };
+  }
+  if (secHour + audioSec > LIMIT_SEC_HOUR) {
+    KEY_USAGE.set(hash, usage);
+    const oldestInHour = usage.find((item) => now - item.t < 3600_000);
+    const retryAfter = oldestInHour ? Math.max(1, Math.ceil((3600_000 - (now - oldestInHour.t)) / 1000)) : 3600;
+    return { ok: false, error: 'Limite de áudio por hora atingido (máx 108 min/hora). Tente mais tarde.', retryAfter };
+  }
+  if (reqDay >= LIMIT_REQ_DAY) {
+    KEY_USAGE.set(hash, usage);
+    return { ok: false, error: 'Limite diário de requisições atingido (máx 1.800 req/dia).', retryAfter: 86400 };
+  }
+  if (secDay + audioSec > LIMIT_SEC_DAY) {
+    KEY_USAGE.set(hash, usage);
+    return { ok: false, error: 'Limite diário de áudio atingido (máx 7,2 horas/dia).', retryAfter: 86400 };
+  }
+
+  usage.push({ t: now, s: audioSec });
+  KEY_USAGE.set(hash, usage);
+  while (KEY_USAGE.size > MAX_TRACKED_KEYS) KEY_USAGE.delete(KEY_USAGE.keys().next().value);
+  return { ok: true };
 }
 
 // limite por IP: protege a cota grátis contra abuso (janela de 1 h)
@@ -67,11 +125,12 @@ export function slim(json) {
   return { text: typeof json?.text === 'string' ? json.text.slice(0, 200_000) : '', words };
 }
 
-function send(res, status, body, origin) {
+function send(res, status, body, origin, extraHeaders = {}) {
   const headers = {
     'content-type': 'application/json; charset=utf-8',
     'x-content-type-options': 'nosniff',
     'cache-control': 'no-store',
+    ...extraHeaders,
   };
   if (origin && ORIGINS.has(origin)) {
     headers['access-control-allow-origin'] = origin;
@@ -101,7 +160,7 @@ export const server = http.createServer(async (req, res) => {
       res.writeHead(204, {
         'access-control-allow-origin': origin,
         'access-control-allow-methods': 'POST, GET',
-        'access-control-allow-headers': 'content-type, x-app, x-groq-key',
+        'access-control-allow-headers': 'content-type, x-app, x-groq-key, x-audio-seconds',
         'access-control-max-age': '86400',
         vary: 'Origin',
       });
@@ -109,7 +168,7 @@ export const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.pathname === '/health') {
       const p = provider();
-      return send(res, 200, { ok: true, ready: Boolean(p), provider: p?.name ?? null }, origin);
+      return send(res, 200, { ok: true, ready: Boolean(p) }, origin);
     }
     if (req.method === 'POST' && url.pathname === '/transcribe') {
       // navegador: só do app; header próprio força preflight (CSRF de outro site não passa)
@@ -118,9 +177,18 @@ export const server = http.createServer(async (req, res) => {
       const type = String(req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
       if (!AUDIO_TYPES.has(type)) return send(res, 415, { error: 'formato de áudio não suportado' }, origin);
       const ip = clientIp(req.headers['x-forwarded-for'], req.socket.remoteAddress);
-      if (!allow(ip)) return send(res, 429, { error: 'muitas transcrições nesta hora; tente mais tarde' }, origin);
-      const p = provider(process.env, req.headers['x-groq-key']);
+      if (!allow(ip)) return send(res, 429, { error: 'muitas transcrições nesta hora; tente mais tarde' }, origin, { 'retry-after': '3600' });
+      const userKey = req.headers['x-groq-key'];
+      const p = provider(process.env, userKey);
       if (!p) return send(res, 503, { error: 'servidor sem chave configurada' }, origin);
+
+      const parsedSec = Number(req.headers['x-audio-seconds']);
+      const audioSec = Number.isFinite(parsedSec) && parsedSec > 0 && parsedSec <= 3600 ? Math.round(parsedSec) : 60;
+      const quota = checkKeyQuota(keyHash(p.key), audioSec);
+      if (!quota.ok) {
+        return send(res, 429, { error: quota.error }, origin, { 'retry-after': String(quota.retryAfter ?? 60) });
+      }
+
       const lang = url.searchParams.get('lang') ?? 'pt';
       if (!LANGS.test(lang)) return send(res, 400, { error: 'idioma inválido' }, origin);
       const audio = await readBody(req);
@@ -140,8 +208,20 @@ export const server = http.createServer(async (req, res) => {
         body: form,
         signal: AbortSignal.timeout(180_000),
       });
-      // nunca repassa o corpo de erro do provedor (pode ecoar dados da conta)
-      if (!r.ok) return send(res, 502, { error: `transcrição falhou (${p.name} ${r.status})` }, origin);
+
+      if (!r.ok) {
+        if (r.status === 429) {
+          const retrySec = Number(r.headers.get('retry-after')) || 60;
+          return send(
+            res,
+            429,
+            { error: 'Limite do provedor Groq atingido para esta chave. Tente novamente em instantes.' },
+            origin,
+            { 'retry-after': String(retrySec) },
+          );
+        }
+        return send(res, 502, { error: `transcrição falhou (${p.name} ${r.status})` }, origin);
+      }
       return send(res, 200, slim(await r.json()), origin);
     }
     send(res, 404, { error: 'não encontrado' }, origin);

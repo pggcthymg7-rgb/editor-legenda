@@ -501,18 +501,18 @@
     const TASKS = [
       {
         id: 'STX-L1',
-        status: 'planejamento',
+        status: 'finalizado',
         title: 'Lote 1: Blindagem de Cotas, BYOK e Feedback Visual 429 (P0)',
         severity: 'Segurança Crítica',
         sevClass: 'badge-crit',
         agent: 'Claude Code & Antigravity',
         category: 'Segurança & Nuvem',
-        commit: 'Aguardando aprovação',
+        commit: 'feat(security): lote 1 - blindagem de cotas groq por hash e prioridade byok',
         popular: 'Garante que o editor na nuvem gaste apenas a cota gratuita do próprio usuário (BYOK), bloqueia abusos antes de estourar 90% do limite da Groq e avisa na tela exatamente quando o limite for atingido e que horas volta.',
         engineering: 'cloud/proxy.mjs prioriza chave do usuário (x-groq-key), adiciona rate-limiting por hash SHA-256 com teto de 90% (18 req/min, 1.800 req/dia, 6.480 s/hora, 25.920 s/dia em janela deslizante) e trata 429 com Retry-After. App cliente envia x-audio-seconds e trata HTTP 429 com mensagem amigável em UploadScreen.tsx.',
-        changes: 'cloud/proxy.mjs, src/app/cloud.ts, src/app/components/UploadScreen.tsx, tests/cloud.test.ts',
+        changes: 'cloud/proxy.mjs, cloud/proxy.d.mts, src/app/cloud.ts, src/app/components/UploadScreen.tsx, tests/cloud.test.ts',
         before: 'Se o Render tivesse chave global, a chave do usuário era ignorada e não havia proteção de segundos de áudio por chave, correndo risco de exaustão silenciosa de cota.',
-        after: 'Cota 100% isolada por usuário, bloqueio preventivo aos 90% e interface transparente.'
+        after: 'Cota 100% isolada por usuário, bloqueio preventivo aos 90% e interface transparente. 13 testes em tests/cloud.test.ts e 124 testes globais passando com 0 erros.'
       },
       {
         id: 'STX-L2',

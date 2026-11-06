@@ -51,13 +51,26 @@ export function cloudHealth(fetchImpl: typeof fetch = fetch): Promise<CloudState
   return healthPromise;
 }
 
-export async function cloudTranscribe(audio: Blob, lang = 'pt', fetchImpl: typeof fetch = fetch): Promise<TranscribedWord[]> {
+export async function cloudTranscribe(
+  audio: Blob,
+  lang = 'pt',
+  fetchImpl: typeof fetch = fetch,
+  audioSeconds?: number,
+): Promise<TranscribedWord[]> {
   if (audio.size > 25 * 1024 * 1024) throw new Error('Áudio maior que 25 MB (cerca de 100 min). Corte o vídeo.');
   let r: Response;
+  const headers: Record<string, string> = {
+    'content-type': 'audio/mp4',
+    'x-app': 'legendas',
+    ...(getGroqKey() ? { 'x-groq-key': getGroqKey()! } : {}),
+  };
+  if (typeof audioSeconds === 'number' && Number.isFinite(audioSeconds) && audioSeconds > 0) {
+    headers['x-audio-seconds'] = String(Math.round(audioSeconds));
+  }
   try {
     r = await fetchImpl(`${CLOUD_URL}/transcribe?lang=${encodeURIComponent(lang)}`, {
       method: 'POST',
-      headers: { 'content-type': 'audio/mp4', 'x-app': 'legendas', ...(getGroqKey() ? { 'x-groq-key': getGroqKey()! } : {}) },
+      headers,
       body: audio,
       signal: AbortSignal.timeout(240_000),
     });
@@ -65,7 +78,12 @@ export async function cloudTranscribe(audio: Blob, lang = 'pt', fetchImpl: typeo
     throw new Error('Sem conexão com a nuvem. Tente de novo ou use “No aparelho”.');
   }
   const body = (await r.json().catch(() => ({}))) as { error?: string; words?: unknown; text?: string };
-  if (!r.ok) throw new Error(body.error ?? `Nuvem respondeu ${r.status}`);
+  if (!r.ok) {
+    if (r.status === 429) {
+      throw new Error(body.error ?? 'Limite de transcrição atingido. Aguarde alguns minutos ou use “No aparelho”.');
+    }
+    throw new Error(body.error ?? `Nuvem respondeu ${r.status}`);
+  }
   const words = fromOpenAi(body as Parameters<typeof fromOpenAi>[0]);
   if (!words.length) throw new Error('Não ouvi fala neste vídeo.');
   return words;

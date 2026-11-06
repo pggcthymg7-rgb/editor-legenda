@@ -216,7 +216,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
       };
       if (engine === 'cloud') {
         try {
-          words = await platform.transcribeCloud(up.ref, status, lang);
+          words = await platform.transcribeCloud(up.ref, status, lang, meta.durationMs);
         } catch (e) {
           // nuvem fora: tenta no aparelho sozinho, sem o usuário precisar fazer nada
           status(`Nuvem indisponível (${(e as Error).message}). Tentando no aparelho…`);

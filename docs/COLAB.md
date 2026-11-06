@@ -314,3 +314,9 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
   - Consulta ao Claude Code realizada via terminal para validação de riscos (`cloud/proxy.mjs`, `server/index.ts`, `server/track3d.ts`).
   - Divisão aprovada em 3 lotes: **Lote 1 (P0)** Blindagem BYOK + teto 90% Groq + feedback visual de 429; **Lote 2 (P1)** Higiene no `/health` sem expor provedor; **Lote 3 (P2)** Magic bytes no upload e descarte de jobs antigos do Track3D.
   - Aguardando autorização do usuário (`APROVADO <lote>`) para iniciar qualquer alteração de código. Nenhum arquivo de código foi alterado nesta etapa.
+
+- **[Antigravity & Claude Code, 2026-11-06] Execução do Lote 1 Concluída (`STX-L1` — P0):**
+  - `cloud/proxy.mjs` + `cloud/proxy.d.mts`: precedência de `userKey` (BYOK) sobre qualquer chave de ambiente, hashing SHA-256 da chave para rate-limiting em janela deslizante (18 req/min, 1.800 req/dia, 6.480 s/h, 25.920 s/dia), retorno de 429 com `Retry-After`.
+  - `src/app/cloud.ts` + `src/app/platform/types.ts` + `src/app/platform/mac.ts` + `src/app/platform/device.ts` + `src/app/components/UploadScreen.tsx`: envio do cabeçalho `x-audio-seconds` e tratamento claro e didático do erro 429 no app.
+  - Testes: `tests/cloud.test.ts` ampliado para 13 testes cobrindo chave de usuário, hash sem vazamento e bloqueios a 90%.
+  - Verificação: `npm run verify` com **0 erros** (12 arquivos / 124 testes passando, build Mac e PWA OK). Kanban atualizado. Lote 1 pronto para commit!

@@ -59,25 +59,16 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `3` | Lotes de Segurança Strix (STX-L1, STX-L2, STX-L3) aguardando aprovação. |
-| ⏳ **2. Na Fila** | `0` | Todos os lotes anteriores foram concluídos. |
-| ⚡ **3. Em Execução** | `0` | Nenhum lote em código no momento (fase estrita de planejamento). |
+| 🧠 **1. Em Planejamento** | `2` | Lotes STX-L2 e STX-L3 aguardando aprovação. |
+| ⏳ **2. Na Fila** | `0` | Nenhum lote na fila. |
+| ⚡ **3. Em Execução** | `0` | Nenhum lote em execução. |
 | 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
-| ✅ **5. Finalizado** | `29` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`) + Teste E2E Real. |
-| 🗑️ **6. Descartado** | `3` | Abordagens descartadas (ex.: bloquear Origin no `/health`). |
+| ✅ **5. Finalizado** | `30` | Lote STX-L1 concluído com sucesso e validado no `npm run verify` (`124/124 testes`). |
+| 🗑️ **6. Descartado** | `3` | Abordagens descartadas. |
 
 ---
 
 ## 🧠 1. Em Planejamento
-
-### 🛡️ Card `STX-L1`: Blindagem de Cotas, BYOK e Feedback Visual 429 (P0)
-- **Status**: ⏳ Aguardando aprovação
-- **🗣️ Linguagem Popular**: Garante que o editor na nuvem gaste apenas a cota gratuita do próprio usuário (BYOK), bloqueia abusos antes de estourar 90% do limite da Groq e avisa na tela exatamente quando o limite for atingido e que horas volta.
-- **🔧 Engenharia de Software**: `cloud/proxy.mjs` prioriza chave do usuário (`x-groq-key`), adiciona rate-limiting por hash SHA-256 com teto de 90% (18 req/min, 1.800 req/dia, 6.480 s/hora, 25.920 s/dia em janela deslizante) e trata 429 com `Retry-After`. App cliente envia `x-audio-seconds` e trata HTTP 429 com mensagem amigável em `UploadScreen.tsx`.
-- **🔄 O que altera no App**: O proxy não permite queimar chaves de servidor e o usuário recebe aviso claro de espera se esgotar sua cota gratuita de áudio na Groq.
-- **🐛 Qual era o Erro (Antes)**: Se o Render tivesse chave global, a chave do usuário era ignorada e não havia proteção de segundos de áudio por chave, correndo risco de exaustão silenciosa de cota.
-- **✅ Resultado Final (Depois)**: Cota 100% isolada por usuário, bloqueio preventivo aos 90% e interface transparente.
-- **Custo Estimado**: Médio | **Dono**: Claude Code (Core/Proxy) & Antigravity (UI)
 
 ### 🧼 Card `STX-L2`: Higiene de Informações no `/health` e Documentação de IP (P1)
 - **Status**: ⏳ Aguardando aprovação
@@ -98,6 +89,32 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 - **Custo Estimado**: Baixo | **Dono**: Claude Code | **Revisor**: Antigravity
 
 ---
+
+## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
+*(Nenhum lote na fila no momento)*
+
+---
+
+## ⚡ 3. Em Execução
+*(Nenhum lote em execução no momento)*
+
+---
+
+## 🛠️ 4. Em Correção
+*(Nenhuma tarefa em correção no momento)*
+
+---
+
+## ✅ 5. Finalizado (Testado, Revisado e com 0 Erros)
+
+### 🛡️ Card `STX-L1`: Blindagem de Cotas, BYOK e Feedback Visual 429 (P0)
+- **Status**: ✅ Finalizado
+- **🗣️ Linguagem Popular**: Garante que o editor na nuvem gaste apenas a cota gratuita do próprio usuário (BYOK), bloqueia abusos antes de estourar 90% do limite da Groq e avisa na tela exatamente quando o limite for atingido e que horas volta.
+- **🔧 Engenharia de Software**: Em `cloud/proxy.mjs`, `provider()` dá precedência total à chave do usuário (`x-groq-key`), adiciona rate-limiting por hash SHA-256 com teto de 90% (18 req/min, 1.800 req/dia, 6.480 s/hora, 25.920 s/dia em janela deslizante) e trata 429 com `Retry-After`. App cliente envia `x-audio-seconds` e trata HTTP 429 com mensagem amigável em `src/app/cloud.ts` e `src/app/components/UploadScreen.tsx`.
+- **🔄 O que altera no App**: O proxy não permite queimar chaves de servidor e o usuário recebe aviso claro de espera se esgotar sua cota gratuita de áudio na Groq.
+- **🐛 Qual era o Erro (Antes)**: Se o Render tivesse chave global, a chave do usuário era ignorada e não havia proteção de segundos de áudio por chave, correndo risco de exaustão silenciosa de cota.
+- **✅ Resultado Final (Depois)**: Cota 100% isolada por usuário, bloqueio preventivo aos 90% e interface transparente. 13 testes em `tests/cloud.test.ts` e 124 testes globais passando.
+- **Commit**: `feat(security): lote 1 - blindagem de cotas groq por hash e prioridade byok` | **Dono**: Claude Code & Antigravity
 
 ## ⏳ 2. Na Fila (Branch `feat/ui-capcut-mobile`)
 *(Fila zerada — todos os lotes `UI-L1` a `UI-L5` foram finalizados)*
