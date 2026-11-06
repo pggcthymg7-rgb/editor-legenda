@@ -339,3 +339,8 @@ Regras: 1 item do `PLANO_REVISAO.md` por vez, quem pega marca "🔒 dono"; `npm 
     - Web PWA (`srv-dbm632rm8hqs73erfa10`): deploy `dep-dbn3vpp5efls739ctku0` (**live**).
     - API Proxy (`srv-dbluvl88v5cc73d1d3j0`): deploy `dep-dbn3vq6i0phs73bg8ao0` (**live**).
   - Verificação ao vivo: `https://editor-legenda-api.onrender.com/health` respondeu `{"ok":true,"ready":true}` sem vazamento de provedor, e `https://editor-legenda.onrender.com/` respondeu `200 OK`. Deploy em produção 100% concluído!
+
+- **[Antigravity & Claude Code, 2026-11-06] Limpeza de Chaves Centralizada no Render (Passo 1 Consolidado):**
+  - Variáveis de ambiente de `srv-dbm632rm8hqs73erfa10` (backend) limpas via ferramenta `update_environment_variables` do MCP Render pelo Claude Code com `replace: true`, mantendo apenas `ALLOWED_ORIGINS`.
+  - `GROQ_API_KEY` e `OPENAI_API_KEY` foram 100% eliminadas do servidor na nuvem.
+  - Deploy `dep-dbn4af7f3r2c73ebem2g` entrou em status **live**. Endpoint `GET /health` responde `{"ok":true,"ready":false}`, confirmando modo BYOK estrito em produção sem nenhuma chave global ativa. Safari do usuário atualizado na tela exata.
