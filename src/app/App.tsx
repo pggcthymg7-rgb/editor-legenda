@@ -26,6 +26,7 @@ import { FPS } from '../remotion/Root';
 import { ExportPanel } from './components/ExportPanel';
 import { Library, type LibTab } from './components/Library';
 import { PersonPanel } from './components/PersonPanel';
+import { Camera3DPanel } from './components/Camera3DPanel';
 import { PhrasePanel } from './components/PhrasePanel';
 import { Preview } from './components/Preview';
 import { Timeline, type Selection } from './components/Timeline';
@@ -332,7 +333,12 @@ export const App: React.FC = () => {
             seekMs={seekMs}
             activeTab={libTab}
             onTabChange={setLibTab}
-            personPanel={<PersonPanel project={project} playableSrc={playable?.video.src ?? null} apply={apply} hasMasks={!!maskUrls} />}
+            personPanel={
+              <>
+                <PersonPanel project={project} playableSrc={playable?.video.src ?? null} apply={apply} hasMasks={!!maskUrls} />
+                <Camera3DPanel project={project} playableSrc={playable?.video.src ?? null} apply={apply} phraseId={selection.phraseId} currentMs={currentMs} />
+              </>
+            }
           />
         </aside>
 

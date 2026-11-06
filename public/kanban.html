@@ -564,6 +564,22 @@
         files: 'src/app/components/Timeline.tsx, src/app/styles.css'
       },
       {
+        id: 'FEAT-3D',
+        status: 'finalizado',
+        title: 'Rastreio 3D de Câmera (Node Video): frase grudada na cena com perspectiva e parallax',
+        severity: 'Alto',
+        sevClass: 'badge-crit',
+        agent: 'Claude Code',
+        category: 'Motor de Visão',
+        commit: 'feat/tracking3d',
+        popular: 'Toque em "Analisar câmera", posicione a frase na parede ou no chão e toque em "Grudar na superfície": ela fica presa no cenário com perspectiva real enquanto a câmera anda. Tudo no aparelho, sem servidor.',
+        engineering: 'KLT piramidal + SfM incremental (essencial/homografia, PnP, triangulação, Huber) + busca de focal + one-euro ida-e-volta, em Web Worker. Âncora por RANSAC de plano → homografia → matrix3d em CaptionComposition (preview e export).',
+        changes: 'Novo painel Câmera 3D na aba Pessoa; project.video.track3d e phrase.anchor3d (validados).',
+        errorBefore: 'Não existia rastreio de câmera: textos não ficavam presos ao cenário.',
+        resultAfter: 'Vídeo 4K real de 10 s: 240 quadros em 5,1 s no Chrome do Mac, erro 0,71 px, export Remotion confirmado, verify 120/120.',
+        files: 'src/tracking3d/*, src/app/track3d/analyze.ts, src/app/components/Camera3DPanel.tsx, src/remotion/CaptionComposition.tsx'
+      },
+      {
         id: 'FIX-MAC-MOV',
         status: 'finalizado',
         title: 'Leitura de Vídeos .mov HEVC 10-bit do iPhone no MacBook (readMeta + AAC 16kHz + H.264)',

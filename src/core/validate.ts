@@ -73,6 +73,21 @@ function presetError(pr: unknown): string | null {
   return null;
 }
 
+const vec = (x: unknown, n: number, lim = 1e6) => Array.isArray(x) && x.length === n && x.every((v) => num(v, -lim, lim));
+function anchorOk(a: unknown): boolean {
+  return isObj(a) && vec(a.origin, 3) && vec(a.ex, 3) && vec(a.ey, 3) && num(a.compW, 16, 8192) && (a.kind === undefined || ['parede', 'chao', 'teto', 'frente'].includes(a.kind as string));
+}
+function track3dError(t: unknown): string | null {
+  if (!isObj(t)) return 'formato';
+  if (!num(t.fps, 1, 120) || !num(t.width, 8, 4096) || !num(t.height, 8, 4096) || !num(t.startMs, -1e7, 1e7) || !num(t.err, 0, 1e6)) return 'cabeçalho';
+  const c = t.cam;
+  if (!isObj(c) || !num(c.f, 1, 1e5) || !num(c.cx, 0, 8192) || !num(c.cy, 0, 8192)) return 'câmera';
+  if (!Array.isArray(t.poses) || t.poses.length < 1 || t.poses.length > 120 * 3600) return 'poses';
+  for (const k of t.poses) if (!isObj(k) || !vec(k.q, 4, 2) || !vec(k.t, 3)) return 'pose';
+  if (!Array.isArray(t.points) || t.points.length > 5000 || !t.points.every((X) => vec(X, 3))) return 'pontos';
+  return null;
+}
+
 export function validateProject(input: unknown): Result {
   const fail = (error: string): Result => ({ ok: false, error });
   if (!isObj(input)) return fail('projeto inválido');
@@ -93,6 +108,7 @@ export function validateProject(input: unknown): Result {
       return fail('máscara inválida');
     }
   }
+  if (v.track3d !== undefined && track3dError(v.track3d)) return fail(`rastreio 3D: ${track3dError(v.track3d)}`);
   if (p.occlusion !== undefined && typeof p.occlusion !== 'boolean') return fail('occlusion inválido');
   if (!Array.isArray(p.phrases) || p.phrases.length > 5000) return fail('frases inválidas');
   for (const ph of p.phrases) {
@@ -113,6 +129,7 @@ export function validateProject(input: unknown): Result {
       for (const k of ['scaleX', 'scaleY'] as const) if (w[k] !== undefined && !num(w[k], 0.05, 20)) return fail(`palavra.${k} inválido`);
     }
     if (ph.behind !== undefined && typeof ph.behind !== 'boolean') return fail('behind inválido');
+    if (ph.anchor3d !== undefined && !anchorOk(ph.anchor3d)) return fail('âncora 3D inválida');
     if (ph.align !== undefined && !ALIGNS.includes(ph.align as string)) return fail('alinhamento inválido');
     if (ph.highlight !== undefined && ph.highlight !== null) {
       const e = styleError(ph.highlight);

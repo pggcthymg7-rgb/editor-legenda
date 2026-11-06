@@ -3,6 +3,8 @@
 
 import type { FontKey } from './fonts';
 export type { FontKey };
+import type { Anchor3D, Track3D } from '../tracking3d/model';
+export type { Anchor3D, Track3D };
 
 export type Fill =
   | { type: 'solid'; color: string }
@@ -113,6 +115,8 @@ export type Phrase = {
   highlightScale?: number;
   /** legenda passa atrás da pessoa (precisa da análise de pessoa no vídeo) */
   behind?: boolean;
+  /** frase grudada na cena 3D (rastreio de câmera) */
+  anchor3d?: Anchor3D;
 };
 
 export type VideoMeta = {
@@ -123,6 +127,8 @@ export type VideoMeta = {
   fps: number;
   /** análise de pessoa feita (máscaras guardadas fora do projeto) */
   mask?: { count: number; fps: number; width: number; height: number };
+  /** rastreio 3D da câmera ("Analisar câmera") */
+  track3d?: Track3D;
 };
 
 export type Project = {

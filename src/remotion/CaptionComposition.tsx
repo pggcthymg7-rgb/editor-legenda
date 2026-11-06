@@ -3,6 +3,7 @@ import { Video } from '@remotion/media';
 import { AbsoluteFill, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
 import { useEffect, useRef, useState } from 'react';
 import { grayToAlpha, maskIndexAt } from '../core/mask';
+import { anchorHomography, homographyCss } from '../tracking3d/model';
 import { phraseStart, phraseVisibleEnd } from '../core/grouping';
 import { arcPlacement, computeLines } from '../core/layout';
 import { counterText, highlightPop, wordMotion, wordWindows } from '../core/motion';
@@ -194,13 +195,17 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
     ));
   }
 
-  return (
+  // grudada na cena 3D: a câmera rastreada vira uma homografia (perspectiva + parallax reais) por quadro
+  const tr = project.video.track3d;
+  const H = phrase.anchor3d && tr ? anchorHomography(tr, phrase.anchor3d, tMs, width, height) : null;
+  if (phrase.anchor3d && tr && !H) return null; // âncora atrás da câmera
+  const body = (
     <div
       data-phrase-id={phrase.id}
       style={{
         position: 'absolute',
-        left: phrase.x * width,
-        top: phrase.y * height,
+        left: H ? 0 : phrase.x * width,
+        top: H ? 0 : phrase.y * height,
         transform: `translate(-50%, -50%) perspective(${1400 * k}px) rotateX(${phrase.rotateX}deg) rotateY(${phrase.rotateY}deg) rotate(${phrase.rotation}deg) scale(${phrase.scale * fit})`,
         display: 'flex',
         flexDirection: 'column',
@@ -212,6 +217,12 @@ export const PhraseView: React.FC<{ phrase: Phrase; index: number; project: Proj
       }}
     >
       {content}
+    </div>
+  );
+  if (!H) return body;
+  return (
+    <div data-anchor3d="" style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, transformOrigin: '0 0', transform: homographyCss(H) }}>
+      {body}
     </div>
   );
 };
