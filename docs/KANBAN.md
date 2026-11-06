@@ -63,7 +63,7 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 | ⏳ **2. Na Fila** | `0` | Todos os 5 lotes (`UI-L1` a `UI-L5`) foram concluídos. |
 | ⚡ **3. Em Execução** | `0` | Nenhum lote pendente no momento. |
 | 🛠️ **4. Em Correção** | `0` | Tarefas que falharam no `npm run verify` ou no teste real e estão sendo ajustadas. |
-| ✅ **5. Finalizado** | `28` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`). |
+| ✅ **5. Finalizado** | `29` | Tarefas 100% concluídas e validadas no `npm run verify` (`114/114 testes`) + Teste E2E Real. |
 | 🗑️ **6. Descartado** | `3` | Abordagens ou pacotes descartados por incompatibilidade técnica ou redundância. |
 
 ---
@@ -89,6 +89,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ✅ 5. Finalizado (Histórico Completo de Engenharia & Explicação Popular)
+
+### [FIX-MAC-MOV] Leitura de Vídeos `.mov` HEVC 10-bit do iPhone no Mac (`readMeta` + `audio.ts` 16 kHz + Normalização H.264)
+- **Responsável:** Antigravity | **Categoria:** Motor Remotion & Mídia | **Status:** Finalizado
+- **🗣️ Explicação Popular:** Quando você tentava abrir um vídeo `.mov` gravado no iPhone (4K HDR / HEVC 10-bit) no navegador do MacBook, aconteciam três problemas: o navegador lia a largura/altura como `0x0` (travando o player), o extrator de som para a nuvem falhava no formato 16 kHz e o vídeo ficava sem imagem no Chromium/VS Code. Agora o app lê as dimensões direto do arquivo via `mediabunny`, aceita arrastar e soltar do Finder, ativa o gravador de som em WebAssembly para 16 kHz e converte vídeos HEVC 10-bit com aceleração de hardware da Apple (`h264_videotoolbox`) no Mac!
+- **🔧 Engenharia de Software:** (1) Em `UploadScreen.tsx`, `readMeta` agora valida `width >= 16 && height >= 16` e faz fallback para `readMetaByMediabunny` (`Input` + `BlobSource` + `ALL_FORMATS` → `getPrimaryVideoTrack()` + `computeDuration()`), além de suportar `onDragOver`/`onDrop` em `.drop`; (2) Em `src/app/platform/audio.ts`, `canEncodeAudio('aac', { numberOfChannels: 1, sampleRate: 16000, bitrate: 32000 })` garante o registro do `@mediabunny/aac-encoder` quando o WebCodecs nativo não suporta 16 kHz; (3) Em `server/index.ts`, `normalizeVideoIfNeeded` usa `ffprobe` + `ffmpeg` (`h264_videotoolbox -pix_fmt yuv420p -movflags +faststart`) ao receber vídeos não-H.264/10-bit no Mac.
+- **🔄 O que altera no App:** Vídeos `.mov` 4K do iPhone abrem, transcrevem na nuvem em ~1s e tocam perfeitamente em qualquer navegador do MacBook (inclusive no navegador interno do VS Code e no Chrome).
+- **🐛 Qual era o Erro (Antes):** `TypeError: The "compositionHeight" prop of the <Player /> component must be positive, but got 0`, `Error: Encoding error` em `AudioEncoderWrapper.encodeSample` (16 kHz) e `Cannot decode /media/m_videoteste.mov` em HEVC Main 10.
+- **✅ Resultado Final (Depois):** Validado em teste real automatizado no Chrome com o vídeo bruto de 84,8 MB: upload + normalização + transcrição Groq (9 frases, 30 palavras) + canvas `2160x3840` renderizado sem erros.
+- **📂 Arquivos:** `src/app/components/UploadScreen.tsx`, `src/app/platform/audio.ts`, `server/index.ts`.
 
 ### [UI-L5] Barra Contextual Inferior (Dock `64px` ↔ Slide-up de Seleção) + Bottom Sheets (`45dvh`) no Mobile (`App.tsx`, `Library.tsx`, `styles.css`)
 - **Responsável:** Antigravity | **Categoria:** UI/UX & Mobile | **Status:** Finalizado

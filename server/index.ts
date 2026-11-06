@@ -1,9 +1,11 @@
 // Servidor local do editor. Escuta só em 127.0.0.1 (não aparece na rede).
 import express, { type NextFunction, type Request, type Response } from 'express';
+import { execFile } from 'node:child_process';
 import { createWriteStream, existsSync } from 'node:fs';
-import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import { promisify } from 'node:util';
 import { newId } from '../src/core/grouping';
 import { validateProject } from '../src/core/validate';
 import { hasOpenAiKey, transcribeOpenAi } from './openai';
@@ -82,6 +84,43 @@ app.get('/api/status', (_req, res) => {
   res.json({ openai: hasOpenAiKey(), formats: FORMATS });
 });
 
+const execFileP = promisify(execFile);
+
+/** Normaliza vídeos HEVC 10-bit (.mov do iPhone) para H.264 yuv420p compatível com qualquer navegador no Mac. */
+async function normalizeVideoIfNeeded(dest: string): Promise<void> {
+  if (process.env.NODE_ENV === 'test') return;
+  try {
+    const { stdout } = await execFileP('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=codec_name,pix_fmt',
+      '-of', 'json',
+      dest,
+    ]);
+    const info = JSON.parse(stdout) as { streams?: { codec_name?: string; pix_fmt?: string }[] };
+    const st = info.streams?.[0];
+    if (!st) return;
+    if (st.codec_name === 'h264' && st.pix_fmt === 'yuv420p') return;
+    const tmp = `${dest}.norm${path.extname(dest)}`;
+    try {
+      await execFileP('ffmpeg', [
+        '-y', '-i', dest,
+        '-map', '0:v:0', '-map', '0:a:0?',
+        '-r', '30',
+        '-c:v', 'h264_videotoolbox', '-pix_fmt', 'yuv420p', '-b:v', '14M',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-movflags', '+faststart',
+        tmp,
+      ]);
+      await rename(tmp, dest);
+    } catch {
+      await rm(tmp, { force: true });
+    }
+  } catch {
+    // Se não for vídeo real ou ffprobe não existir, mantém o arquivo original.
+  }
+}
+
 // Upload: corpo cru do arquivo; extensão vem no header.
 app.post('/api/upload', async (req, res) => {
   const ext = String(req.headers['x-file-ext'] ?? '').toLowerCase();
@@ -97,6 +136,7 @@ app.post('/api/upload', async (req, res) => {
   });
   try {
     await pipeline(req, createWriteStream(dest));
+    await normalizeVideoIfNeeded(dest);
     res.json({ name, url: `/media/${name}` });
   } catch {
     await rm(dest, { force: true });

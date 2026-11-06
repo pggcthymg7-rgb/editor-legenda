@@ -9,22 +9,46 @@ import { cloudHealth, getGroqKey, isGroqKey, setGroqKey, type CloudState } from 
 
 type Engine = 'cloud' | 'local' | 'openai' | 'none';
 
-function readMeta(file: File): Promise<{ width: number; height: number; durationMs: number }> {
-  return new Promise((resolve, reject) => {
+async function readMetaByMediabunny(file: File): Promise<{ width: number; height: number; durationMs: number }> {
+  const { ALL_FORMATS, BlobSource, Input } = await import('mediabunny');
+  const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
+  try {
+    const [vt, dur] = await Promise.all([input.getPrimaryVideoTrack(), input.computeDuration()]);
+    const width = Math.round(vt?.displayWidth || vt?.codedWidth || 0);
+    const height = Math.round(vt?.displayHeight || vt?.codedHeight || 0);
+    const durationMs = Math.round((dur || 0) * 1000);
+    if (width < 16 || height < 16 || durationMs < 1) throw new Error('Não consegui ler o vídeo');
+    return { width, height, durationMs };
+  } finally {
+    input.dispose();
+  }
+}
+
+async function readMeta(file: File): Promise<{ width: number; height: number; durationMs: number }> {
+  const native = await new Promise<{ width: number; height: number; durationMs: number } | null>((resolve) => {
     const v = document.createElement('video');
     v.preload = 'metadata';
     v.muted = true;
     v.playsInline = true;
+    const done = (res: { width: number; height: number; durationMs: number } | null) => {
+      URL.revokeObjectURL(v.src);
+      resolve(res);
+    };
     v.onloadedmetadata = () => {
-      resolve({ width: v.videoWidth, height: v.videoHeight, durationMs: Math.round(v.duration * 1000) });
-      URL.revokeObjectURL(v.src);
+      const width = v.videoWidth;
+      const height = v.videoHeight;
+      const durationMs = Math.round(v.duration * 1000);
+      if (width >= 16 && height >= 16 && Number.isFinite(durationMs) && durationMs > 0) {
+        done({ width, height, durationMs });
+      } else {
+        done(null);
+      }
     };
-    v.onerror = () => {
-      URL.revokeObjectURL(v.src);
-      reject(new Error('Não consegui ler o vídeo'));
-    };
+    v.onerror = () => done(null);
     v.src = URL.createObjectURL(file);
   });
+  if (native) return native;
+  return readMetaByMediabunny(file);
 }
 
 /** Chave da OpenAI do próprio usuário, guardada só neste aparelho (versão iPhone). */
@@ -241,7 +265,23 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
         </button>
       </div>
 
-      <label className={`drop ${file ? 'has-file' : ''}`}>
+      <label
+        className={`drop ${file ? 'has-file' : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (busy) return;
+          const f = e.dataTransfer?.files?.[0] ?? null;
+          if (f) {
+            setFile(f);
+            setSheetOpen(true);
+          }
+        }}
+      >
         <input
           type="file"
           accept="video/mp4,video/quicktime,video/webm,.m4v,.mov"
@@ -393,7 +433,7 @@ export const UploadScreen: React.FC<{ onReady: (p: Project) => void }> = ({ onRe
 
           {busy && (
             <div className="status">
-              {msg}
+              <span>{msg}</span>
               {progress !== undefined ? <progress value={progress} max={1} /> : <progress />}
             </div>
           )}

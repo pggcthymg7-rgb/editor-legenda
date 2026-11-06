@@ -7,8 +7,8 @@ const inputOf = (src: Src) => new Input({ source: typeof src === 'string' ? new 
 
 /** Áudio compacto (AAC mono 16 kHz 32 kbps, ~0,25 MB/min) para enviar à nuvem. */
 export async function extractAudio(src: Src, onProgress?: (p: number) => void): Promise<Blob> {
-  if (!(await canEncodeAudio('aac'))) {
-    // Safari sem encoder AAC nativo: usa o encoder em WebAssembly
+  if (!(await canEncodeAudio('aac', { numberOfChannels: 1, sampleRate: 16000, bitrate: 32000 }))) {
+    // Safari ou WebCodecs do Mac sem suporte a AAC 16 kHz: usa o encoder em WebAssembly
     const { registerAacEncoder } = await import('@mediabunny/aac-encoder');
     registerAacEncoder();
   }

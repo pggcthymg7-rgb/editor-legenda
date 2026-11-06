@@ -564,6 +564,22 @@
         files: 'src/app/components/Timeline.tsx, src/app/styles.css'
       },
       {
+        id: 'FIX-MAC-MOV',
+        status: 'finalizado',
+        title: 'Leitura de Vídeos .mov HEVC 10-bit do iPhone no MacBook (readMeta + AAC 16kHz + H.264)',
+        severity: 'Crítico',
+        sevClass: 'badge-crit',
+        agent: 'Antigravity',
+        category: 'Motor Remotion',
+        commit: 'feat/ui-capcut-mobile',
+        popular: 'Corrigimos os 3 bloqueios que impediam abrir vídeos .mov 4K do iPhone no navegador do MacBook: leitura de dimensões via mediabunny (evitando 0x0), ativação do codificador de som WASM em 16 kHz para a nuvem Groq e conversão acelerada por hardware (h264_videotoolbox) no servidor Mac, além de suporte a arrastar e soltar (Drag & Drop).',
+        engineering: 'Em UploadScreen.tsx: fallback readMetaByMediabunny quando <video> retorna videoWidth=0 + onDragOver/onDrop. Em audio.ts: canEncodeAudio("aac", { numberOfChannels: 1, sampleRate: 16000, bitrate: 32000 }). Em server/index.ts: normalizeVideoIfNeeded com ffprobe + ffmpeg (h264_videotoolbox -pix_fmt yuv420p).',
+        changes: 'Qualquer vídeo .mov do iPhone abre, transcreve na nuvem em segundos e reproduz com imagem e som em qualquer navegador do MacBook.',
+        errorBefore: 'TypeError: compositionHeight must be positive, but got 0; Error: Encoding error em 16 kHz; Cannot decode /media/m_videoteste.mov (HEVC Main 10).',
+        resultAfter: 'Teste E2E real no Chrome passou 100%: vídeo de 84,8 MB lido, transcrito na nuvem (9 frases) e renderizado em 2160x3840.',
+        files: 'src/app/components/UploadScreen.tsx, src/app/platform/audio.ts, server/index.ts'
+      },
+      {
         id: 'UI-L5',
         status: 'finalizado',
         title: 'Lote 5: Barra Contextual Inferior (Dock 64px ↔ Slide-up) + Bottom Sheets (45dvh)',
