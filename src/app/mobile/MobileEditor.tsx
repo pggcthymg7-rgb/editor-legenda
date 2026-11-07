@@ -1,5 +1,6 @@
 import {
   CaseSensitive,
+  ChevronDown,
   ChevronLeft,
   Download,
   WholeWord,
@@ -9,12 +10,12 @@ import { countMatches, replaceAll } from '../../core/edit';
 import { shiftPhrase, splitPhrase } from '../../core/grouping';
 import type { Role } from '../../core/types';
 import { Camera3DPanel } from '../components/Camera3DPanel';
-import { ExportPanel } from '../components/ExportPanel';
 import { PersonPanel } from '../components/PersonPanel';
 import { PhraseList } from '../components/PhraseList';
 import { Preview } from '../components/Preview';
 import { MobileAutoCaptionsSheet } from './MobileAutoCaptionsSheet';
 import { MobileBottomSheet } from './MobileBottomSheet';
+import { MobileExportSheet } from './MobileExportSheet';
 import { MobileInspectorSheet, type InspectorTab } from './MobileInspectorSheet';
 import { MobileTimeline } from './MobileTimeline';
 import { MobileToolbar, type MobileActiveSheet } from './MobileToolbar';
@@ -60,6 +61,8 @@ export const MobileEditor: React.FC<{ ed: EditorState }> = ({ ed }) => {
 
   const [activeSheet, setActiveSheet] = useState<MobileActiveSheet>(null);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('modelos');
+  const [exportRendering, setExportRendering] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
 
   // Estado do sheet "Buscar e Substituir"
   const [find, setFind] = useState('');
@@ -189,9 +192,9 @@ export const MobileEditor: React.FC<{ ed: EditorState }> = ({ ed }) => {
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span
-            className="text-[11px] px-2 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[#9CA3AF]"
+            className="text-[10px] px-2 py-1 rounded-full bg-white/[0.05] text-[#9CA3AF]"
             role="status"
           >
             {saveState === 'ok' ? 'Salvo' : saveState === 'saving' ? 'Salvando…' : 'Erro'}
@@ -199,11 +202,22 @@ export const MobileEditor: React.FC<{ ed: EditorState }> = ({ ed }) => {
           <button
             type="button"
             onClick={() => openSheet('export')}
-            className="mob-btn-cyan flex items-center gap-1.5 h-9 min-h-[36px] px-3.5 rounded-full text-[13px] font-bold shadow-sm"
+            className="flex items-center gap-1 h-9 min-h-[36px] min-w-0 px-2.5 rounded-full bg-white/[0.06] border border-white/10 text-[12px] font-semibold text-white/90"
+            aria-label="Qualidade da exportação"
+          >
+            <span>Qualidade</span>
+            <ChevronDown size={13} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => openSheet('export')}
+            className="mob-btn-cyan flex items-center gap-1.5 h-9 min-h-[36px] min-w-0 px-3.5 rounded-full text-[13px] font-bold shadow-sm"
             aria-label="Exportar vídeo"
           >
             <Download size={14} aria-hidden="true" />
-            <span>Exportar</span>
+            <span>
+              {exportRendering ? `${Math.round(exportProgress * 100)}%` : 'Exportar'}
+            </span>
           </button>
         </div>
       </header>
@@ -469,17 +483,14 @@ export const MobileEditor: React.FC<{ ed: EditorState }> = ({ ed }) => {
         </div>
       </MobileBottomSheet>
 
-      {/* Painéis com progresso longo (Pessoa, Câmera 3D e Exportar) mantidos montados para nunca perder estado ao fechar a gaveta */}
-      <div style={{ display: 'none' }} aria-hidden="true" />
+      {/* Painéis com progresso longo (Pessoa e Câmera 3D) mantidos montados para nunca perder estado ao fechar a gaveta */}
       <MobileBottomSheet
-        open={activeSheet === 'pessoa' || activeSheet === 'camera3d' || activeSheet === 'export'}
+        open={activeSheet === 'pessoa' || activeSheet === 'camera3d'}
         onOpenChange={(o) => !o && setActiveSheet(null)}
         title={
           activeSheet === 'pessoa'
             ? 'Legenda atrás da pessoa'
-            : activeSheet === 'camera3d'
-              ? 'Câmera 3D (Rastrear cena)'
-              : 'Exportar Vídeo / Legendas'
+            : 'Câmera 3D (Rastrear cena)'
         }
         maxHeight="72dvh"
       >
@@ -500,16 +511,22 @@ export const MobileEditor: React.FC<{ ed: EditorState }> = ({ ed }) => {
             currentMs={currentMs}
           />
         </div>
-        <div style={{ display: activeSheet === 'export' ? 'block' : 'none' }}>
-          {playable && (
-            <ExportPanel
-              project={playable}
-              maskUrls={activeMasks}
-              personMasks={maskUrls}
-            />
-          )}
-        </div>
       </MobileBottomSheet>
+
+      {/* Sheet 5: Exportação e Qualidade CapCut Mobile (mantido montado para preservar render em andamento) */}
+      {playable && (
+        <MobileExportSheet
+          open={activeSheet === 'export'}
+          onOpenChange={(o) => !o && setActiveSheet(null)}
+          project={playable}
+          maskUrls={activeMasks}
+          personMasks={maskUrls}
+          onRenderingStateChange={(busy, p) => {
+            setExportRendering(busy);
+            setExportProgress(p);
+          }}
+        />
+      )}
     </div>
   );
 };
