@@ -1,4 +1,8 @@
 /* Editor de Legendas: layout de NLE (biblioteca | monitor | inspetor / timeline) + ergonomia CapCut Mobile. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source("./mobile");
+
 :root {
   /* Tokens Globais Principais (Design System CapCut Mobile & Desktop NLE) */
   --bg-app: #0F172A;

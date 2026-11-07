@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { createReadStream, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -60,7 +61,13 @@ export default defineConfig(({ mode }) => {
   const device = mode === 'pwa';
   return {
     base: process.env.BASE_PATH ?? '/',
+    resolve: {
+      alias: {
+        '@': path.resolve('src'),
+      },
+    },
     plugins: [
+      tailwindcss(),
       react(),
       mediapipe(),
       ...(device
