@@ -2,8 +2,12 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cloudHealth } from '../src/app/cloud';
-import { timecode } from '../src/app/components/Preview';
+import { timecode, timecodeShort } from '../src/app/components/Preview';
+import { applyGeneratedPhrases } from '../src/app/mobile/MobileAutoCaptionsSheet';
+import { msToTimelineX, timelineXToMs } from '../src/app/mobile/MobileTimeline';
+import { cn } from '../src/app/mobile/utils';
 import { devicePlatform } from '../src/app/platform/device';
+import { buildPhrase, createProject } from '../src/core/grouping';
 
 describe('timecode do monitor', () => {
   it('formata mm:ss:quadros e não fica negativo', () => {
@@ -71,3 +75,43 @@ describe('aparelho: Blob URLs ao trocar de projeto', () => {
     expect(await devicePlatform.videoUrl('https://x.test/v.mp4')).toBe('https://x.test/v.mp4');
   });
 });
+
+describe('CapCut Mobile: timecode curto, matemática da agulha central e substituição de legendas', () => {
+  it('formata timecodeShort mm:ss para a barra de transporte mobile', () => {
+    expect(timecodeShort(0)).toBe('00:00');
+    expect(timecodeShort(-200)).toBe('00:00');
+    expect(timecodeShort(65_400)).toBe('01:05');
+  });
+
+  it('converte tempo (ms) <-> scrollLeft (px) sob a agulha central fixa', () => {
+    const scale = 100; // 100 px/s
+    expect(msToTimelineX(0, scale)).toBe(0);
+    expect(msToTimelineX(2500, scale)).toBe(250);
+    expect(timelineXToMs(250, scale, 10_000)).toBe(2500);
+    expect(timelineXToMs(-50, scale, 10_000)).toBe(0);
+    expect(timelineXToMs(9999, scale, 10_000)).toBe(10_000);
+  });
+
+  it('applyGeneratedPhrases substitui quando clearExisting=true e mescla ordenado quando false', () => {
+    const baseProj = createProject(
+      { src: 'idb://v1', width: 1080, height: 1920, durationMs: 10_000, fps: 30 },
+      [{ text: 'Antiga', startMs: 1000, endMs: 1800 }],
+      'Teste',
+    );
+    const newPhrase = buildPhrase([{ text: 'Nova', startMs: 500, endMs: 900 }], 'p1-editorial');
+
+    const replaced = applyGeneratedPhrases(baseProj, [newPhrase], true);
+    expect(replaced.phrases).toHaveLength(1);
+    expect(replaced.phrases[0].words[0].text).toBe('Nova');
+
+    const merged = applyGeneratedPhrases(baseProj, [newPhrase], false);
+    expect(merged.phrases).toHaveLength(2);
+    expect(merged.phrases[0].words[0].text).toBe('Nova');
+    expect(merged.phrases[1].words[0].text).toBe('Antiga');
+  });
+
+  it('cn combina classes Tailwind do escopo mobile', () => {
+    expect(cn('px-2', undefined, null, false, 'py-1')).toBe('px-2 py-1');
+  });
+});
+

@@ -1,7 +1,7 @@
 // IndexedDB mínimo, sem dependência. Guarda projetos e vídeos no aparelho.
 const DB_NAME = 'editor-legenda';
-const DB_VERSION = 2;
-export type StoreName = 'projects' | 'videos' | 'masks';
+const DB_VERSION = 3;
+export type StoreName = 'projects' | 'videos' | 'masks' | 'thumbs';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -10,7 +10,7 @@ function openDb(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      for (const s of ['projects', 'videos', 'masks'] as const) if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+      for (const s of ['projects', 'videos', 'masks', 'thumbs'] as const) if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => {

@@ -1,27 +1,17 @@
-import type { PlayerRef } from '@remotion/player';
 import {
-  ChevronLeft,
   Clapperboard,
-  Copy,
   Download,
   FilePlus2,
   Keyboard,
-  Layers,
-  ListOrdered,
   Redo2,
-  Replace,
-  Scissors,
   SlidersHorizontal,
-  Trash2,
-  Type,
   Undo2,
-  UserRound,
   X,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { duplicatePhrase, setWordTime, sortPhrases, splitPhraseAt } from '../core/edit';
-import { buildPhrase, phraseEnd, phraseStart, shiftPhrase } from '../core/grouping';
-import type { Project, Word } from '../core/types';
+import React, { useEffect, useState } from 'react';
+import { setWordTime } from '../core/edit';
+import { shiftPhrase } from '../core/grouping';
+import type { Project } from '../core/types';
 import { FPS } from '../remotion/Root';
 import { ExportPanel } from './components/ExportPanel';
 import { Library, type LibTab } from './components/Library';
@@ -29,12 +19,12 @@ import { PersonPanel } from './components/PersonPanel';
 import { Camera3DPanel } from './components/Camera3DPanel';
 import { PhrasePanel } from './components/PhrasePanel';
 import { Preview } from './components/Preview';
-import { Timeline, type Selection } from './components/Timeline';
+import { Timeline } from './components/Timeline';
 import { UploadScreen } from './components/UploadScreen';
-import { platform } from './platform';
-import { useProjectStore } from './store';
-
-type MobileTab = 'biblioteca' | 'inspetor';
+import { MobileEditor } from './mobile/MobileEditor';
+import { MobileHome } from './mobile/MobileHome';
+import { useEditor } from './mobile/useEditor';
+import { useIsMobile } from './mobile/useIsMobile';
 
 const SHORTCUTS: [string, string][] = [
   ['Espaço', 'Play / pause'],
@@ -51,135 +41,49 @@ const SHORTCUTS: [string, string][] = [
 ];
 
 export const App: React.FC = () => {
-  const { project, apply, load, undo, redo, canUndo, canRedo } = useProjectStore();
-  const [selection, setSelection] = useState<Selection>({ phraseId: null, wordId: null });
-  const [currentMs, setCurrentMs] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [saveState, setSaveState] = useState<'ok' | 'saving' | 'error'>('ok');
+  const ed = useEditor();
+  const isMobile = useIsMobile();
+  const {
+    project,
+    apply,
+    load,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    selection,
+    setSelection,
+    currentMs,
+    setCurrentMs,
+    playing,
+    setPlaying,
+    saveState,
+    playerRef,
+    playable,
+    videoError,
+    maskUrls,
+    activeMasks,
+    selected,
+    active,
+    seekMs,
+    onMovePhrase,
+    onTransformPhrase,
+    onMoveWord,
+    addAtPlayhead,
+    splitAtPlayhead,
+    duplicate,
+    remove,
+    closeProject,
+  } = ed;
+
   const [exportOpen, setExportOpen] = useState(false);
   const [exportMounted, setExportMounted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<MobileTab>('inspetor');
-  const [mobileSheet, setMobileSheet] = useState<MobileTab | null>(null);
   const [libTab, setLibTab] = useState<LibTab>('frases');
-  const playerRef = useRef<PlayerRef | null>(null);
-  const [playableSrc, setPlayableSrc] = useState<{ src: string; url: string } | null>(null);
-  const [videoError, setVideoError] = useState('');
-  const [maskUrls, setMaskUrls] = useState<string[] | undefined>();
 
-  // iPhone: vídeo fica no aparelho como local:<id> → vira blob URL para tocar/renderizar
-  const src = project?.video.src ?? '';
+  // atalhos de teclado estilo NLE (apenas desktop)
   useEffect(() => {
-    let alive = true;
-    setVideoError('');
-    platform
-      .videoUrl(src)
-      .then((url) => alive && setPlayableSrc({ src, url }))
-      .catch((e) => alive && setVideoError((e as Error).message));
-    return () => {
-      alive = false;
-    };
-  }, [src]);
-
-  // máscaras da pessoa (se a análise já foi feita)
-  const maskCount = project?.video.mask?.count ?? 0;
-  useEffect(() => {
-    let alive = true;
-    if (!maskCount || !src) return setMaskUrls(undefined);
-    platform
-      .maskUrls(src, maskCount)
-      .then((u) => alive && setMaskUrls(u))
-      .catch(() => alive && setMaskUrls(undefined));
-    return () => {
-      alive = false;
-    };
-  }, [src, maskCount]);
-
-  const playable = useMemo(
-    () =>
-      project && playableSrc?.src === project.video.src ? { ...project, video: { ...project.video, src: playableSrc.url } } : null,
-    [project, playableSrc],
-  );
-  const occlusionOn = project?.occlusion !== false;
-  const activeMasks = occlusionOn ? maskUrls : undefined;
-
-  // salva sozinho 1,5 s depois da última mudança
-  useEffect(() => {
-    if (!project) return;
-    setSaveState('saving');
-    const t = setTimeout(() => {
-      platform
-        .saveProject(project)
-        .then(() => setSaveState('ok'))
-        .catch(() => setSaveState('error'));
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [project]);
-
-  const seekMs = useCallback((ms: number) => playerRef.current?.seekTo(Math.round((ms / 1000) * FPS)), []);
-
-  const onMovePhrase = useCallback(
-    (id: string, x: number, y: number) =>
-      apply((p) => ({ ...p, phrases: p.phrases.map((ph) => (ph.id === id ? { ...ph, x, y } : ph)) }), true),
-    [apply],
-  );
-  const onTransformPhrase = useCallback(
-    (id: string, patch: { scale?: number; rotation?: number }) =>
-      apply((p) => ({ ...p, phrases: p.phrases.map((ph) => (ph.id === id ? { ...ph, ...patch } : ph)) }), true),
-    [apply],
-  );
-  const onMoveWord = useCallback(
-    (phraseId: string, wordId: string, patch: Partial<Word>) =>
-      apply(
-        (p) => ({
-          ...p,
-          phrases: p.phrases.map((ph) =>
-            ph.id === phraseId ? { ...ph, words: ph.words.map((w) => (w.id === wordId ? { ...w, ...patch } : w)) } : ph,
-          ),
-        }),
-        true,
-      ),
-    [apply],
-  );
-
-  const addAtPlayhead = useCallback(() => {
-    if (!project) return;
-    const ph = buildPhrase([{ text: 'Texto', startMs: currentMs, endMs: Math.min(project.video.durationMs, currentMs + 1000) }], 'p1-editorial', project.customPresets);
-    apply((proj) => ({ ...proj, phrases: sortPhrases([...proj.phrases, ph]) }));
-    setSelection({ phraseId: ph.id, wordId: null });
-  }, [apply, currentMs, project]);
-
-  const splitAtPlayhead = useCallback(() => {
-    if (!project) return;
-    const targetId =
-      selection.phraseId ?? project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p))?.id;
-    if (!targetId) return;
-    apply((proj) => ({ ...proj, phrases: splitPhraseAt(proj.phrases, targetId, currentMs) }));
-  }, [apply, project, selection.phraseId, currentMs]);
-
-  const duplicate = useCallback(() => {
-    if (!project || !selection.phraseId) return;
-    const r = duplicatePhrase(project.phrases, selection.phraseId);
-    apply((proj) => ({ ...proj, phrases: r.phrases }));
-    setSelection({ phraseId: r.id, wordId: null });
-  }, [apply, project, selection.phraseId]);
-
-  const remove = useCallback(() => {
-    if (!selection.phraseId) return;
-    apply((proj) => ({ ...proj, phrases: proj.phrases.filter((p) => p.id !== selection.phraseId) }));
-    setSelection({ phraseId: null, wordId: null });
-  }, [apply, selection.phraseId]);
-
-  // avisa antes de fechar com alteração ainda não salva
-  useEffect(() => {
-    if (saveState === 'ok') return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [saveState]);
-
-  // atalhos de teclado estilo NLE
-  useEffect(() => {
+    if (isMobile) return;
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === 'Escape' && (exportOpen || helpOpen)) {
@@ -239,30 +143,20 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, apply, selection, currentMs, project, exportOpen, helpOpen]);
+  }, [isMobile, undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, apply, selection, currentMs, project, exportOpen, helpOpen, playerRef, setSelection]);
 
-  // seleção some se a frase foi apagada (desfazer etc.)
-  useEffect(() => {
-    if (project && selection.phraseId && !project.phrases.some((p) => p.id === selection.phraseId)) setSelection({ phraseId: null, wordId: null });
-  }, [project, selection.phraseId]);
+  if (!project) {
+    return isMobile ? (
+      <MobileHome onReady={(p: Project) => load(p)} />
+    ) : (
+      <UploadScreen onReady={(p: Project) => load(p)} />
+    );
+  }
 
-  useEffect(() => {
-    if (!selection.phraseId && mobileSheet === 'inspetor') setMobileSheet(null);
-  }, [selection.phraseId, mobileSheet]);
-
-  if (!project) return <UploadScreen onReady={(p: Project) => load(p)} />;
-
-  const selected = project.phrases.find((p) => p.id === selection.phraseId) ?? null;
-  const active = project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p));
-
-  const openLibSheet = (t: LibTab) => {
-    setLibTab(t);
-    setMobileTab('biblioteca');
-    setMobileSheet((cur) => (cur === 'biblioteca' && libTab === t ? null : 'biblioteca'));
-  };
+  if (isMobile) return <MobileEditor ed={ed} />;
 
   return (
-    <div className="editor" data-mtab={mobileTab} data-msheet={mobileSheet ?? 'none'}>
+    <div className="editor">
       <header className="topbar">
         <span className="brand" aria-hidden="true">
           <Clapperboard size={18} />
@@ -270,16 +164,14 @@ export const App: React.FC = () => {
         <button
           className="back-btn"
           onClick={async () => {
-            if (project && saveState === 'saving') await platform.saveProject(project).catch(() => undefined);
             setExportOpen(false);
             setExportMounted(false);
-            load(null);
+            await closeProject();
           }}
           title="Abrir outro vídeo"
           aria-label="Abrir outro vídeo"
         >
-          <ChevronLeft size={18} className="only-sm" aria-hidden="true" />
-          <FilePlus2 size={16} className="hide-sm" aria-hidden="true" /> <span className="hide-sm">Novo</span>
+          <FilePlus2 size={16} aria-hidden="true" /> <span>Novo</span>
         </button>
         <input
           className="name"
@@ -315,15 +207,6 @@ export const App: React.FC = () => {
 
       <main className="workspace">
         <aside className="panel left" aria-label="Biblioteca">
-          <div className="sheet-bar only-sm">
-            <span className="sheet-grabber" aria-hidden="true" />
-            <div className="sheet-bar-row">
-              <strong>Biblioteca</strong>
-              <button className="icon" onClick={() => setMobileSheet(null)} aria-label="Fechar painel">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
           <Library
             project={project}
             apply={apply}
@@ -348,10 +231,7 @@ export const App: React.FC = () => {
               project={playable}
               playerRef={playerRef}
               selection={selection}
-              onSelect={(s) => {
-                setSelection(s);
-                if (s.phraseId) setMobileTab('inspetor');
-              }}
+              onSelect={setSelection}
               onMovePhrase={onMovePhrase}
               onMoveWord={onMoveWord}
               onTransformPhrase={onTransformPhrase}
@@ -369,15 +249,6 @@ export const App: React.FC = () => {
         </section>
 
         <aside className="panel right" aria-label="Inspetor">
-          <div className="sheet-bar only-sm">
-            <span className="sheet-grabber" aria-hidden="true" />
-            <div className="sheet-bar-row">
-              <strong>Inspetor de Legenda</strong>
-              <button className="icon" onClick={() => setMobileSheet(null)} aria-label="Fechar inspetor">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
           {selected ? (
             <PhrasePanel
               key={selected.id}
@@ -399,118 +270,6 @@ export const App: React.FC = () => {
           )}
         </aside>
 
-        <nav className="mobile-dock" role="toolbar" aria-label="Ferramentas do editor">
-          {selected ? (
-            <div className="dock-row contextual" key="selected-dock">
-              <button
-                className={`dock-btn ${mobileSheet === 'inspetor' ? 'on' : ''}`}
-                onClick={() => {
-                  setMobileTab('inspetor');
-                  setMobileSheet((cur) => (cur === 'inspetor' ? null : 'inspetor'));
-                }}
-              >
-                <SlidersHorizontal size={20} aria-hidden="true" />
-                <span>Editar</span>
-              </button>
-              <button
-                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'modelos' ? 'on' : ''}`}
-                onClick={() => openLibSheet('modelos')}
-              >
-                <Layers size={20} aria-hidden="true" />
-                <span>Modelos</span>
-              </button>
-              <button
-                className="dock-btn"
-                onClick={splitAtPlayhead}
-                disabled={selected.words.length < 2}
-              >
-                <Scissors size={20} aria-hidden="true" />
-                <span>Dividir</span>
-              </button>
-              <button className="dock-btn" onClick={duplicate}>
-                <Copy size={20} aria-hidden="true" />
-                <span>Duplicar</span>
-              </button>
-              <button
-                className="dock-btn danger-soft"
-                onClick={() => {
-                  remove();
-                  setMobileSheet(null);
-                }}
-              >
-                <Trash2 size={20} aria-hidden="true" />
-                <span>Excluir</span>
-              </button>
-              <button
-                className="dock-btn"
-                onClick={() => {
-                  setSelection({ phraseId: null, wordId: null });
-                  setMobileSheet(null);
-                }}
-                aria-label="Tirar seleção"
-              >
-                <X size={20} aria-hidden="true" />
-                <span>Fechar</span>
-              </button>
-            </div>
-          ) : (
-            <div className="dock-row" key="default-dock">
-              <button
-                className="dock-btn"
-                onClick={() => {
-                  addAtPlayhead();
-                  setMobileTab('inspetor');
-                  setMobileSheet('inspetor');
-                }}
-              >
-                <Type size={20} aria-hidden="true" />
-                <span>+ Texto</span>
-              </button>
-              <button
-                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'modelos' ? 'on' : ''}`}
-                onClick={() => openLibSheet('modelos')}
-              >
-                <Layers size={20} aria-hidden="true" />
-                <span>Modelos</span>
-              </button>
-              <button
-                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'frases' ? 'on' : ''}`}
-                onClick={() => openLibSheet('frases')}
-              >
-                <ListOrdered size={20} aria-hidden="true" />
-                <span>Frases</span>
-              </button>
-              <button
-                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'texto' ? 'on' : ''}`}
-                onClick={() => openLibSheet('texto')}
-              >
-                <Replace size={20} aria-hidden="true" />
-                <span>Buscar</span>
-              </button>
-              <button
-                className={`dock-btn ${mobileSheet === 'biblioteca' && libTab === 'pessoa' ? 'on' : ''}`}
-                onClick={() => openLibSheet('pessoa')}
-              >
-                <UserRound size={20} aria-hidden="true" />
-                <span>Pessoa</span>
-              </button>
-              {active && (
-                <button
-                  className="dock-btn"
-                  onClick={() => {
-                    setSelection({ phraseId: active.id, wordId: null });
-                    setMobileTab('inspetor');
-                    setMobileSheet('inspetor');
-                  }}
-                >
-                  <SlidersHorizontal size={20} aria-hidden="true" />
-                  <span>Na agulha</span>
-                </button>
-              )}
-            </div>
-          )}
-        </nav>
-
         <Timeline
           project={project}
           apply={apply}
@@ -518,10 +277,7 @@ export const App: React.FC = () => {
           playing={playing}
           seekMs={seekMs}
           selection={selection}
-          onSelect={(s) => {
-            setSelection(s);
-            if (s.phraseId) setMobileTab('inspetor');
-          }}
+          onSelect={setSelection}
           onSplit={splitAtPlayhead}
           onDuplicate={duplicate}
           onDelete={remove}

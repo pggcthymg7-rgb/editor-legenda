@@ -22,7 +22,21 @@ describe('aparelho: vídeo e projetos no IndexedDB', () => {
 
     const p = createProject({ src: saved.src, ...meta }, words, 'Meu reel');
     await devicePlatform.saveProject(p);
-    expect(await devicePlatform.listProjects()).toEqual([{ id: p.id, name: 'Meu reel' }]);
+    await devicePlatform.saveThumb!(saved.src, 'data:image/jpeg;base64,/9j/4AAQ');
+    const listed = await devicePlatform.listProjects();
+    expect(listed).toHaveLength(1);
+    expect(listed[0]).toMatchObject({
+      id: p.id,
+      name: 'Meu reel',
+      durationMs: 4000,
+      width: 1080,
+      height: 1920,
+      videoSrc: saved.src,
+      thumb: 'data:image/jpeg;base64,/9j/4AAQ',
+    });
+    const vf = await devicePlatform.videoFile!(saved.src);
+    expect(vf).toBeInstanceOf(File);
+    expect(vf?.name).toBe('reel.mp4');
     const loaded = await devicePlatform.loadProject(p.id);
     expect(loaded.phrases.length).toBe(p.phrases.length);
 

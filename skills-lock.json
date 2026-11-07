@@ -25,6 +25,12 @@
       "skillPath": "skills/remotion-render/SKILL.md",
       "computedHash": "f672299df7dacbc1c32904e52d5577d6fafd1aa9e74d12a8eb9caac0810ed814"
     },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
+    },
     "transformers-js": {
       "source": "huggingface/skills",
       "sourceType": "github",

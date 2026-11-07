@@ -28,7 +28,16 @@ export type RenderResult = {
   file?: File;
 };
 
-export type ProjectSummary = { id: string; name: string };
+export type ProjectSummary = {
+  id: string;
+  name: string;
+  updatedAt?: number;
+  durationMs?: number;
+  width?: number;
+  height?: number;
+  videoSrc?: string;
+  thumb?: string;
+};
 
 export interface Platform {
   kind: 'mac' | 'device';
@@ -37,6 +46,10 @@ export interface Platform {
   saveVideo(file: File, onProgress: (p: number) => void): Promise<SavedVideo>;
   /** Converte project.video.src em URL tocável (device: blob URL). */
   videoUrl(src: string): Promise<string>;
+  /** Reconstrói o File do vídeo salvo no aparelho para transcrição local dentro do editor. */
+  videoFile?(src: string): Promise<File | null>;
+  /** Guarda miniatura do vídeo em store próprio do IndexedDB (fora de Project). */
+  saveThumb?(src: string, dataUrl: string): Promise<void>;
   transcribeOpenAi(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string): Promise<TranscribedWord[]>;
   /** Nuvem grátis (proxy → Groq): extrai o áudio aqui e manda só o áudio. */
   transcribeCloud(ref: string, onStatus: (msg: string, p?: number) => void, lang?: string, durationMs?: number): Promise<TranscribedWord[]>;
