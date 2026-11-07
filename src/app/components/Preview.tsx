@@ -1,4 +1,5 @@
 import { Player, type PlayerRef } from '@remotion/player';
+import { usePinch } from '@use-gesture/react';
 import {
   ChevronFirst,
   ChevronLast,
@@ -159,12 +160,66 @@ export const Preview: React.FC<Props> = ({
     return () => cancelAnimationFrame(id);
   }, [measure, currentMs, project, stageSize]);
 
+  // Gestos de 2 dedos (pinça e giro) no monitor mobile para palavra ou frase selecionada (MOB-L7)
+  usePinch(
+    ({ offset: [dScale, dAngle], event }) => {
+      if (!mobileMode || !selection.phraseId) return;
+      event?.preventDefault();
+      const phrase = project.phrases.find((p) => p.id === selection.phraseId);
+      if (!phrase) return;
+      if (selection.wordId) {
+        const w = phrase.words.find((x) => x.id === selection.wordId);
+        if (!w) return;
+        const nextScale = Math.round(Math.min(5, Math.max(0.2, dScale)) * 100) / 100;
+        let r = ((((dAngle + 180) % 360) + 360) % 360) - 180;
+        const near = Math.round(r / 15) * 15;
+        if (Math.abs(r - near) < 3) r = near;
+        onMoveWord(phrase.id, w.id, {
+          scaleX: nextScale,
+          scaleY: nextScale,
+          rotation: Math.round(r),
+        });
+      } else if (onTransformPhrase) {
+        const nextScale = Math.round(Math.min(5, Math.max(0.2, dScale)) * 100) / 100;
+        let r = ((((dAngle + 180) % 360) + 360) % 360) - 180;
+        const near = Math.round(r / 15) * 15;
+        if (Math.abs(r - near) < 3) r = near;
+        onTransformPhrase(phrase.id, {
+          scale: nextScale,
+          rotation: Math.round(r),
+        });
+      }
+    },
+    {
+      target: stageRef,
+      enabled: mobileMode && Boolean(selection.phraseId),
+      from: () => {
+        const phrase = project.phrases.find((p) => p.id === selection.phraseId);
+        if (!phrase) return [1, 0];
+        if (selection.wordId) {
+          const w = phrase.words.find((x) => x.id === selection.wordId);
+          return [w?.scaleX ?? 1, w?.rotation ?? 0];
+        }
+        return [phrase.scale || 1, phrase.rotation || 0];
+      },
+      scaleBounds: { min: 0.2, max: 5 },
+      eventOptions: { passive: false },
+    },
+  );
+
   const onPointerDown = (e: React.PointerEvent) => {
     const stage = stageRef.current;
     if (!stage || (e.target as HTMLElement).closest('.transport')) return;
     const handle = (e.target as HTMLElement).closest<HTMLElement>('[data-handle]');
     if (handle && box && selection.phraseId) {
-      const kind = handle.dataset.handle as 'scale' | 'rotate' | 'transform' | 'delete' | 'edit' | 'duplicate';
+      const kind = handle.dataset.handle as
+        | 'scale'
+        | 'rotate'
+        | 'transform'
+        | 'word-transform'
+        | 'delete'
+        | 'edit'
+        | 'duplicate';
       if (kind === 'delete') {
         e.preventDefault();
         e.stopPropagation();
@@ -181,6 +236,45 @@ export const Preview: React.FC<Props> = ({
         e.preventDefault();
         e.stopPropagation();
         onDuplicatePhrase?.();
+        return;
+      }
+      if (kind === 'word-transform' && selection.wordId) {
+        const phrase = project.phrases.find((p) => p.id === selection.phraseId);
+        const word = phrase?.words.find((w) => w.id === selection.wordId);
+        if (!phrase || !word) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const s = stage.getBoundingClientRect();
+        const cx = s.left + box.left + box.width / 2;
+        const cy = s.top + box.top + box.height / 2;
+        const d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy));
+        const a0 = Math.atan2(e.clientY - cy, e.clientX - cx);
+        const sx0 = word.scaleX ?? 1;
+        const sy0 = word.scaleY ?? 1;
+        const rot0 = word.rotation ?? 0;
+        const move = (ev: PointerEvent) => {
+          const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+          const ratio = d / d0;
+          const nextSx = Math.round(Math.min(5, Math.max(0.2, sx0 * ratio)) * 100) / 100;
+          const nextSy = Math.round(Math.min(5, Math.max(0.2, sy0 * ratio)) * 100) / 100;
+          let r = rot0 + ((Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180) / Math.PI;
+          r = ((((r + 180) % 360) + 360) % 360) - 180;
+          const near = Math.round(r / 15) * 15;
+          if (!ev.altKey && Math.abs(r - near) < 3) r = near;
+          onMoveWord(phrase.id, word.id, {
+            scaleX: nextSx,
+            scaleY: nextSy,
+            rotation: Math.round(r),
+          });
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', up);
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
         return;
       }
       if (onTransformPhrase) {
@@ -395,6 +489,19 @@ export const Preview: React.FC<Props> = ({
                 </div>
               )}
             </>
+          )}
+          {box && selection.wordId && !playing && mobileMode && (
+            <div
+              className="mob-corner-handle"
+              data-handle="word-transform"
+              style={{ left: box.left + box.width, top: box.top + box.height }}
+              title="Arraste para redimensionar e girar esta palavra"
+              aria-hidden="true"
+            >
+              <span className="mob-corner-dot">
+                <Maximize2 size={12} strokeWidth={2.5} aria-hidden="true" />
+              </span>
+            </div>
           )}
           {box && !selection.wordId && onTransformPhrase && !playing && !mobileMode && (
             <>
