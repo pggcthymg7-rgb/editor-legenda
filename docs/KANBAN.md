@@ -61,7 +61,7 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 |---|:---:|---|
 | 🧠 **1. Em Planejamento** | `0` | Todos os lotes do plano Strix foram executados. |
 | ⏳ **2. Na Fila** | `0` | Nenhum lote na fila. |
-| ⚡ **3. Em Execução** | `0` | Nenhum lote em execução. |
+| ⚡ **3. Em Execução** | `1` | `CHORE-01` (aguardando APROVADO). |
 | 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
 | ✅ **5. Finalizado** | `33` | Lotes de segurança Strix (L1, L2, L3) e Motor 3D concluídos e em produção no Render (`128/128 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens descartadas. |
@@ -79,7 +79,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ⚡ 3. Em Execução
-*(Nenhum lote em execução no momento)*
+
+### 🧰 Card `CHORE-01`: Registro de `PRODUCT.md` e Skill `shadcn` Instalada (aguardando APROVADO)
+- **Status**: ⚡ Em Execução (aguardando APROVADO)
+- **🗣️ Linguagem Popular**: Registra no projeto a ficha oficial do produto (o que o app é, para quem serve e suas regras) e a ferramenta de componentes visuais (`shadcn`) que foi instalada para a reforma da tela do celular.
+- **🔧 Engenharia de Software**: Adiciona `PRODUCT.md` (schema Impeccable v1), `.claude/skills/shadcn/` (20 arquivos de documentação e regras da skill) e a entrada `shadcn` em `skills-lock.json`.
+- **🔄 O que altera no App**: Nenhuma mudança no código ou no visual do app; apenas organiza os arquivos de referência e skills no controle de versão.
+- **🐛 Qual era o Erro (Antes)**: Os arquivos criados pela preparação das skills estavam soltos como não rastreados no Git (`git status`).
+- **✅ Resultado Final (Depois)**: Árvore Git limpa para iniciar os lotes `MOB-L1` a `MOB-L9`.
+- **Commit**: `chore: registrar PRODUCT.md e skill shadcn instalada` | **Dono**: Claude Code & Antigravity
 
 ---
 

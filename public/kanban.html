@@ -560,6 +560,21 @@
         after: 'Ambos os serviços live no Render, 100% alinhados com a branch local e validados com 0 erros.'
       },
       {
+        id: 'CHORE-01',
+        status: 'execucao',
+        title: 'Registro de PRODUCT.md e Skill shadcn Instalada (aguardando APROVADO)',
+        severity: 'Chore · aguardando APROVADO',
+        sevClass: 'badge-low',
+        agent: 'Claude Code & Antigravity',
+        category: 'Configuração & Skills',
+        commit: 'chore: registrar PRODUCT.md e skill shadcn instalada',
+        popular: 'Registra no projeto a ficha oficial do produto (o que o app é, para quem serve e suas regras) e a ferramenta de componentes visuais (shadcn) que foi instalada para a reforma da tela do celular.',
+        engineering: 'Adiciona PRODUCT.md (schema Impeccable v1), .claude/skills/shadcn/ (20 arquivos de documentação e regras da skill) e a entrada shadcn em skills-lock.json.',
+        changes: 'PRODUCT.md, skills-lock.json, .claude/skills/shadcn/**',
+        before: 'Os arquivos criados pela preparação das skills estavam soltos como não rastreados no Git.',
+        after: 'Árvore Git organizada para iniciar os lotes MOB-L1 a MOB-L9.'
+      },
+      {
         id: 'UI-L1',
         status: 'finalizado',
         title: 'Lote 1: Tokens de Tema Slate/Indigo/Emerald e Tipografia (styles.css)',
