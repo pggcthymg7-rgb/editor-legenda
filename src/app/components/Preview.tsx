@@ -1,5 +1,22 @@
 import { Player, type PlayerRef } from '@remotion/player';
-import { ChevronFirst, ChevronLast, Grid3x3, Pause, Play, ScanLine, StepBack, StepForward, Volume2, VolumeX } from 'lucide-react';
+import {
+  ChevronFirst,
+  ChevronLast,
+  Copy,
+  Grid3x3,
+  Maximize2,
+  Pause,
+  Pencil,
+  Play,
+  Redo2,
+  ScanLine,
+  StepBack,
+  StepForward,
+  Undo2,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CompositionProps, Project, Word } from '../../core/types';
 import { CaptionComposition } from '../../remotion/CaptionComposition';
@@ -20,6 +37,15 @@ type Props = {
   currentMs: number;
   playing: boolean;
   maskUrls?: string[];
+  /** Modo CapCut Mobile: 4 alças de canto no texto + barra de transporte compacta com Undo/Redo */
+  mobileMode?: boolean;
+  onDeletePhrase?: () => void;
+  onEditPhraseText?: () => void;
+  onDuplicatePhrase?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 };
 
 export const timecode = (ms: number) => {
@@ -28,6 +54,13 @@ export const timecode = (ms: number) => {
   const s = Math.floor(t % 60);
   const f = Math.floor((t * FPS) % FPS);
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(f).padStart(2, '0')}`;
+};
+
+export const timecodeShort = (ms: number) => {
+  const t = Math.max(0, ms) / 1000;
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
 type Box = { left: number; top: number; width: number; height: number } | null;
@@ -46,6 +79,14 @@ export const Preview: React.FC<Props> = ({
   currentMs,
   playing,
   maskUrls,
+  mobileMode = false,
+  onDeletePhrase,
+  onEditPhraseText,
+  onDuplicatePhrase,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const holderRef = useRef<HTMLDivElement>(null);
@@ -122,42 +163,70 @@ export const Preview: React.FC<Props> = ({
     const stage = stageRef.current;
     if (!stage || (e.target as HTMLElement).closest('.transport')) return;
     const handle = (e.target as HTMLElement).closest<HTMLElement>('[data-handle]');
-    if (handle && box && selection.phraseId && onTransformPhrase) {
-      const phrase = project.phrases.find((p) => p.id === selection.phraseId);
-      if (!phrase) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const s = stage.getBoundingClientRect();
-      const cx = s.left + box.left + box.width / 2;
-      const cy = s.top + box.top + box.height / 2;
-      const kind = handle.dataset.handle as 'scale' | 'rotate';
-      const d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy));
-      const a0 = Math.atan2(e.clientY - cy, e.clientX - cx);
-      const scale0 = phrase.scale || 1;
-      const rot0 = phrase.rotation || 0;
-      const id = phrase.id;
-      const move = (ev: PointerEvent) => {
-        if (kind === 'scale') {
-          const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
-          onTransformPhrase(id, { scale: Math.round(Math.min(5, Math.max(0.2, (scale0 * d) / d0)) * 100) / 100 });
-        } else {
-          let r = rot0 + ((Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180) / Math.PI;
-          r = ((((r + 180) % 360) + 360) % 360) - 180;
-          // ímã a cada 15° (ou livre com Alt)
-          const near = Math.round(r / 15) * 15;
-          if (!ev.altKey && Math.abs(r - near) < 3) r = near;
-          onTransformPhrase(id, { rotation: Math.round(r) });
-        }
-      };
-      const up = () => {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-        window.removeEventListener('pointercancel', up);
-      };
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
-      window.addEventListener('pointercancel', up);
-      return;
+    if (handle && box && selection.phraseId) {
+      const kind = handle.dataset.handle as 'scale' | 'rotate' | 'transform' | 'delete' | 'edit' | 'duplicate';
+      if (kind === 'delete') {
+        e.preventDefault();
+        e.stopPropagation();
+        onDeletePhrase?.();
+        return;
+      }
+      if (kind === 'edit') {
+        e.preventDefault();
+        e.stopPropagation();
+        onEditPhraseText?.();
+        return;
+      }
+      if (kind === 'duplicate') {
+        e.preventDefault();
+        e.stopPropagation();
+        onDuplicatePhrase?.();
+        return;
+      }
+      if (onTransformPhrase) {
+        const phrase = project.phrases.find((p) => p.id === selection.phraseId);
+        if (!phrase) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const s = stage.getBoundingClientRect();
+        const cx = s.left + box.left + box.width / 2;
+        const cy = s.top + box.top + box.height / 2;
+        const d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy));
+        const a0 = Math.atan2(e.clientY - cy, e.clientX - cx);
+        const scale0 = phrase.scale || 1;
+        const rot0 = phrase.rotation || 0;
+        const id = phrase.id;
+        const move = (ev: PointerEvent) => {
+          if (kind === 'scale') {
+            const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+            onTransformPhrase(id, { scale: Math.round(Math.min(5, Math.max(0.2, (scale0 * d) / d0)) * 100) / 100 });
+          } else if (kind === 'rotate') {
+            let r = rot0 + ((Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180) / Math.PI;
+            r = ((((r + 180) % 360) + 360) % 360) - 180;
+            // ímã a cada 15° (ou livre com Alt)
+            const near = Math.round(r / 15) * 15;
+            if (!ev.altKey && Math.abs(r - near) < 3) r = near;
+            onTransformPhrase(id, { rotation: Math.round(r) });
+          } else if (kind === 'transform') {
+            const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+            const nextScale = Math.round(Math.min(5, Math.max(0.2, (scale0 * d) / d0)) * 100) / 100;
+            let r = rot0 + ((Math.atan2(ev.clientY - cy, ev.clientX - cx) - a0) * 180) / Math.PI;
+            r = ((((r + 180) % 360) + 360) % 360) - 180;
+            const near = Math.round(r / 15) * 15;
+            if (!ev.altKey && Math.abs(r - near) < 3) r = near;
+            onTransformPhrase(id, { scale: nextScale, rotation: Math.round(r) });
+          }
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', up);
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
+        return;
+      }
     }
     const hits = document.elementsFromPoint(e.clientX, e.clientY);
     const phraseEl = hits.find((h) => h instanceof HTMLElement && h.dataset.phraseId) as HTMLElement | undefined;
@@ -267,8 +336,67 @@ export const Preview: React.FC<Props> = ({
           {grid && <div className="thirds" aria-hidden="true" />}
           {snapGuide.x && <div className="snap-line x" aria-hidden="true" />}
           {snapGuide.y && <div className="snap-line y" aria-hidden="true" />}
-          {box && <div className={`selbox ${selection.wordId ? 'word' : ''}`} style={box} aria-hidden="true" />}
-          {box && !selection.wordId && onTransformPhrase && !playing && (
+          {box && (
+            <div
+              className={`selbox ${selection.wordId ? 'word' : ''} ${mobileMode && !selection.wordId ? 'mob-selbox' : ''}`}
+              style={box}
+              aria-hidden="true"
+            />
+          )}
+          {box && !selection.wordId && !playing && mobileMode && (
+            <>
+              <button
+                type="button"
+                className="mob-corner-handle"
+                data-handle="delete"
+                style={{ left: box.left, top: box.top }}
+                aria-label="Apagar legenda"
+                title="Apagar legenda"
+              >
+                <span className="mob-corner-dot">
+                  <X size={13} strokeWidth={2.5} aria-hidden="true" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className="mob-corner-handle"
+                data-handle="edit"
+                style={{ left: box.left + box.width, top: box.top }}
+                aria-label="Editar texto da legenda"
+                title="Editar texto"
+              >
+                <span className="mob-corner-dot">
+                  <Pencil size={12} strokeWidth={2.5} aria-hidden="true" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className="mob-corner-handle"
+                data-handle="duplicate"
+                style={{ left: box.left, top: box.top + box.height }}
+                aria-label="Duplicar legenda"
+                title="Duplicar legenda"
+              >
+                <span className="mob-corner-dot">
+                  <Copy size={12} strokeWidth={2.5} aria-hidden="true" />
+                </span>
+              </button>
+              {onTransformPhrase && (
+                <div
+                  className="mob-corner-handle"
+                  data-handle="transform"
+                  style={{ left: box.left + box.width, top: box.top + box.height }}
+                  title="Arraste para redimensionar e girar"
+                  aria-hidden="true"
+                >
+                  <span className="mob-corner-dot">
+                    <Maximize2 size={12} strokeWidth={2.5} aria-hidden="true" />
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {box && !selection.wordId && onTransformPhrase && !playing && !mobileMode && (
             <>
               <div
                 className="handle scale"
@@ -288,48 +416,120 @@ export const Preview: React.FC<Props> = ({
           )}
         </div>
       </div>
-      <div className="transport" role="toolbar" aria-label="Controles de reprodução">
-        <button className="icon" onClick={() => p?.seekTo(0)} aria-label="Início" title="Início (Home)">
-          <ChevronFirst size={18} aria-hidden="true" />
-        </button>
-        <button className="icon" onClick={() => p?.seekTo(Math.max(0, frame - 1))} aria-label="Quadro anterior" title="Quadro anterior (←)">
-          <StepBack size={18} aria-hidden="true" />
-        </button>
-        <button className="icon play" onClick={() => p?.toggle()} aria-label={playing ? 'Pausar' : 'Reproduzir'} title="Play/Pause (Espaço)">
-          {playing ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
-        </button>
-        <button className="icon" onClick={() => p?.seekTo(Math.min(durationInFrames - 1, frame + 1))} aria-label="Próximo quadro" title="Próximo quadro (→)">
-          <StepForward size={18} aria-hidden="true" />
-        </button>
-        <button className="icon" onClick={() => p?.seekTo(durationInFrames - 1)} aria-label="Fim" title="Fim (End)">
-          <ChevronLast size={18} aria-hidden="true" />
-        </button>
-        <span className="tc" aria-live="off">
-          {timecode(currentMs)} <span className="muted">/ {timecode(durationMs)}</span>
-        </span>
-        <span className="tl-grow" />
-        <button
-          className={`icon ${muted ? 'on' : ''}`}
-          onClick={() => {
-            setMuted((m) => {
-              if (m) p?.unmute();
-              else p?.mute();
-              return !m;
-            });
-          }}
-          aria-pressed={muted}
-          aria-label={muted ? 'Ativar som' : 'Silenciar'}
-          title="Som"
-        >
-          {muted ? <VolumeX size={18} aria-hidden="true" /> : <Volume2 size={18} aria-hidden="true" />}
-        </button>
-        <button className={`icon ${safe ? 'on' : ''}`} onClick={() => setSafe((v) => !v)} aria-pressed={safe} aria-label="Área segura" title="Guias de área segura (Reels/TikTok)">
-          <ScanLine size={18} aria-hidden="true" />
-        </button>
-        <button className={`icon ${grid ? 'on' : ''}`} onClick={() => setGrid((v) => !v)} aria-pressed={grid} aria-label="Grade de terços" title="Grade de terços">
-          <Grid3x3 size={18} aria-hidden="true" />
-        </button>
-      </div>
+      {mobileMode ? (
+        <div className="transport mob-transport" role="toolbar" aria-label="Controles de reprodução">
+          <button
+            className="icon play"
+            onClick={() => p?.toggle()}
+            aria-label={playing ? 'Pausar' : 'Reproduzir'}
+            title="Play/Pause"
+          >
+            {playing ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
+          </button>
+          <span className="tc mob-tc" aria-live="off">
+            {timecodeShort(currentMs)} <span className="muted">/ {timecodeShort(durationMs)}</span>
+          </span>
+          <span className="tl-grow" />
+          {onUndo && (
+            <button
+              className="icon"
+              onClick={onUndo}
+              disabled={!canUndo}
+              aria-label="Desfazer"
+              title="Desfazer"
+            >
+              <Undo2 size={17} aria-hidden="true" />
+            </button>
+          )}
+          {onRedo && (
+            <button
+              className="icon"
+              onClick={onRedo}
+              disabled={!canRedo}
+              aria-label="Refazer"
+              title="Refazer"
+            >
+              <Redo2 size={17} aria-hidden="true" />
+            </button>
+          )}
+          <button
+            className={`icon ${safe ? 'on' : ''}`}
+            onClick={() => setSafe((v) => !v)}
+            aria-pressed={safe}
+            aria-label="Área segura"
+            title="Guias de área segura (Reels/TikTok)"
+          >
+            <ScanLine size={17} aria-hidden="true" />
+          </button>
+          <button
+            className={`icon ${grid ? 'on' : ''}`}
+            onClick={() => setGrid((v) => !v)}
+            aria-pressed={grid}
+            aria-label="Grade de terços"
+            title="Grade de terços"
+          >
+            <Grid3x3 size={17} aria-hidden="true" />
+          </button>
+          <button
+            className={`icon ${muted ? 'on' : ''}`}
+            onClick={() => {
+              setMuted((m) => {
+                if (m) p?.unmute();
+                else p?.mute();
+                return !m;
+              });
+            }}
+            aria-pressed={muted}
+            aria-label={muted ? 'Ativar som' : 'Silenciar'}
+            title="Som"
+          >
+            {muted ? <VolumeX size={17} aria-hidden="true" /> : <Volume2 size={17} aria-hidden="true" />}
+          </button>
+        </div>
+      ) : (
+        <div className="transport" role="toolbar" aria-label="Controles de reprodução">
+          <button className="icon" onClick={() => p?.seekTo(0)} aria-label="Início" title="Início (Home)">
+            <ChevronFirst size={18} aria-hidden="true" />
+          </button>
+          <button className="icon" onClick={() => p?.seekTo(Math.max(0, frame - 1))} aria-label="Quadro anterior" title="Quadro anterior (←)">
+            <StepBack size={18} aria-hidden="true" />
+          </button>
+          <button className="icon play" onClick={() => p?.toggle()} aria-label={playing ? 'Pausar' : 'Reproduzir'} title="Play/Pause (Espaço)">
+            {playing ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
+          </button>
+          <button className="icon" onClick={() => p?.seekTo(Math.min(durationInFrames - 1, frame + 1))} aria-label="Próximo quadro" title="Próximo quadro (→)">
+            <StepForward size={18} aria-hidden="true" />
+          </button>
+          <button className="icon" onClick={() => p?.seekTo(durationInFrames - 1)} aria-label="Fim" title="Fim (End)">
+            <ChevronLast size={18} aria-hidden="true" />
+          </button>
+          <span className="tc" aria-live="off">
+            {timecode(currentMs)} <span className="muted">/ {timecode(durationMs)}</span>
+          </span>
+          <span className="tl-grow" />
+          <button
+            className={`icon ${muted ? 'on' : ''}`}
+            onClick={() => {
+              setMuted((m) => {
+                if (m) p?.unmute();
+                else p?.mute();
+                return !m;
+              });
+            }}
+            aria-pressed={muted}
+            aria-label={muted ? 'Ativar som' : 'Silenciar'}
+            title="Som"
+          >
+            {muted ? <VolumeX size={18} aria-hidden="true" /> : <Volume2 size={18} aria-hidden="true" />}
+          </button>
+          <button className={`icon ${safe ? 'on' : ''}`} onClick={() => setSafe((v) => !v)} aria-pressed={safe} aria-label="Área segura" title="Guias de área segura (Reels/TikTok)">
+            <ScanLine size={18} aria-hidden="true" />
+          </button>
+          <button className={`icon ${grid ? 'on' : ''}`} onClick={() => setGrid((v) => !v)} aria-pressed={grid} aria-label="Grade de terços" title="Grade de terços">
+            <Grid3x3 size={18} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
