@@ -459,3 +459,63 @@ input[type='color'] { width: 34px; height: 26px; border: none; background: none;
   .vclip { touch-action: pan-x; }
   button, .stage, label { -webkit-touch-callout: none; }
 }
+
+/* ---------- Refatoração CapCut Mobile (.mobile-root escopado) ---------- */
+.mobile-root {
+  --mob-bg: #0B0C10;
+  --mob-surface: #15171E;
+  --mob-elevated: rgba(24, 27, 36, 0.94);
+  --mob-card: #1E212B;
+  --mob-border: rgba(255, 255, 255, 0.10);
+  --mob-border-strong: rgba(255, 255, 255, 0.22);
+  --mob-text: #F8FAFC;
+  --mob-text-muted: #9CA3AF;
+  --mob-cyan: #00D4EB;
+  --mob-cyan-hover: #00B8CC;
+  --mob-cyan-ink: #041B1E;
+  --mob-clip: #C2410C;
+  --mob-clip-sel: #EA580C;
+  --mob-word: #312E81;
+  --mob-playhead: #FFFFFF;
+  --mob-danger: #EF4444;
+  --mob-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --mob-font-sans: 'Inter Variable', Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --mob-font-display: 'Outfit Variable', Outfit, 'Inter Variable', sans-serif;
+
+  background: var(--mob-bg);
+  color: var(--mob-text);
+  font-family: var(--mob-font-sans);
+  min-height: 100dvh;
+  max-width: 100vw;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.mobile-root input,
+.mobile-root textarea,
+.mobile-root select {
+  font-size: 16px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.mobile-root button {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-root .mob-btn-cyan {
+  background: var(--mob-cyan);
+  color: var(--mob-cyan-ink);
+  border-color: var(--mob-cyan);
+  font-weight: 700;
+}
+
+.mobile-root .mob-btn-cyan:hover:not(:disabled) {
+  background: var(--mob-cyan-hover);
+}
+
