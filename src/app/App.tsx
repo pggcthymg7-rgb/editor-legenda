@@ -1,4 +1,3 @@
-import type { PlayerRef } from '@remotion/player';
 import {
   ChevronLeft,
   Clapperboard,
@@ -18,10 +17,10 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { duplicatePhrase, setWordTime, sortPhrases, splitPhraseAt } from '../core/edit';
-import { buildPhrase, phraseEnd, phraseStart, shiftPhrase } from '../core/grouping';
-import type { Project, Word } from '../core/types';
+import React, { useEffect, useState } from 'react';
+import { setWordTime } from '../core/edit';
+import { shiftPhrase } from '../core/grouping';
+import type { Project } from '../core/types';
 import { FPS } from '../remotion/Root';
 import { ExportPanel } from './components/ExportPanel';
 import { Library, type LibTab } from './components/Library';
@@ -29,10 +28,11 @@ import { PersonPanel } from './components/PersonPanel';
 import { Camera3DPanel } from './components/Camera3DPanel';
 import { PhrasePanel } from './components/PhrasePanel';
 import { Preview } from './components/Preview';
-import { Timeline, type Selection } from './components/Timeline';
+import { Timeline } from './components/Timeline';
 import { UploadScreen } from './components/UploadScreen';
-import { platform } from './platform';
-import { useProjectStore } from './store';
+import { MobileEditor } from './mobile/MobileEditor';
+import { useEditor } from './mobile/useEditor';
+import { useIsMobile } from './mobile/useIsMobile';
 
 type MobileTab = 'biblioteca' | 'inspetor';
 
@@ -51,135 +51,51 @@ const SHORTCUTS: [string, string][] = [
 ];
 
 export const App: React.FC = () => {
-  const { project, apply, load, undo, redo, canUndo, canRedo } = useProjectStore();
-  const [selection, setSelection] = useState<Selection>({ phraseId: null, wordId: null });
-  const [currentMs, setCurrentMs] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [saveState, setSaveState] = useState<'ok' | 'saving' | 'error'>('ok');
+  const ed = useEditor();
+  const isMobile = useIsMobile();
+  const {
+    project,
+    apply,
+    load,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    selection,
+    setSelection,
+    currentMs,
+    setCurrentMs,
+    playing,
+    setPlaying,
+    saveState,
+    playerRef,
+    playable,
+    videoError,
+    maskUrls,
+    activeMasks,
+    selected,
+    active,
+    seekMs,
+    onMovePhrase,
+    onTransformPhrase,
+    onMoveWord,
+    addAtPlayhead,
+    splitAtPlayhead,
+    duplicate,
+    remove,
+    closeProject,
+  } = ed;
+
   const [exportOpen, setExportOpen] = useState(false);
   const [exportMounted, setExportMounted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('inspetor');
   const [mobileSheet, setMobileSheet] = useState<MobileTab | null>(null);
   const [libTab, setLibTab] = useState<LibTab>('frases');
-  const playerRef = useRef<PlayerRef | null>(null);
-  const [playableSrc, setPlayableSrc] = useState<{ src: string; url: string } | null>(null);
-  const [videoError, setVideoError] = useState('');
-  const [maskUrls, setMaskUrls] = useState<string[] | undefined>();
 
-  // iPhone: vídeo fica no aparelho como local:<id> → vira blob URL para tocar/renderizar
-  const src = project?.video.src ?? '';
+  // atalhos de teclado estilo NLE (apenas desktop)
   useEffect(() => {
-    let alive = true;
-    setVideoError('');
-    platform
-      .videoUrl(src)
-      .then((url) => alive && setPlayableSrc({ src, url }))
-      .catch((e) => alive && setVideoError((e as Error).message));
-    return () => {
-      alive = false;
-    };
-  }, [src]);
-
-  // máscaras da pessoa (se a análise já foi feita)
-  const maskCount = project?.video.mask?.count ?? 0;
-  useEffect(() => {
-    let alive = true;
-    if (!maskCount || !src) return setMaskUrls(undefined);
-    platform
-      .maskUrls(src, maskCount)
-      .then((u) => alive && setMaskUrls(u))
-      .catch(() => alive && setMaskUrls(undefined));
-    return () => {
-      alive = false;
-    };
-  }, [src, maskCount]);
-
-  const playable = useMemo(
-    () =>
-      project && playableSrc?.src === project.video.src ? { ...project, video: { ...project.video, src: playableSrc.url } } : null,
-    [project, playableSrc],
-  );
-  const occlusionOn = project?.occlusion !== false;
-  const activeMasks = occlusionOn ? maskUrls : undefined;
-
-  // salva sozinho 1,5 s depois da última mudança
-  useEffect(() => {
-    if (!project) return;
-    setSaveState('saving');
-    const t = setTimeout(() => {
-      platform
-        .saveProject(project)
-        .then(() => setSaveState('ok'))
-        .catch(() => setSaveState('error'));
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [project]);
-
-  const seekMs = useCallback((ms: number) => playerRef.current?.seekTo(Math.round((ms / 1000) * FPS)), []);
-
-  const onMovePhrase = useCallback(
-    (id: string, x: number, y: number) =>
-      apply((p) => ({ ...p, phrases: p.phrases.map((ph) => (ph.id === id ? { ...ph, x, y } : ph)) }), true),
-    [apply],
-  );
-  const onTransformPhrase = useCallback(
-    (id: string, patch: { scale?: number; rotation?: number }) =>
-      apply((p) => ({ ...p, phrases: p.phrases.map((ph) => (ph.id === id ? { ...ph, ...patch } : ph)) }), true),
-    [apply],
-  );
-  const onMoveWord = useCallback(
-    (phraseId: string, wordId: string, patch: Partial<Word>) =>
-      apply(
-        (p) => ({
-          ...p,
-          phrases: p.phrases.map((ph) =>
-            ph.id === phraseId ? { ...ph, words: ph.words.map((w) => (w.id === wordId ? { ...w, ...patch } : w)) } : ph,
-          ),
-        }),
-        true,
-      ),
-    [apply],
-  );
-
-  const addAtPlayhead = useCallback(() => {
-    if (!project) return;
-    const ph = buildPhrase([{ text: 'Texto', startMs: currentMs, endMs: Math.min(project.video.durationMs, currentMs + 1000) }], 'p1-editorial', project.customPresets);
-    apply((proj) => ({ ...proj, phrases: sortPhrases([...proj.phrases, ph]) }));
-    setSelection({ phraseId: ph.id, wordId: null });
-  }, [apply, currentMs, project]);
-
-  const splitAtPlayhead = useCallback(() => {
-    if (!project) return;
-    const targetId =
-      selection.phraseId ?? project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p))?.id;
-    if (!targetId) return;
-    apply((proj) => ({ ...proj, phrases: splitPhraseAt(proj.phrases, targetId, currentMs) }));
-  }, [apply, project, selection.phraseId, currentMs]);
-
-  const duplicate = useCallback(() => {
-    if (!project || !selection.phraseId) return;
-    const r = duplicatePhrase(project.phrases, selection.phraseId);
-    apply((proj) => ({ ...proj, phrases: r.phrases }));
-    setSelection({ phraseId: r.id, wordId: null });
-  }, [apply, project, selection.phraseId]);
-
-  const remove = useCallback(() => {
-    if (!selection.phraseId) return;
-    apply((proj) => ({ ...proj, phrases: proj.phrases.filter((p) => p.id !== selection.phraseId) }));
-    setSelection({ phraseId: null, wordId: null });
-  }, [apply, selection.phraseId]);
-
-  // avisa antes de fechar com alteração ainda não salva
-  useEffect(() => {
-    if (saveState === 'ok') return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [saveState]);
-
-  // atalhos de teclado estilo NLE
-  useEffect(() => {
+    if (isMobile) return;
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === 'Escape' && (exportOpen || helpOpen)) {
@@ -239,12 +155,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, apply, selection, currentMs, project, exportOpen, helpOpen]);
-
-  // seleção some se a frase foi apagada (desfazer etc.)
-  useEffect(() => {
-    if (project && selection.phraseId && !project.phrases.some((p) => p.id === selection.phraseId)) setSelection({ phraseId: null, wordId: null });
-  }, [project, selection.phraseId]);
+  }, [isMobile, undo, redo, duplicate, splitAtPlayhead, addAtPlayhead, remove, apply, selection, currentMs, project, exportOpen, helpOpen, playerRef, setSelection]);
 
   useEffect(() => {
     if (!selection.phraseId && mobileSheet === 'inspetor') setMobileSheet(null);
@@ -252,8 +163,7 @@ export const App: React.FC = () => {
 
   if (!project) return <UploadScreen onReady={(p: Project) => load(p)} />;
 
-  const selected = project.phrases.find((p) => p.id === selection.phraseId) ?? null;
-  const active = project.phrases.find((p) => currentMs >= phraseStart(p) && currentMs < phraseEnd(p));
+  if (isMobile) return <MobileEditor ed={ed} />;
 
   const openLibSheet = (t: LibTab) => {
     setLibTab(t);
@@ -270,10 +180,9 @@ export const App: React.FC = () => {
         <button
           className="back-btn"
           onClick={async () => {
-            if (project && saveState === 'saving') await platform.saveProject(project).catch(() => undefined);
             setExportOpen(false);
             setExportMounted(false);
-            load(null);
+            await closeProject();
           }}
           title="Abrir outro vídeo"
           aria-label="Abrir outro vídeo"

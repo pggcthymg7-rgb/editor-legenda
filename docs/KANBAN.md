@@ -59,9 +59,9 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ## 📊 Resumo de Status Atual
 | Aba / Coluna | Quantidade | Descrição |
 |---|:---:|---|
-| 🧠 **1. Em Planejamento** | `0` | Todos os lotes do plano Strix foram executados. |
+| 🧠 **1. Em Planejamento** | `8` | Lotes `MOB-L2` a `MOB-L9` da Refatoração Mobile CapCut (`refactor/mobile-capcut-ux`). |
 | ⏳ **2. Na Fila** | `0` | Nenhum lote na fila. |
-| ⚡ **3. Em Execução** | `1` | `CHORE-01` (aguardando APROVADO). |
+| ⚡ **3. Em Execução** | `2` | `CHORE-01` e `MOB-L1` (aguardando APROVADO / OK do João). |
 | 🛠️ **4. Em Correção** | `0` | Nenhuma tarefa em correção. |
 | ✅ **5. Finalizado** | `33` | Lotes de segurança Strix (L1, L2, L3) e Motor 3D concluídos e em produção no Render (`128/128 testes`). |
 | 🗑️ **6. Descartado** | `3` | Abordagens descartadas. |
@@ -69,7 +69,70 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## 🧠 1. Em Planejamento
-*(Plano Strix 100% executado)*
+
+### 📦 Card `MOB-L2`: Dependências Mobile, Tailwind Escopado, Safe-Area e `shadcn`
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: Instala as bibliotecas visuais de movimento, gavetas deslizantes e gestos de toque do novo editor de celular, além de ajustar as margens para a ilha e barra inferior do iPhone sem afetar a tela do computador.
+- **🔧 Engenharia de Software**: Adiciona `viewport-fit=cover` + `safe-area` em `index.html`, instala `tailwindcss` e `@tailwindcss/vite` sem preflight escopado em `.mobile-root`, `motion`, `vaul@1.1.2` (com `container`), `@use-gesture/react` e `shadcn` init com diff prévio.
+- **🔄 O que altera no App**: Prepara a fundação de estilo e componentes de toque para o mobile mantendo o desktop intacto.
+- **🐛 Qual era o Erro (Antes)**: O app não possuía motor dedicado de bottom sheets com snap points nem gestos multi-toque declarativos.
+- **✅ Resultado Final (Depois)**: Dependências instaladas, isoladas e validadas com `npm run verify` = 0 erros.
+
+### 🎨 Card `MOB-L3`: Direção Visual Mobile (`DESIGN.md` e Tokens `.mobile-root`)
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: Define a paleta de cores escura profissional, fontes e cantos arredondados da interface mobile estilo CapCut após escolha entre opções visuais.
+- **🔧 Engenharia de Software**: Gera propostas via `ui-ux-pro-max` e `/impeccable shape`, registra a direção aprovada em `DESIGN.md` / `design-system/` e aplica variáveis CSS dentro de `.mobile-root`.
+- **🔄 O que altera no App**: Identidade visual de estúdio mobile aplicada exclusivamente ao contêiner mobile.
+- **🐛 Qual era o Erro (Antes)**: Tokens compartilhados com o desktop sem direção visual dedicada ao fluxo CapCut mobile.
+- **✅ Resultado Final (Depois)**: Sistema de design documentado e escopado em `.mobile-root`.
+
+### 🏠 Card `MOB-L4`: `MobileHome`, `MobileMediaPicker` e Miniaturas no IndexedDB (`DB_VERSION = 3`)
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: Nova tela inicial com botão "Novo Projeto" que abre a grade de vídeos (Galeria + vídeos já usados com miniatura e duração) e entra direto no editor, sem perguntas antes.
+- **🔧 Engenharia de Software**: Cria `MobileHome.tsx` e `MobileMediaPicker.tsx`, estende `ProjectSummary` com duração/data/miniatura, sobe `DB_VERSION` para `3` criando store separado `thumbs` em `idb.ts`/`device.ts` (sem tocar em `validateProject`) e substitui `confirm` de exclusão por sheet mobile.
+- **🔄 O que altera no App**: O usuário escolhe o vídeo e cai direto na timeline do editor, igual ao CapCut.
+- **🐛 Qual era o Erro (Antes)**: A entrada parecia um formulário web que obrigava a configurar transcrição antes de ver o editor.
+- **✅ Resultado Final (Depois)**: Fluxo instantâneo Mídia ➔ Editor com galeria de vídeos recentes e miniaturas.
+
+### 🎞️ Card `MOB-L5`: Monitor Mobile (4 Alças) e `MobileTimeline` com Agulha Central Fixa
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: A agulha branca fica parada no meio da tela enquanto você rola o vídeo por baixo dela, faz zoom com pinça de 2 dedos e usa as 4 alças nos cantos da legenda (apagar, editar, copiar, girar).
+- **🔧 Engenharia de Software**: Cria `MobileTimeline.tsx` com agulha central fixa, scrubbing por scroll, zoom via `@use-gesture`, tira de quadros em baixa resolução sob demanda + forma de onda, faixa de palavras sob demanda com botão `X` e 4 alças nos cantos do preview (`X`, `Lápis`, `Copiar`, `Girar`).
+- **🔄 O que altera no App**: Ergonomia de edição idêntica ao CapCut no iPhone.
+- **🐛 Qual era o Erro (Antes)**: Agulha móvel à esquerda, faixa de palavras sempre aberta ocupando espaço e barra de ferramentas duplicada acima da timeline.
+- **✅ Resultado Final (Depois)**: Timeline limpa, virtualizada e com agulha central fixa.
+
+### 🧰 Card `MOB-L6`: Barra Dinâmica, Bottom Sheets (Vaul), "Legendas Automáticas" e Inspetor CapCut
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: A barra de baixo muda sozinha conforme o que você seleciona, traz a ferramenta "Legendas automáticas" com carrossel de modelos e a opção "Aplicar a todas as legendas principais" na edição de texto.
+- **🔧 Engenharia de Software**: Cria `MobileToolbar.tsx` e `MobileBottomSheet.tsx` (`modal=false`, `snapPoints`, `repositionInputs`), sheet "Legendas automáticas" (com *"Apagar legendas atuais"* marcada por padrão e integrada ao `undo`), inspetor com abas CapCut e eleva o estado de progresso de `Pessoa`, `Câmera 3D` e `Exportar` acima dos dois layouts.
+- **🔄 O que altera no App**: Navegação contextual completa por gavetas deslizantes sem perder o vídeo de vista.
+- **🐛 Qual era o Erro (Antes)**: Dock fixo de 5 abas e transcrição presa apenas à tela de entrada.
+- **✅ Resultado Final (Depois)**: Barra dinâmica, transcrição dentro do editor e painéis persistentes.
+
+### 🤏 Card `MOB-L7`: Gestos Diretos na Palavra no Preview (Arrastar, Pinça e Girar)
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: Permite tocar direto em uma palavra da legenda em cima do vídeo e arrastar, aumentar/diminuir com dois dedos ou girar.
+- **🔧 Engenharia de Software**: Aplica `@use-gesture/react` sobre os elementos `data-word-id` no preview mobile para atualizar `dx`, `dy`, `scaleX`, `scaleY` e `rotation` via `onMoveWord`.
+- **🔄 O que altera no App**: Manipulação direta de cada palavra com os dedos no monitor.
+- **🐛 Qual era o Erro (Antes)**: Ajuste individual de palavra dependia de controles numéricos no inspetor.
+- **✅ Resultado Final (Depois)**: Gestos táteis diretos em palavras e frases no preview.
+
+### 📱 Card `MOB-L8`: Limpeza do CSS Mobile Antigo e Auditoria Final no iPhone
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: Remove o código antigo de celular que ficava misturado com o de computador e faz a checagem final de toque, contraste e velocidade.
+- **🔧 Engenharia de Software**: Remove o bloco `@media (max-width: 900px)` antigo de `src/app/styles.css` (após aprovação do diff) e executa auditoria completa com `web-design-guidelines` e Impeccable critique/audit.
+- **🔄 O que altera no App**: Código CSS limpo, sem regras mortas e 100% auditado para PWA em tela cheia.
+- **🐛 Qual era o Erro (Antes)**: Regras CSS mobile antigas sobrepostas ao DOM desktop.
+- **✅ Resultado Final (Depois)**: Arquitetura mobile 100% independente e validada.
+
+### 📤 Card `MOB-L9`: Sheet Mobile de Exportação e "Qualidade"
+- **Status**: 🧠 Em Planejamento
+- **🗣️ Linguagem Popular**: Tela de exportação no padrão CapCut mobile mostrando apenas as opções reais que o nosso editor possui (vídeo, camadas, SRT, ASS).
+- **🔧 Engenharia de Software**: Adapta o fluxo de `ExportPanel.tsx` para tela/sheet mobile no padrão CapCut, expondo exclusivamente os formatos e opções reais suportados pelo app.
+- **🔄 O que altera no App**: Exportação mobile integrada ao novo design sem controles falsos.
+- **🐛 Qual era o Erro (Antes)**: Modal de exportação compartilhado com o layout desktop.
+- **✅ Resultado Final (Depois)**: Exportação mobile nativa e fiel às capacidades reais do motor.
 
 ---
 
@@ -79,6 +142,15 @@ cd /Users/joaogabrielzava/Projetos/editor-legenda && claude
 ---
 
 ## ⚡ 3. Em Execução
+
+### 🔀 Card `MOB-L1`: Hook `useEditor`, Gatilho `useIsMobile` e Casca `MobileEditor` (aguardando APROVADO)
+- **Status**: ⚡ Em Execução (aguardando APROVADO)
+- **🗣️ Linguagem Popular**: Separa o cérebro do editor (salvar, tocar o vídeo, cortar e mover legendas) em uma peça compartilhada e cria o interruptor automático que mostra a tela de celular no iPhone e mantém a tela atual no computador sem nunca duplicar o player de vídeo.
+- **🔧 Engenharia de Software**: Cria `src/app/mobile/useIsMobile.ts` (`useSyncExternalStore` + `matchMedia('(max-width: 899.98px), (pointer: coarse)')`), `src/app/mobile/useEditor.ts` (estado e handlers extraídos de `App.tsx`) e `src/app/mobile/MobileEditor.tsx` (casca provisória sem `<Player />`), atualizando `src/app/App.tsx` como interruptor limpo.
+- **🔄 O que altera no App**: No computador tudo continua 100% idêntico; em telas estreitas ou de toque entra a casca base onde construiremos o novo editor CapCut.
+- **🐛 Qual era o Erro (Antes)**: Toda a lógica de estado e o layout de computador e celular viviam misturados dentro de um único `App.tsx` de 570 linhas.
+- **✅ Resultado Final (Depois)**: Lógica isolada em `useEditor`, 1 único `<Player />` montado por vez e `npm run verify` com 0 erros (`128/128 testes`).
+- **Commit**: *(aguardando OK do João)* | **Dono**: Claude Code & Antigravity
 
 ### 🧰 Card `CHORE-01`: Registro de `PRODUCT.md` e Skill `shadcn` Instalada (aguardando APROVADO)
 - **Status**: ⚡ Em Execução (aguardando APROVADO)
