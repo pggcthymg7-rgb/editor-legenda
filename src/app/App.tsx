@@ -31,6 +31,7 @@ import { Preview } from './components/Preview';
 import { Timeline } from './components/Timeline';
 import { UploadScreen } from './components/UploadScreen';
 import { MobileEditor } from './mobile/MobileEditor';
+import { MobileHome } from './mobile/MobileHome';
 import { useEditor } from './mobile/useEditor';
 import { useIsMobile } from './mobile/useIsMobile';
 
@@ -161,7 +162,13 @@ export const App: React.FC = () => {
     if (!selection.phraseId && mobileSheet === 'inspetor') setMobileSheet(null);
   }, [selection.phraseId, mobileSheet]);
 
-  if (!project) return <UploadScreen onReady={(p: Project) => load(p)} />;
+  if (!project) {
+    return isMobile ? (
+      <MobileHome onReady={(p: Project) => load(p)} />
+    ) : (
+      <UploadScreen onReady={(p: Project) => load(p)} />
+    );
+  }
 
   if (isMobile) return <MobileEditor ed={ed} />;
 

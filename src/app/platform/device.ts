@@ -66,6 +66,19 @@ export const devicePlatform: Platform = {
     return url;
   },
 
+  async videoFile(src) {
+    if (!LOCAL_SRC.test(src)) return null;
+    const v = await idbGet<StoredVideo>('videos', src.slice('local:'.length));
+    if (!v) return null;
+    if (v.blob instanceof File) return v.blob;
+    return new File([v.blob], v.name || 'video.mp4', { type: v.type || 'video/mp4' });
+  },
+
+  async saveThumb(src, dataUrl) {
+    if (!LOCAL_SRC.test(src) || !dataUrl.startsWith('data:image/')) return;
+    await idbPut('thumbs', src, dataUrl);
+  },
+
   async transcribeOpenAi(ref, onStatus, lang = 'pt') {
     const key = getKey();
     if (!key) throw new Error('Coloque sua chave da OpenAI nas configurações');
@@ -91,9 +104,23 @@ export const devicePlatform: Platform = {
 
   async listProjects() {
     const all = await idbAll<StoredProject>('projects');
-    return all
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .map((s): ProjectSummary => ({ id: s.project.id, name: s.project.name }));
+    const sorted = all.sort((a, b) => b.updatedAt - a.updatedAt);
+    return Promise.all(
+      sorted.map(async (s): Promise<ProjectSummary> => {
+        const src = s.project.video.src;
+        const thumb = LOCAL_SRC.test(src) ? await idbGet<string>('thumbs', src).catch(() => undefined) : undefined;
+        return {
+          id: s.project.id,
+          name: s.project.name,
+          updatedAt: s.updatedAt,
+          durationMs: s.project.video.durationMs,
+          width: s.project.video.width,
+          height: s.project.video.height,
+          videoSrc: src,
+          ...(thumb ? { thumb } : {}),
+        };
+      }),
+    );
   },
 
   async loadProject(id) {
@@ -119,6 +146,7 @@ export const devicePlatform: Platform = {
       const others = await idbAll<StoredProject>('projects');
       if (!others.some((o) => o.project.video.src === src)) {
         await idbDelete('videos', src.slice('local:'.length));
+        await idbDelete('thumbs', src).catch(() => undefined);
         await idbDeletePrefix('masks', `${src.slice('local:'.length)}:`);
         revokeMasks(src);
       }
